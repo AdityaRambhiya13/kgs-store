@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { getOrder } from '../api'
 import ProgressSteps from '../components/ProgressSteps'
 import Navbar from '../components/Navbar'
+import Token3D from '../components/Token3D'
 import { motion, AnimatePresence } from 'framer-motion'
 
 // ── Confetti burst ───────────────────────────────────────────
@@ -96,19 +97,33 @@ export default function StatusPage() {
     }
 
     return (
-        <div>
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+        >
             <Navbar searchQuery="" onSearchChange={() => { }} />
             <div className="status-page">
                 <div className="status-center">
-                    {/* Token card */}
+                    {/* Token card (3D) */}
                     <motion.div
                         className="token-card"
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                        style={{
+                            height: 300,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: 'radial-gradient(circle at center, rgba(255,255,255,0.1), transparent)',
+                            border: 'none',
+                            boxShadow: 'none',
+                            padding: 0
+                        }}
                     >
-                        <div className="token-label">Your Token Number</div>
-                        <div className="token-value">{token}</div>
+                        <Token3D token={token} isReady={isReady} />
                     </motion.div>
 
                     {/* Progress steps */}
@@ -175,6 +190,6 @@ export default function StatusPage() {
                     </motion.button>
                 </div>
             </div>
-        </div>
+        </motion.div>
     )
 }

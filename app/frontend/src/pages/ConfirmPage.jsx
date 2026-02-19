@@ -12,11 +12,12 @@ export default function ConfirmPage() {
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
     const [apiError, setApiError] = useState('')
+    const [orderPlaced, setOrderPlaced] = useState(false)
 
-    // If cart is empty, redirect home
+    // If cart is empty, redirect home (unless order was just placed)
     useEffect(() => {
-        if (cartItems.length === 0) navigate('/')
-    }, [cartItems, navigate])
+        if (cartItems.length === 0 && !orderPlaced) navigate('/')
+    }, [cartItems, navigate, orderPlaced])
 
     const isValidPhone = /^[6-9]\d{9}$/.test(phone)
 
@@ -37,6 +38,7 @@ export default function ConfirmPage() {
                 quantity: item.quantity,
             }))
             const result = await placeOrder({ phone: `+91${phone}`, items, total: cartTotal })
+            setOrderPlaced(true)
             clearCart()
             navigate(`/status/${result.token}`)
         } catch (err) {

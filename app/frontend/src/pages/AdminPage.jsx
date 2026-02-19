@@ -61,7 +61,13 @@ export default function AdminPage() {
 
     if (!authed) {
         return (
-            <div className="admin-page">
+            <motion.div
+                className="admin-page"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+            >
                 <Navbar searchQuery="" onSearchChange={() => { }} />
                 <div className="admin-login">
                     <motion.div
@@ -96,12 +102,18 @@ export default function AdminPage() {
                         </motion.button>
                     </motion.div>
                 </div>
-            </div>
+            </motion.div>
         )
     }
 
     return (
-        <div className="admin-page">
+        <motion.div
+            className="admin-page"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+        >
             {/* Header */}
             <div className="admin-header">
                 <div>
@@ -166,7 +178,7 @@ export default function AdminPage() {
                     ))}
                 </AnimatePresence>
             </div>
-        </div>
+        </motion.div>
     )
 }
 

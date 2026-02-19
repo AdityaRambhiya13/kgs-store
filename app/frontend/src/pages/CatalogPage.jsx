@@ -1,8 +1,10 @@
 import { useState, useEffect, useMemo } from 'react'
 import Navbar from '../components/Navbar'
 import ProductCard from '../components/ProductCard'
+import Hero3D from '../components/Hero3D' // [NEW]
 import { getProducts } from '../api'
 import { motion } from 'framer-motion'
+
 
 const CATEGORIES = ['All']
 
@@ -35,11 +37,18 @@ export default function CatalogPage() {
     }, [products, search, activeCategory])
 
     return (
-        <div>
+        <motion.div
+            className="catalog-page"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+        >
             <Navbar searchQuery={search} onSearchChange={setSearch} />
 
             {/* Hero */}
             <div className="hero">
+                <Hero3D />
                 <div className="hero-content">
                     <motion.h1
                         initial={{ opacity: 0, y: -20 }}
@@ -133,6 +142,7 @@ export default function CatalogPage() {
                     </div>
                 )}
             </div>
-        </div>
+            {/* ... other content ... */}
+        </motion.div>
     )
 }
