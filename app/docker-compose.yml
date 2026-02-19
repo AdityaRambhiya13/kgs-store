@@ -1,0 +1,16 @@
+version: "3.8"
+
+services:
+  quickshop:
+    build: .
+    container_name: quickshop-app
+    ports:
+      - "8000:8000"   # FastAPI REST API
+      - "8501:8501"   # Flet Web Frontend
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data    # Persist SQLite database
+    environment:
+      - DATABASE_URL=/app/data/store.db
+    restart: unless-stopped

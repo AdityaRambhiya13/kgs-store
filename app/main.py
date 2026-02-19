@@ -1,0 +1,150 @@
+# ============================================================
+# main.py — FastAPI Backend (standalone, no Flet)
+# ============================================================
+import os
+import json
+import time
+from typing import List
+from contextlib import asynccontextmanager
+
+import uvicorn
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request
+from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+
+from database import init_db, get_all_products, create_order, get_all_orders, get_order_by_token, update_order_status
+from models import OrderCreate, OrderOut, OrderStatusUpdate, ProductOut
+from websocket import manager
+
+load_dotenv()
+
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
+SECRET_KEY = os.getenv("SECRET_KEY", "quickshop-secret-key-change-in-production")
+
+# ── Rate Limiting ─────────────────────────────────────────────
+rate_limit_store = {}
+RATE_LIMIT = int(os.getenv("RATE_LIMIT", "30"))
+RATE_WINDOW = 60
+
+def check_rate_limit(request: Request):
+    client_ip = request.client.host if request.client else "unknown"
+    now = time.time()
+    if client_ip not in rate_limit_store:
+        rate_limit_store[client_ip] = []
+    rate_limit_store[client_ip] = [t for t in rate_limit_store[client_ip] if now - t < RATE_WINDOW]
+    if len(rate_limit_store[client_ip]) >= RATE_LIMIT:
+        raise HTTPException(status_code=429, detail="Too many requests.")
+    rate_limit_store[client_ip].append(now)
+
+def verify_admin_password(password: str) -> bool:
+    return password == ADMIN_PASSWORD
+
+# ── Lifecycle ─────────────────────────────────────────────────
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    print("✅ Database initialized with 20 products")
+    print("=" * 50)
+    print("🏪 Quick Shop — FastAPI Backend")
+    print("=" * 50)
+    print("📡 API:   http://localhost:8000")
+    print("📋 Docs:  http://localhost:8000/docs")
+    print(f"🔑 Admin: {ADMIN_PASSWORD}")
+    print("=" * 50)
+    yield
+
+# ── FastAPI App ───────────────────────────────────────────────
+app = FastAPI(
+    title="Quick Shop — Virtual Queue API",
+    description="REST API for the Virtual Queue & Digital Storefront",
+    version="2.0.0",
+    lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ── Endpoints ─────────────────────────────────────────────────
+
+@app.get("/api/products", response_model=List[ProductOut])
+def list_products(request: Request):
+    check_rate_limit(request)
+    return get_all_products()
+
+@app.post("/api/orders")
+def place_order(order: OrderCreate, request: Request):
+    check_rate_limit(request)
+    products = {p["id"]: p for p in get_all_products()}
+    validated_items = []
+    calculated_total = 0.0
+
+    for item in order.items:
+        if item.product_id not in products:
+            raise HTTPException(status_code=400, detail=f"Product ID {item.product_id} not found")
+        product = products[item.product_id]
+        subtotal = product["price"] * item.quantity
+        calculated_total += subtotal
+        validated_items.append({
+            "product_id": item.product_id,
+            "name": product["name"],
+            "price": product["price"],
+            "quantity": item.quantity,
+            "subtotal": subtotal,
+        })
+
+    if abs(calculated_total - order.total) > 1.0:
+        raise HTTPException(status_code=400, detail=f"Total mismatch")
+
+    token = create_order(order.phone, validated_items, calculated_total)
+    return {"token": token, "total": calculated_total, "status": "Processing"}
+
+@app.get("/api/orders")
+def list_orders(password: str, request: Request):
+    check_rate_limit(request)
+    if not verify_admin_password(password):
+        raise HTTPException(status_code=401, detail="Invalid admin password")
+    return get_all_orders()
+
+@app.get("/api/orders/{token}")
+def get_order(token: str, request: Request):
+    check_rate_limit(request)
+    order = get_order_by_token(token)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    return order
+
+@app.patch("/api/orders/{token}/status")
+async def toggle_order_status(token: str, body: OrderStatusUpdate, password: str, request: Request):
+    check_rate_limit(request)
+    if not verify_admin_password(password):
+        raise HTTPException(status_code=401, detail="Invalid admin password")
+    updated = update_order_status(token, body.status)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Order not found")
+    await manager.broadcast_all({"type": "status_update", "token": token, "status": body.status})
+    return {"token": token, "status": body.status}
+
+@app.websocket("/ws/{channel}")
+async def websocket_endpoint(websocket: WebSocket, channel: str):
+    if channel not in ("customer", "admin"):
+        await websocket.close(code=4000)
+        return
+    await manager.connect(websocket, channel)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, channel)
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "service": "Quick Shop API", "version": "2.0.0"}
+
+# ── Entry Point ───────────────────────────────────────────────
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
