@@ -4,26 +4,26 @@
 > **Goal**: Replace the existing Flet UI with a production-ready React + Three.js frontend, keeping the FastAPI backend unchanged and delivering a polished, real-time virtual queue experience.
 
 ## Must-Haves
-- [ ] React frontend with product catalog, cart, confirm, status tracking
-- [ ] Admin dashboard with login and order management
+- [x] React frontend with product catalog, cart, confirm, status tracking
+- [x] Admin dashboard with login and order management
 - [ ] Three.js animated hero and token effects
-- [ ] Real-time polling for order status
-- [ ] Dark mode toggle
+- [x] Real-time polling for order status
+- [x] Dark mode toggle
 
 ## Nice-to-Haves
 - [ ] WebSocket live updates
 - [ ] PWA support
 - [ ] Sound effects
-- [ ] Confetti on order ready
+- [x] Confetti on order ready
 
 ## Phases
 
 ### Phase 1: Scaffold & Foundation
-**Status**: ⬜ Not Started
+**Status**: ✅ Complete
 **Objective**: Initialize Vite + React project, install Three.js / Framer Motion / React Router, set up project structure, design system (CSS variables, fonts, colors).
 
 ### Phase 2: Customer Frontend
-**Status**: ⬜ Not Started
+**Status**: ✅ Complete
 **Objective**: Build customer pages — product catalog grid with hover effects, slide-in cart panel, order confirmation with phone input, status tracking page with auto-polling.
 
 ### Phase 3: Admin Frontend
