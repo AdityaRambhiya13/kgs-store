@@ -1,15 +1,14 @@
-import { useState, useEffect, useMemo, Suspense, lazy, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import ProductCard from '../components/ProductCard'
 import ProductVariantModal from '../components/ProductVariantModal'
 import { useCart } from '../CartContext'
 import { getProducts } from '../api'
 
-const Hero3D = lazy(() => import('../components/Hero3D'))
-
 const CATEGORY_EMOJI = { Rice: '🍚', Wheat: '🌾', Jowari: '🌽', Bajri: '🫘' }
 
-export default function CatalogPage() {
+
+export default function CatalogPage({ searchQuery = '' }) {
     const [products, setProducts] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
@@ -65,24 +64,25 @@ export default function CatalogPage() {
         return Object.values(groups)
     }, [products])
 
-    const filtered = useMemo(() =>
-        grouped.filter(g => activeCategory === 'All' || g.category === activeCategory),
-        [grouped, activeCategory])
+    const filtered = useMemo(() => {
+        let result = grouped;
+        if (activeCategory !== 'All') {
+            result = result.filter(g => g.category === activeCategory);
+        }
+        if (searchQuery && searchQuery.trim()) {
+            const lowerQuery = searchQuery.toLowerCase();
+            result = result.filter(g =>
+                (g.name && g.name.toLowerCase().includes(lowerQuery)) ||
+                (g.base_name && g.base_name.toLowerCase().includes(lowerQuery)) ||
+                (g.description && g.description.toLowerCase().includes(lowerQuery))
+            );
+        }
+        return result;
+    }, [grouped, activeCategory, searchQuery])
 
     return (
         <div className="catalog-page">
-            {/* Hero 3D */}
-            <div className="hero-section">
-                <Suspense fallback={<div className="hero-fallback"><div className="hero-fallback-inner" /></div>}>
-                    <Hero3D />
-                </Suspense>
-            </div>
 
-            {/* Section heading */}
-            <div className="catalog-heading">
-                <h2 className="catalog-title">Our Grains</h2>
-                <p className="catalog-subtitle">Farm-fresh, weighed to your need</p>
-            </div>
 
             {/* Category chips */}
             <div className="category-scroll">
@@ -149,24 +149,7 @@ export default function CatalogPage() {
                 onClose={() => setSelectedGroup(null)}
             />
 
-            {/* Floating cart FAB */}
-            <AnimatePresence>
-                {cartCount > 0 && (
-                    <motion.button
-                        className={`cart-fab ${fabWiggle ? 'wiggle' : ''}`}
-                        initial={{ y: 100, opacity: 0, scale: 0.8 }}
-                        animate={{ y: 0, opacity: 1, scale: 1 }}
-                        exit={{ y: 100, opacity: 0, scale: 0.8 }}
-                        transition={{ type: 'spring', stiffness: 380, damping: 28 }}
-                        onClick={() => setCartOpen(true)}
-                        whileTap={{ scale: 0.94 }}
-                    >
-                        <span className="cart-fab-icon">🛒</span>
-                        <span className="cart-fab-label">View Cart</span>
-                        <span className="cart-fab-count">{cartCount} kg</span>
-                    </motion.button>
-                )}
-            </AnimatePresence>
+
         </div>
     )
 }

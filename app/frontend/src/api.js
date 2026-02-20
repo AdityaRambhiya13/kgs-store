@@ -1,6 +1,7 @@
 // api.js — All API calls to FastAPI backend
 
-const BASE = ''  // Vite proxy handles /api → http://localhost:8000
+// Uses VITE_API_URL for production (Vercel), or fallback to local Vite proxy ('')
+const BASE = import.meta.env.VITE_API_URL || ''
 
 async function request(method, path, body = null, signal = null) {
     const opts = {

@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, Suspense, lazy } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getOrder } from '../api'
 import ProgressSteps from '../components/ProgressSteps'
-import Navbar from '../components/Navbar'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const Token3D = lazy(() => import('../components/Token3D'))
@@ -74,7 +73,7 @@ export default function StatusPage() {
     if (loading) {
         return (
             <div>
-                <Navbar searchQuery="" onSearchChange={() => { }} />
+
                 <div className="status-page">
                     <div className="status-center">
                         <div style={{ margin: '80px auto', display: 'flex', justifyContent: 'center' }}>
@@ -89,7 +88,7 @@ export default function StatusPage() {
     if (notFound) {
         return (
             <div>
-                <Navbar searchQuery="" onSearchChange={() => { }} />
+
                 <div className="status-page">
                     <div className="status-center">
                         <div className="empty-state" style={{ marginTop: 60 }}>
@@ -113,7 +112,6 @@ export default function StatusPage() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
         >
-            <Navbar searchQuery="" onSearchChange={() => { }} />
             <div className="status-page">
                 <div className="status-center">
                     {/* Token card (3D) */}
@@ -125,14 +123,19 @@ export default function StatusPage() {
                         style={{
                             height: 300,
                             display: 'flex',
+                            flexDirection: 'column',
                             alignItems: 'center',
                             justifyContent: 'center',
                             background: 'radial-gradient(circle at center, rgba(255,255,255,0.1), transparent)',
                             border: 'none',
                             boxShadow: 'none',
-                            padding: 0
+                            padding: 0,
+                            position: 'relative'
                         }}
                     >
+                        <div style={{ position: 'absolute', top: 10, background: 'rgba(255,255,255,0.9)', padding: '4px 12px', borderRadius: 20, fontSize: 13, fontWeight: 700, color: 'var(--text)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                            Token: {token}
+                        </div>
                         <Suspense fallback={<div style={{ width: 220, height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="spinner" /></div>}>
                             <Token3D token={token} isReady={isReady || isDelivered} />
                         </Suspense>

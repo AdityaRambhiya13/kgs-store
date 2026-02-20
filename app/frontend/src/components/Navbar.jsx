@@ -2,7 +2,7 @@ import { useCart } from '../CartContext'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 
-export default function Navbar() {
+export default function Navbar({ searchQuery, onSearchChange }) {
     const { cartCount, setCartOpen } = useCart()
     const navigate = useNavigate()
 
@@ -17,9 +17,21 @@ export default function Navbar() {
             <div className="navbar-inner">
                 {/* Logo */}
                 <span className="nav-logo" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
-                    <span className="nav-logo-icon">🌾</span>
-                    <span className="nav-logo-text gradient-text">KGS Grains</span>
+                    <span className="nav-logo-text gradient-text" style={{ fontSize: '22px' }}>Ketan General Stores</span>
                 </span>
+
+                {/* Search Bar - only show if searchQuery is provided (customer side) */}
+                {searchQuery !== undefined && (
+                    <div className="nav-search">
+                        <span className="nav-search-icon">🔍</span>
+                        <input
+                            type="text"
+                            placeholder="Search for grains..."
+                            value={searchQuery || ''}
+                            onChange={e => onSearchChange(e.target.value)}
+                        />
+                    </div>
+                )}
 
                 {/* Actions */}
                 <div className="nav-actions">

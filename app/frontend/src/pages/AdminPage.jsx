@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import { listOrders, updateStatus } from '../api'
-import Navbar from '../components/Navbar'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function AdminPage() {
@@ -69,7 +68,6 @@ export default function AdminPage() {
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
             >
-                <Navbar searchQuery="" onSearchChange={() => { }} />
                 <div className="admin-login">
                     <motion.div
                         className="admin-login-card"

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../CartContext'
 import { placeOrder, setupPin } from '../api'
-import Navbar from '../components/Navbar'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function ConfirmPage() {
@@ -72,7 +71,7 @@ export default function ConfirmPage() {
 
     return (
         <div>
-            <Navbar searchQuery="" onSearchChange={() => { }} />
+
             <div className="confirm-page">
 
                 {/* ── Step 1: Order Form ── */}
@@ -191,8 +190,15 @@ export default function ConfirmPage() {
                             transition={{ duration: 0.35 }}
                         >
                             <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                                <div style={{ fontSize: 48, marginBottom: 8 }}>🔐</div>
-                                <h2 style={{ fontWeight: 800, fontSize: 22, marginBottom: 6 }}>Secure Your Account</h2>
+                                <div style={{ fontSize: 48, marginBottom: 8 }}>✅</div>
+                                <h2 style={{ fontWeight: 800, fontSize: 24, marginBottom: 6, color: 'var(--primary)' }}>
+                                    Order Placed!
+                                </h2>
+                                <div style={{ background: 'var(--bg-surface)', padding: '12px', borderRadius: '8px', marginBottom: '16px', display: 'inline-block' }}>
+                                    <span style={{ fontSize: 13, color: 'var(--text-muted)', display: 'block' }}>Your Order Token</span>
+                                    <span style={{ fontSize: 28, fontWeight: 900, color: 'var(--text)' }}>{token}</span>
+                                </div>
+                                <h3 style={{ fontWeight: 800, fontSize: 18, marginBottom: 6 }}>Secure Your Account</h3>
                                 <p style={{ color: 'var(--text-muted)', fontSize: 14, lineHeight: 1.5 }}>
                                     Set a 4-digit PIN to securely view your order history anytime.
                                 </p>

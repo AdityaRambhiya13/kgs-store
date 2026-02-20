@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Navbar from '../components/Navbar'
 import { getOrderHistory } from '../api'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -40,7 +39,6 @@ export default function OrderHistoryPage() {
 
     return (
         <div>
-            <Navbar searchQuery="" onSearchChange={() => { }} />
             <div className="confirm-page">
                 <motion.div
                     className="confirm-card"
