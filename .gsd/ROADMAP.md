@@ -6,7 +6,10 @@
 ## Must-Haves
 - [x] React frontend with product catalog, cart, confirm, status tracking
 - [x] Admin dashboard with login and order management
-- [ ] Three.js animated hero and token effects
+- [x] **Phase 4**: Three.js & Animations (Hero, Token, Transitions)
+  - [x] 4.1 3D Hero Animation
+  - [x] 4.2 3D Token Reveal
+  - [x] 4.3 Page Transitions & Polish
 - [x] Real-time polling for order status
 - [x] Dark mode toggle
 
@@ -34,9 +37,23 @@
 **Status**: ⬜ Not Started
 **Objective**: Add 3D effects — floating particles hero banner, spinning 3D token reveal with confetti, animated gradient mesh backgrounds. Wire up Framer Motion page transitions and micro-animations.
 
-### Phase 5: Polish & DevOps
-**Status**: ⬜ Not Started
-**Objective**: Dark mode toggle, responsive design polish, update Dockerfile and docker-compose for React build, update README, final verification.
+### Phase 5: Product Overhaul + Order History + Delivery
+**Status**: 🟡 Planning
+**Objective**: Replace generic product catalog with categorized grain products (Rice/Wheat/Jowari/Bajri with kg-pricing), add per-customer order history, delivery type selection (Pickup/Home Delivery), admin delivery confirmation (three-lane: Processing→Ready→Delivered), and performance/stability hardening.
+**Depends on**: Phase 4
+
+**Tasks**:
+- [ ] 5.1 — Backend: Schema migration + grain product catalog (37 products)
+- [ ] 5.2 — Customer frontend: Delivery toggle + Order History page
+- [ ] 5.3 — Admin: Three-lane dashboard + delivery confirmation
+- [ ] 5.4 — Performance: AbortController, Suspense fallback, product cache
+
+**Verification**:
+- `GET /api/products` returns only Rice/Wheat/Jowari/Bajri products
+- Customer can choose Home Delivery or Store Pickup
+- Order History page shows all past orders by phone
+- Admin can mark orders Delivered — customer status page updates
+- `npm run build` passes, no console errors
 
 ---
 

@@ -1,55 +1,68 @@
-import { useCart } from '../CartContext'
 import { motion } from 'framer-motion'
 
-export default function ProductCard({ product }) {
-    const { cart, addToCart } = useCart()
-    const qty = cart[product.id]?.quantity || 0
+const CATEGORY_EMOJI = {
+    Rice: '🍚',
+    Wheat: '🌾',
+    Jowari: '🌽',
+    Bajri: '🫘',
+}
+
+export default function ProductCard({ product, onClick }) {
+    const variants = product.variants ?? [product]
+    const minPrice = Math.min(...variants.map(v => v.price))
+    const maxPrice = Math.max(...variants.map(v => v.price))
+    const priceLabel = minPrice === maxPrice
+        ? `₹${minPrice}`
+        : `₹${minPrice} – ₹${maxPrice}`
+    const variantCount = variants.length
+    const emoji = CATEGORY_EMOJI[product.category] || '🌾'
 
     return (
         <motion.div
             className="product-card"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            layout
+            whileHover="hover"
+            onClick={onClick}
+            style={{ cursor: 'pointer' }}
         >
-            <img
-                className="product-card-img"
-                src={product.image_url}
-                alt={product.name}
-                loading="lazy"
-                onError={e => { e.target.src = `https://picsum.photos/seed/${product.id}/200/130` }}
-            />
-            <div className="product-card-body">
-                <div className="product-card-name">{product.name}</div>
-                <div className="product-card-desc">{product.description || ''}</div>
-                <div className="product-card-footer">
-                    <span className="product-price">₹{product.price.toFixed(0)}</span>
-                    <span className="badge badge-primary">{product.category}</span>
+            {/* Image with gradient overlay */}
+            <div className="pc-img-wrap">
+                <motion.img
+                    src={product.image_url}
+                    alt={product.base_name || product.name}
+                    loading="lazy"
+                    className="pc-img"
+                    variants={{ hover: { scale: 1.07 } }}
+                    transition={{ duration: 0.38 }}
+                    onError={e => {
+                        e.target.src = 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=300&fit=crop'
+                    }}
+                />
+                {/* Dark gradient overlay */}
+                <div className="pc-overlay" />
+
+                {/* Category badge top-left */}
+                <span className="pc-cat-badge">{emoji} {product.category}</span>
+
+                {/* Name + price pinned bottom-left on image */}
+                <div className="pc-img-info">
+                    <div className="pc-name">{product.base_name || product.name}</div>
+                    <div className="pc-price">{priceLabel}<span>/kg</span></div>
                 </div>
-                <div className="qty-stepper">
-                    <motion.button
-                        className="qty-btn qty-btn-minus"
-                        whileTap={{ scale: 0.8 }}
-                        onClick={() => addToCart(product, -1)}
-                        disabled={qty === 0}
-                        style={{ opacity: qty === 0 ? 0.35 : 1 }}
-                    >−</motion.button>
-                    <motion.span
-                        key={qty}
-                        className="qty-count"
-                        initial={{ scale: 1.35 }}
-                        animate={{ scale: 1 }}
-                        transition={{ type: 'spring', stiffness: 600, damping: 20 }}
-                    >
-                        {qty}
-                    </motion.span>
-                    <motion.button
-                        className="qty-btn qty-btn-plus"
-                        whileTap={{ scale: 0.8 }}
-                        onClick={() => addToCart(product, 1)}
-                    >+</motion.button>
-                </div>
+            </div>
+
+            {/* Bottom strip */}
+            <div className="pc-footer">
+                <span className="pc-variants-label">
+                    {variantCount} {variantCount === 1 ? 'price' : 'prices'}
+                </span>
+                <motion.button
+                    className="pc-choose-btn"
+                    onClick={e => { e.stopPropagation(); onClick() }}
+                    variants={{ hover: { paddingRight: '22px', background: 'var(--secondary)' } }}
+                    whileTap={{ scale: 0.93 }}
+                >
+                    Choose →
+                </motion.button>
             </div>
         </motion.div>
     )

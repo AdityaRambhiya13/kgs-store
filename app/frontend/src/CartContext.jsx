@@ -25,7 +25,7 @@ export function CartProvider({ children }) {
     const addToCart = (product, delta = 1) => {
         setCart(prev => {
             const current = prev[product.id]?.quantity || 0
-            const next = Math.max(0, Math.min(10, current + delta))
+            const next = Math.max(0, Math.min(100, current + delta))
             if (next === 0) {
                 const { [product.id]: _, ...rest } = prev
                 return rest

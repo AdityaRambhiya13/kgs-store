@@ -1,24 +1,52 @@
-import { useState, useEffect, useMemo } from 'react'
-import Navbar from '../components/Navbar'
+import { useState, useEffect, useMemo, Suspense, lazy, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import ProductCard from '../components/ProductCard'
-import Hero3D from '../components/Hero3D' // [NEW]
+import ProductVariantModal from '../components/ProductVariantModal'
+import { useCart } from '../CartContext'
 import { getProducts } from '../api'
-import { motion } from 'framer-motion'
 
+const Hero3D = lazy(() => import('../components/Hero3D'))
 
-const CATEGORIES = ['All']
+const CATEGORY_EMOJI = { Rice: '🍚', Wheat: '🌾', Jowari: '🌽', Bajri: '🫘' }
 
 export default function CatalogPage() {
     const [products, setProducts] = useState([])
     const [loading, setLoading] = useState(true)
-    const [error, setError] = useState(null)
-    const [search, setSearch] = useState('')
+    const [error, setError] = useState('')
     const [activeCategory, setActiveCategory] = useState('All')
+    const [selectedGroup, setSelectedGroup] = useState(null)
+    const [fabWiggle, setFabWiggle] = useState(false)
+    const { cartCount, setCartOpen } = useCart()
+    const abortRef = useRef(null)
+    const prevCartCount = useRef(cartCount)
+
+    // Wiggle FAB on new cart item
+    useEffect(() => {
+        if (cartCount > prevCartCount.current) {
+            setFabWiggle(true)
+            setTimeout(() => setFabWiggle(false), 600)
+        }
+        prevCartCount.current = cartCount
+    }, [cartCount])
 
     useEffect(() => {
-        getProducts()
-            .then(data => { setProducts(data); setLoading(false) })
-            .catch(err => { setError(err.message); setLoading(false) })
+        const controller = new AbortController()
+        abortRef.current = controller
+        setLoading(true)
+        getProducts(controller.signal)
+            .then(data => {
+                if (!controller.signal.aborted) {
+                    setProducts(Array.isArray(data) ? data : [])
+                    setLoading(false)
+                }
+            })
+            .catch(err => {
+                if (!controller.signal.aborted) {
+                    setError(err.message || 'Could not load products')
+                    setLoading(false)
+                }
+            })
+        return () => controller.abort()
     }, [])
 
     const categories = useMemo(() => {
@@ -26,123 +54,119 @@ export default function CatalogPage() {
         return ['All', ...cats]
     }, [products])
 
-    const filtered = useMemo(() => {
-        return products.filter(p => {
-            const matchSearch = !search ||
-                p.name.toLowerCase().includes(search.toLowerCase()) ||
-                (p.category || '').toLowerCase().includes(search.toLowerCase())
-            const matchCat = activeCategory === 'All' || p.category === activeCategory
-            return matchSearch && matchCat
+    const grouped = useMemo(() => {
+        const groups = {}
+        products.forEach(p => {
+            const key = p.base_name || p.name
+            if (!groups[key]) groups[key] = { ...p, variants: [] }
+            groups[key].variants.push(p)
+            groups[key].variants.sort((a, b) => a.price - b.price)
         })
-    }, [products, search, activeCategory])
+        return Object.values(groups)
+    }, [products])
+
+    const filtered = useMemo(() =>
+        grouped.filter(g => activeCategory === 'All' || g.category === activeCategory),
+        [grouped, activeCategory])
 
     return (
-        <motion.div
-            className="catalog-page"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-        >
-            <Navbar searchQuery={search} onSearchChange={setSearch} />
-
-            {/* Hero */}
-            <div className="hero">
-                <Hero3D />
-                <div className="hero-content">
-                    <motion.h1
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5 }}
-                    >
-                        🏪 Quick Shop
-                    </motion.h1>
-                    <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.2, duration: 0.5 }}
-                    >
-                        No Wait — Just Shop!
-                    </motion.p>
-                    <motion.p
-                        className="hero-sub"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.4, duration: 0.5 }}
-                    >
-                        Browse • Add to Cart • Get Your Token • Pick Up!
-                    </motion.p>
-                </div>
+        <div className="catalog-page">
+            {/* Hero 3D */}
+            <div className="hero-section">
+                <Suspense fallback={<div className="hero-fallback"><div className="hero-fallback-inner" /></div>}>
+                    <Hero3D />
+                </Suspense>
             </div>
 
-            {/* Catalog */}
-            <div className="container catalog-section" style={{ paddingTop: 20 }}>
-                {/* Category chips */}
-                {!loading && categories.length > 1 && (
-                    <div className="category-bar">
-                        {categories.map(cat => (
-                            <motion.button
-                                key={cat}
-                                className={`chip ${activeCategory === cat ? 'active' : ''}`}
-                                onClick={() => setActiveCategory(cat)}
-                                whileTap={{ scale: 0.94 }}
-                            >{cat}</motion.button>
-                        ))}
-                    </div>
-                )}
+            {/* Section heading */}
+            <div className="catalog-heading">
+                <h2 className="catalog-title">Our Grains</h2>
+                <p className="catalog-subtitle">Farm-fresh, weighed to your need</p>
+            </div>
 
-                {/* Section header */}
-                <div className="section-header">
-                    <span className="section-title">
-                        {loading ? 'Loading...' : `🛍️ Products (${filtered.length})`}
-                    </span>
+            {/* Category chips */}
+            <div className="category-scroll">
+                {categories.map(cat => (
+                    <motion.button
+                        key={cat}
+                        className={`category-chip ${activeCategory === cat ? 'active' : ''}`}
+                        onClick={() => setActiveCategory(cat)}
+                        whileTap={{ scale: 0.92 }}
+                    >
+                        {cat === 'All' ? '✨ All' : `${CATEGORY_EMOJI[cat] || ''} ${cat}`}
+                    </motion.button>
+                ))}
+            </div>
+
+            {/* Loading */}
+            {loading && (
+                <div className="loading-state">
+                    <div className="spinner" />
+                    <p>Loading products…</p>
                 </div>
+            )}
 
-                {/* Error */}
-                {error && (
-                    <div className="empty-state">
-                        <div className="emoji">😕</div>
-                        <h3>Could not load products</h3>
-                        <p>{error}</p>
-                        <p style={{ marginTop: 8, fontSize: 13 }}>Make sure the API server is running on port 8000</p>
-                    </div>
-                )}
+            {error && !loading && (
+                <div className="empty-state">
+                    <div className="emoji">⚠️</div>
+                    <h3>Couldn't load products</h3>
+                    <p>{error}</p>
+                </div>
+            )}
 
-                {/* Skeletons */}
-                {loading && (
+            {!loading && !error && filtered.length === 0 && (
+                <div className="empty-state">
+                    <div className="emoji">🌾</div>
+                    <h3>No products found</h3>
+                    <p>Try a different category.</p>
+                </div>
+            )}
+
+            {/* Product grid */}
+            {!loading && !error && filtered.length > 0 && (
+                <AnimatePresence>
                     <div className="product-grid">
-                        {Array.from({ length: 8 }).map((_, i) => (
-                            <div key={i} className="skeleton skeleton-card" />
-                        ))}
-                    </div>
-                )}
-
-                {/* Empty search */}
-                {!loading && !error && filtered.length === 0 && (
-                    <div className="empty-state">
-                        <div className="emoji">🔍</div>
-                        <h3>No products found</h3>
-                        <p>Try a different search term or category.</p>
-                    </div>
-                )}
-
-                {/* Product Grid */}
-                {!loading && !error && filtered.length > 0 && (
-                    <div className="product-grid">
-                        {filtered.map((p, i) => (
+                        {filtered.map((group, i) => (
                             <motion.div
-                                key={p.id}
-                                initial={{ opacity: 0, y: 20 }}
+                                key={group.base_name || group.name}
+                                initial={{ opacity: 0, y: 24 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: i * 0.03, duration: 0.3 }}
+                                transition={{ duration: 0.32, delay: Math.min(i * 0.045, 0.5) }}
                             >
-                                <ProductCard product={p} />
+                                <ProductCard
+                                    product={group}
+                                    onClick={() => setSelectedGroup(group)}
+                                />
                             </motion.div>
                         ))}
                     </div>
+                </AnimatePresence>
+            )}
+
+            {/* Variant modal */}
+            <ProductVariantModal
+                group={selectedGroup}
+                onClose={() => setSelectedGroup(null)}
+            />
+
+            {/* Floating cart FAB */}
+            <AnimatePresence>
+                {cartCount > 0 && (
+                    <motion.button
+                        className={`cart-fab ${fabWiggle ? 'wiggle' : ''}`}
+                        initial={{ y: 100, opacity: 0, scale: 0.8 }}
+                        animate={{ y: 0, opacity: 1, scale: 1 }}
+                        exit={{ y: 100, opacity: 0, scale: 0.8 }}
+                        transition={{ type: 'spring', stiffness: 380, damping: 28 }}
+                        onClick={() => setCartOpen(true)}
+                        whileTap={{ scale: 0.94 }}
+                    >
+                        <span className="cart-fab-icon">🛒</span>
+                        <span className="cart-fab-label">View Cart</span>
+                        <span className="cart-fab-count">{cartCount} kg</span>
+                    </motion.button>
                 )}
-            </div>
-            {/* ... other content ... */}
-        </motion.div>
+            </AnimatePresence>
+        </div>
     )
 }

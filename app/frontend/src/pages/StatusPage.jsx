@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense, lazy } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getOrder } from '../api'
 import ProgressSteps from '../components/ProgressSteps'
 import Navbar from '../components/Navbar'
-import Token3D from '../components/Token3D'
 import { motion, AnimatePresence } from 'framer-motion'
+
+const Token3D = lazy(() => import('../components/Token3D'))
 
 // ── Confetti burst ───────────────────────────────────────────
 function fireConfetti() {
@@ -34,30 +35,39 @@ export default function StatusPage() {
     const celebratedRef = useRef(false)
     const intervalRef = useRef(null)
 
-    const fetchOrder = async () => {
+    const fetchOrder = async (signal) => {
         try {
-            const data = await getOrder(token)
+            const data = await getOrder(token, signal)
+            if (signal?.aborted) return
             setOrder(data)
-            if (data.status === 'Ready for Pickup' && !celebratedRef.current) {
+            const isDone = data.status === 'Ready for Pickup' || data.status === 'Delivered'
+            if (isDone && !celebratedRef.current) {
                 celebratedRef.current = true
                 fireConfetti()
                 clearInterval(intervalRef.current)
             }
-        } catch {
+        } catch (err) {
+            if (err?.name === 'AbortError') return
             setNotFound(true)
             clearInterval(intervalRef.current)
         } finally {
-            setLoading(false)
+            if (!signal?.aborted) setLoading(false)
         }
     }
 
     useEffect(() => {
-        fetchOrder()
-        intervalRef.current = setInterval(fetchOrder, 5000)
-        return () => clearInterval(intervalRef.current)
+        const controller = new AbortController()
+        fetchOrder(controller.signal)
+        intervalRef.current = setInterval(() => fetchOrder(controller.signal), 5000)
+        return () => {
+            clearInterval(intervalRef.current)
+            controller.abort()
+        }
     }, [token])
 
     const isReady = order?.status === 'Ready for Pickup'
+    const isDelivered = order?.status === 'Delivered'
+    const deliveryType = order?.delivery_type || 'pickup'
     let items = []
     try { items = order ? JSON.parse(order.items_json) : [] } catch { }
 
@@ -123,24 +133,37 @@ export default function StatusPage() {
                             padding: 0
                         }}
                     >
-                        <Token3D token={token} isReady={isReady} />
+                        <Suspense fallback={<div style={{ width: 220, height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="spinner" /></div>}>
+                            <Token3D token={token} isReady={isReady || isDelivered} />
+                        </Suspense>
                     </motion.div>
 
                     {/* Progress steps */}
                     <ProgressSteps status={order.status} />
 
+                    {/* Delivery badge */}
+                    <div className="delivery-badge">
+                        {deliveryType === 'delivery' ? '🚚 Home Delivery' : '🏪 Store Pickup'}
+                    </div>
+
                     {/* Status message */}
                     <motion.div
-                        className={`status-message-card ${isReady ? 'ready' : ''}`}
+                        className={`status-message-card ${isReady || isDelivered ? 'ready' : ''}`}
                         layout
                         transition={{ duration: 0.4 }}
                     >
-                        <div className="status-emoji">{isReady ? '🎉' : '⏳'}</div>
-                        <h3>{isReady ? 'Order Ready!' : 'Preparing Your Order'}</h3>
+                        <div className="status-emoji">
+                            {isDelivered ? '✅' : isReady ? '🎉' : '⏳'}
+                        </div>
+                        <h3>
+                            {isDelivered ? 'Order Delivered!' : isReady ? 'Order Ready!' : 'Preparing Your Order'}
+                        </h3>
                         <p>
-                            {isReady
-                                ? 'Please collect your order from the counter. Thanks for shopping!'
-                                : "We're preparing your items. You'll be notified automatically when ready."}
+                            {isDelivered
+                                ? 'Your order has been delivered. Thank you for shopping with us!'
+                                : isReady
+                                    ? 'Please collect your order from the counter. Thanks for shopping!'
+                                    : "We're preparing your items. You'll be notified automatically when ready."}
                         </p>
                     </motion.div>
 
@@ -162,7 +185,7 @@ export default function StatusPage() {
                                         <div className="confirm-order-summary">
                                             {items.map((item, i) => (
                                                 <div key={i} className="confirm-item-row">
-                                                    <span>{item.name} × {item.quantity}</span>
+                                                    <span>{item.name} × {item.quantity} kg</span>
                                                     <span style={{ fontWeight: 600, color: 'var(--secondary)' }}>
                                                         ₹{(item.subtotal || item.price * item.quantity).toFixed(0)}
                                                     </span>

@@ -34,7 +34,7 @@ export default function CartPanel() {
                     >
                         {/* Header */}
                         <div className="cart-header">
-                            <h2>🛒 Your Cart {cartCount > 0 && `(${cartCount})`}</h2>
+                            <h2>🛒 Cart {cartCount > 0 && `(${cartCount} kg)`}</h2>
                             <button className="cart-close" onClick={() => setCartOpen(false)}>✕</button>
                         </div>
 
@@ -65,7 +65,7 @@ export default function CartPanel() {
                                                 <div className="cart-item-actions">
                                                     <div className="qty-stepper" style={{ gap: 4 }}>
                                                         <button className="qty-btn qty-btn-minus" onClick={() => addToCart(item, -1)}>−</button>
-                                                        <span className="qty-count">{item.quantity}</span>
+                                                        <span className="qty-count">{item.quantity} kg</span>
                                                         <button className="qty-btn qty-btn-plus" onClick={() => addToCart(item, 1)}>+</button>
                                                     </div>
                                                     <span className="cart-item-subtotal">₹{(item.price * item.quantity).toFixed(0)}</span>

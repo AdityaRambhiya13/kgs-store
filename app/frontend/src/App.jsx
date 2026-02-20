@@ -4,6 +4,7 @@ import CatalogPage from './pages/CatalogPage'
 import ConfirmPage from './pages/ConfirmPage'
 import StatusPage from './pages/StatusPage'
 import AdminPage from './pages/AdminPage'
+import OrderHistoryPage from './pages/OrderHistoryPage'
 import CartPanel from './components/CartPanel'
 
 export default function App() {
@@ -17,6 +18,7 @@ export default function App() {
           <Route path="/confirm" element={<ConfirmPage />} />
           <Route path="/status/:token" element={<StatusPage />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/orders" element={<OrderHistoryPage />} />
         </Routes>
       </AnimatePresence>
       <CartPanel />

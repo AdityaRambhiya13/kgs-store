@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { listOrders, updateStatus } from '../api'
 import Navbar from '../components/Navbar'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -8,9 +8,11 @@ export default function AdminPage() {
     const [authed, setAuthed] = useState(false)
     const [orders, setOrders] = useState([])
     const [loading, setLoading] = useState(false)
-    const [error, setError] = useState('')
+    const [loginError, setLoginError] = useState('')
     const [expanded, setExpanded] = useState({})
     const [togglingToken, setTogglingToken] = useState(null)
+    const [cardError, setCardError] = useState({})   // per-token inline errors
+    const intervalRef = useRef(null)
 
     // Poll orders every 8s when authed
     useEffect(() => {
@@ -21,66 +23,63 @@ export default function AdminPage() {
                 .catch(() => { })
         }
         fetchOrders()
-        const iv = setInterval(fetchOrders, 8000)
-        return () => clearInterval(iv)
+        intervalRef.current = setInterval(fetchOrders, 8000)
+        return () => clearInterval(intervalRef.current)
     }, [authed, password])
 
     const handleLogin = async () => {
-        setError('')
+        setLoginError('')
         setLoading(true)
         try {
             const data = await listOrders(password)
             setOrders(Array.isArray(data) ? data : [])
             setAuthed(true)
         } catch (e) {
-            setError(e.message || 'Invalid password')
+            setLoginError(e.message || 'Invalid password')
         } finally {
             setLoading(false)
         }
     }
 
-    const handleToggleStatus = async (token, currentStatus) => {
-        const next = currentStatus === 'Processing' ? 'Ready for Pickup' : 'Processing'
+    const handleStatusAction = async (token, nextStatus) => {
         setTogglingToken(token)
+        setCardError(prev => ({ ...prev, [token]: '' }))
         try {
-            await updateStatus(token, next, password)
-            setOrders(prev => prev.map(o => o.token === token ? { ...o, status: next } : o))
+            await updateStatus(token, nextStatus, password)
+            setOrders(prev => prev.map(o => o.token === token ? { ...o, status: nextStatus } : o))
         } catch (e) {
-            alert(e.message)
+            setCardError(prev => ({ ...prev, [token]: e.message || 'Update failed' }))
         } finally {
             setTogglingToken(null)
         }
     }
 
-    const toggleExpand = (token) => {
-        setExpanded(prev => ({ ...prev, [token]: !prev[token] }))
-    }
+    const toggleExpand = (token) => setExpanded(prev => ({ ...prev, [token]: !prev[token] }))
 
     const processing = orders.filter(o => o.status === 'Processing')
     const ready = orders.filter(o => o.status === 'Ready for Pickup')
+    const delivered = orders.filter(o => o.status === 'Delivered')
+
+    const revenue = orders.reduce((sum, o) => sum + (o.total || 0), 0)
 
     if (!authed) {
         return (
             <motion.div
                 className="admin-page"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
             >
                 <Navbar searchQuery="" onSearchChange={() => { }} />
                 <div className="admin-login">
                     <motion.div
                         className="admin-login-card"
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
+                        initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4 }}
                     >
                         <div className="admin-avatar">🔐</div>
                         <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 6 }}>Admin Login</h2>
-                        <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 28 }}>
-                            Quick Shop Dashboard
-                        </p>
+                        <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 28 }}>KGS Grain Store Dashboard</p>
+
                         <input
                             className="input"
                             type="password"
@@ -90,7 +89,7 @@ export default function AdminPage() {
                             onKeyDown={e => e.key === 'Enter' && handleLogin()}
                             style={{ marginBottom: 12 }}
                         />
-                        {error && <p className="error-msg" style={{ marginBottom: 8 }}>⚠️ {error}</p>}
+                        {loginError && <p className="error-msg" style={{ marginBottom: 8 }}>⚠️ {loginError}</p>}
                         <motion.button
                             className="btn btn-primary"
                             style={{ width: '100%', justifyContent: 'center', padding: '13px' }}
@@ -109,21 +108,19 @@ export default function AdminPage() {
     return (
         <motion.div
             className="admin-page"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
         >
             {/* Header */}
             <div className="admin-header">
                 <div>
-                    <div style={{ fontSize: 20, fontWeight: 800 }}>🏪 Admin Dashboard</div>
-                    <div style={{ fontSize: 12, opacity: 0.7, marginTop: 2 }}>Quick Shop</div>
+                    <div style={{ fontSize: 20, fontWeight: 800 }}>🌾 KGS Admin Dashboard</div>
+                    <div style={{ fontSize: 12, opacity: 0.7, marginTop: 2 }}>Grain Store Orders</div>
                 </div>
                 <button
                     className="btn btn-ghost"
                     style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', fontSize: 13 }}
-                    onClick={() => { setAuthed(false); setOrders([]) }}
+                    onClick={() => { setAuthed(false); setOrders([]); clearInterval(intervalRef.current) }}
                 >
                     Sign Out
                 </button>
@@ -142,54 +139,106 @@ export default function AdminPage() {
                     <div className="stat-label">Processing</div>
                 </div>
                 <div className="stat-card">
-                    <div className="stat-icon">✅</div>
+                    <div className="stat-icon">🟡</div>
                     <div className="stat-value">{ready.length}</div>
                     <div className="stat-label">Ready</div>
                 </div>
+                <div className="stat-card">
+                    <div className="stat-icon">✅</div>
+                    <div className="stat-value">{delivered.length}</div>
+                    <div className="stat-label">Delivered</div>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-icon">💰</div>
+                    <div className="stat-value">₹{revenue.toFixed(0)}</div>
+                    <div className="stat-label">Revenue</div>
+                </div>
             </div>
 
-            {/* Orders */}
+            {/* Orders — 3 lanes */}
             <div className="orders-list">
-                <h3 style={{ fontSize: 17, fontWeight: 700, marginBottom: 4 }}>
-                    ⏳ Processing ({processing.length})
-                </h3>
-                {processing.length === 0 && (
-                    <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 20 }}>No pending orders</p>
-                )}
-                <AnimatePresence>
-                    {processing.map(order => (
-                        <OrderCard key={order.token} order={order} onToggle={handleToggleStatus}
-                            toggling={togglingToken === order.token}
-                            expanded={expanded[order.token]} onExpand={toggleExpand} />
-                    ))}
-                </AnimatePresence>
+                {/* Lane 1: Processing */}
+                <OrderLane
+                    title="⏳ Processing"
+                    count={processing.length}
+                    orders={processing}
+                    expanded={expanded}
+                    togglingToken={togglingToken}
+                    cardError={cardError}
+                    onExpand={toggleExpand}
+                    onAction={handleStatusAction}
+                    password={password}
+                />
 
-                <h3 style={{ fontSize: 17, fontWeight: 700, marginBottom: 4, marginTop: 20 }}>
-                    ✅ Ready for Pickup ({ready.length})
-                </h3>
-                {ready.length === 0 && (
-                    <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>No completed orders</p>
-                )}
-                <AnimatePresence>
-                    {ready.map(order => (
-                        <OrderCard key={order.token} order={order} onToggle={handleToggleStatus}
-                            toggling={togglingToken === order.token}
-                            expanded={expanded[order.token]} onExpand={toggleExpand} />
-                    ))}
-                </AnimatePresence>
+                {/* Lane 2: Ready for Pickup */}
+                <OrderLane
+                    title="🟡 Ready for Pickup"
+                    count={ready.length}
+                    orders={ready}
+                    expanded={expanded}
+                    togglingToken={togglingToken}
+                    cardError={cardError}
+                    onExpand={toggleExpand}
+                    onAction={handleStatusAction}
+                    password={password}
+                />
+
+                {/* Lane 3: Delivered */}
+                <OrderLane
+                    title="✅ Delivered"
+                    count={delivered.length}
+                    orders={delivered}
+                    expanded={expanded}
+                    togglingToken={togglingToken}
+                    cardError={cardError}
+                    onExpand={toggleExpand}
+                    onAction={handleStatusAction}
+                    password={password}
+                />
             </div>
         </motion.div>
     )
 }
 
-function OrderCard({ order, onToggle, toggling, expanded, onExpand }) {
-    const isReady = order.status === 'Ready for Pickup'
+function OrderLane({ title, count, orders, expanded, togglingToken, cardError, onExpand, onAction }) {
+    return (
+        <div style={{ marginBottom: 32 }}>
+            <h3 style={{ fontSize: 17, fontWeight: 700, marginBottom: 10 }}>
+                {title} ({count})
+            </h3>
+            {count === 0 && (
+                <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 8 }}>No orders in this lane</p>
+            )}
+            <AnimatePresence>
+                {orders.map(order => (
+                    <OrderCard
+                        key={order.token}
+                        order={order}
+                        onAction={onAction}
+                        toggling={togglingToken === order.token}
+                        expanded={expanded[order.token]}
+                        onExpand={onExpand}
+                        inlineError={cardError[order.token]}
+                    />
+                ))}
+            </AnimatePresence>
+        </div>
+    )
+}
+
+function OrderCard({ order, onAction, toggling, expanded, onExpand, inlineError }) {
+    const status = order.status
+    const isProcessing = status === 'Processing'
+    const isReady = status === 'Ready for Pickup'
+    const isDelivered = status === 'Delivered'
+    const deliveryType = order.delivery_type || 'pickup'
+
     let items = []
     try { items = JSON.parse(order.items_json) } catch { }
 
     return (
         <motion.div
-            className={`order-card ${isReady ? 'ready' : 'processing'}`}
+            className={`order-card ${isReady ? 'ready' : isDelivered ? 'delivered' : 'processing'}`}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, height: 0 }}
@@ -199,11 +248,15 @@ function OrderCard({ order, onToggle, toggling, expanded, onExpand }) {
                 <div>
                     <div className="order-token">{order.token}</div>
                     <div className="order-meta">📱 {order.phone}</div>
+                    {/* Delivery badge */}
+                    <span className={`admin-delivery-badge ${deliveryType}`}>
+                        {deliveryType === 'delivery' ? '🚚 Home Delivery' : '🏪 Store Pickup'}
+                    </span>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                     <div className="order-amount">₹{order.total?.toFixed(0)}</div>
-                    <span className={`status-pill ${isReady ? 'ready' : 'processing'}`}>
-                        {isReady ? '✅ Ready' : '⏳ Processing'}
+                    <span className={`status-pill ${isReady ? 'ready' : isDelivered ? 'delivered' : 'processing'}`}>
+                        {isDelivered ? '✅ Delivered' : isReady ? '🟡 Ready' : '⏳ Processing'}
                     </span>
                 </div>
             </div>
@@ -220,33 +273,72 @@ function OrderCard({ order, onToggle, toggling, expanded, onExpand }) {
                         <div className="order-items-detail">
                             {items.map((item, i) => (
                                 <div key={i} className="order-item-row">
-                                    <span>{item.name} × {item.quantity}</span>
+                                    <span>{item.name} × {item.quantity} kg</span>
                                     <span>₹{(item.subtotal || item.price * item.quantity)?.toFixed(0)}</span>
                                 </div>
                             ))}
+                            {order.delivered_at && (
+                                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
+                                    Delivered at: {order.delivered_at}
+                                </div>
+                            )}
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            <div className="order-actions">
-                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                    {items.length} item{items.length !== 1 ? 's' : ''}
-                </span>
-                <motion.button
-                    className={`btn ${isReady ? 'btn-ghost' : 'btn-secondary'}`}
-                    style={{ padding: '7px 16px', fontSize: 13 }}
-                    onClick={() => onToggle(order.token, order.status)}
-                    disabled={toggling}
-                    whileTap={{ scale: 0.95 }}
+            {/* Inline error */}
+            {inlineError && (
+                <motion.div
+                    className="admin-card-error"
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                 >
-                    {toggling
-                        ? <span className="spinner spinner-sm" />
-                        : isReady
-                            ? '↩ Mark Processing'
-                            : '✅ Mark Ready'}
-                </motion.button>
-            </div>
+                    ⚠️ {inlineError}
+                </motion.div>
+            )}
+
+            {!isDelivered && (
+                <div className="order-actions">
+                    <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                        {items.length} item{items.length !== 1 ? 's' : ''}
+                    </span>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                        {isReady && (
+                            <motion.button
+                                className="btn btn-ghost"
+                                style={{ padding: '7px 14px', fontSize: 12 }}
+                                onClick={() => onAction(order.token, 'Processing')}
+                                disabled={toggling}
+                                whileTap={{ scale: 0.95 }}
+                            >
+                                {toggling ? <span className="spinner spinner-sm" /> : '↩ Processing'}
+                            </motion.button>
+                        )}
+
+                        <motion.button
+                            className={`btn ${isProcessing ? 'btn-secondary' : 'btn-primary'}`}
+                            style={{ padding: '7px 16px', fontSize: 13 }}
+                            onClick={() => onAction(order.token, isProcessing ? 'Ready for Pickup' : 'Delivered')}
+                            disabled={toggling}
+                            whileTap={{ scale: 0.95 }}
+                        >
+                            {toggling
+                                ? <span className="spinner spinner-sm" />
+                                : isProcessing
+                                    ? '✅ Mark Ready'
+                                    : '📦 Mark Delivered'}
+                        </motion.button>
+                    </div>
+                </div>
+            )}
+
+            {isDelivered && (
+                <div className="order-actions" style={{ justifyContent: 'flex-end' }}>
+                    <span style={{ fontSize: 12, color: 'var(--secondary)', fontWeight: 700 }}>
+                        ✅ Order Completed
+                    </span>
+                </div>
+            )}
         </motion.div>
     )
 }
