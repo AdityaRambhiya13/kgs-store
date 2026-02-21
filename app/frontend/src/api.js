@@ -7,6 +7,7 @@ async function request(method, path, body = null, signal = null, token = null) {
     const opts = {
         method,
         headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store'
     }
     if (token) {
         opts.headers['Authorization'] = `Bearer ${token}`
