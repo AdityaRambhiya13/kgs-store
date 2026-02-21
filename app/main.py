@@ -5,8 +5,7 @@ import os
 import re
 import json
 import time
-from typing import List
-from contextlib import asynccontextmanager
+from typing import List, Optional
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 
@@ -20,15 +19,40 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
+import firebase_admin
+from firebase_admin import credentials, auth as firebase_auth
+
 from database import (
     init_db, get_all_products, create_order,
     get_all_orders, get_order_by_token, update_order_status, mark_delivered,
     get_orders_by_phone, get_customer, create_or_update_customer, get_all_customers,
 )
-from models import OrderCreate, OrderOut, OrderStatusUpdate, ProductOut, CustomerAuth, CustomerOut
+from models import OrderCreate, OrderOut, OrderStatusUpdate, ProductOut, OTPRequest, OTPVerifyRequest, CustomerOut
 from websocket import manager
 
 load_dotenv()
+
+# Initialize Firebase Admin
+try:
+    # Option 1: Load from Environment Variable (Best for Render/Vercel)
+    service_account_json = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
+    if service_account_json:
+        # Load JSON from string if it starts with { (otherwise it might be a path)
+        if service_account_json.strip().startswith("{"):
+            print("🔧 Initializing Firebase Admin from environment variable...")
+            cred_dict = json.loads(service_account_json)
+            cred = credentials.Certificate(cred_dict)
+        else:
+            print(f"🔧 Initializing Firebase Admin from path: {service_account_json}")
+            cred = credentials.Certificate(service_account_json)
+    else:
+        # Option 2: Fallback to local file
+        print("🔧 Initializing Firebase Admin from local file (firebase-adminsdk.json)...")
+        cred = credentials.Certificate("firebase-adminsdk.json")
+    
+    firebase_admin.initialize_app(cred)
+except Exception as e:
+    print(f"⚠️ Firebase Admin initialization failed: {e}")
 
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 SECRET_KEY     = os.getenv("SECRET_KEY", "quickshop-secret-key-change-in-production")
@@ -121,25 +145,20 @@ app.add_middleware(
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    # Log the full exception internally, return generic error to client
     import traceback
     print(f"CRITICAL UNHANDLED ERROR: {exc}\n{traceback.format_exc()}")
     return JSONResponse(status_code=500, content={"detail": "Something went wrong. Please try again later."})
 
 # ── Products ──────────────────────────────────────────────
-
 @app.get("/api/products", response_model=List[ProductOut])
 def list_products(request: Request):
     check_rate_limit(request)
     return get_all_products()
 
 # ── Orders ────────────────────────────────────────────────
-
 @app.post("/api/orders")
 def place_order(order: OrderCreate, request: Request):
-    # Business logic protection: max 3 orders per 10 minutes per IP
     check_rate_limit(request, limit=3, window=600, scope="orders")
-    
     products = {p["id"]: p for p in get_all_products()}
     validated_items = []
     calculated_total = 0.0
@@ -174,11 +193,8 @@ def list_customers(request: Request, admin: dict = Depends(get_current_admin)):
     check_rate_limit(request)
     return get_all_customers()
 
-# ── IMPORTANT: /history and /auth routes MUST be before /{token} ──
-
 @app.get("/api/orders/history")
 def order_history(request: Request, customer: dict = Depends(get_current_customer)):
-    """Get all orders for a customer — requires JWT auth."""
     check_rate_limit(request)
     phone = customer.get("phone")
     return get_orders_by_phone(phone)
@@ -194,19 +210,15 @@ def get_order(token: str, request: Request):
 @app.patch("/api/orders/{token}/status")
 async def toggle_order_status(token: str, body: OrderStatusUpdate, request: Request, admin: dict = Depends(get_current_admin)):
     check_rate_limit(request)
-    
     if body.status == "Delivered":
         order = get_order_by_token(token)
         if not order:
             raise HTTPException(status_code=404, detail="Order not found")
-        
-        # Verify OTP for home delivery
         if order["delivery_type"] == "delivery":
             if not body.otp:
                 raise HTTPException(status_code=400, detail="Delivery OTP is required for home deliveries")
             if body.otp != order["delivery_otp"]:
                 raise HTTPException(status_code=400, detail="Invalid Delivery OTP")
-
         updated = mark_delivered(token)
     else:
         updated = update_order_status(token, body.status)
@@ -218,7 +230,6 @@ async def toggle_order_status(token: str, body: OrderStatusUpdate, request: Requ
     return {"token": token, "status": body.status}
 
 # ── Authentication ─────────────────────────────────────
-
 class AdminLoginInfo(BaseModel):
     password: str
 
@@ -230,35 +241,52 @@ def admin_login(body: AdminLoginInfo, request: Request):
     token = create_access_token({"role": "admin"}, timedelta(hours=12))
     return {"access_token": token, "role": "admin"}
 
+otp_store = {}
 
-@app.post("/api/auth/setup-pin")
-def setup_pin(body: CustomerAuth, request: Request):
-    """Set or update a customer's 4-digit security PIN."""
-    check_rate_limit(request, limit=5, window=60, scope="auth")
-    pin_hash = bcrypt.hashpw(body.pin.encode(), bcrypt.gensalt()).decode()
-    create_or_update_customer(body.phone, pin_hash)
-    token = create_access_token({"role": "customer", "phone": body.phone}, timedelta(days=7))
-    return {"message": "PIN set successfully", "phone": body.phone, "access_token": token}
-
-@app.post("/api/auth/verify")
-def verify_customer(body: CustomerAuth, request: Request):
-    """Verify phone + PIN. Returns verified status and JWT token."""
+@app.post("/api/auth/send-otp")
+def send_otp(body: OTPRequest, request: Request):
+    """Check if user exists and prepare for Firebase auth."""
     check_rate_limit(request, limit=5, window=60, scope="auth")
     customer = get_customer(body.phone)
+    is_new = customer is None
+    return {"message": "Ready for verification", "is_new": is_new}
+
+@app.post("/api/auth/verify-otp")
+def verify_otp(body: OTPVerifyRequest, request: Request):
+    """Verify Firebase Token and sign in or sign up."""
+    check_rate_limit(request, limit=5, window=60, scope="auth")
+    verified_phone = None
+
+    if body.firebase_token:
+        try:
+            decoded_token = firebase_auth.verify_id_token(body.firebase_token)
+            verified_phone = decoded_token.get('phone_number')
+            if verified_phone.startswith("+91"):
+                verified_phone = verified_phone[3:]
+        except Exception as e:
+            print(f"❌ Firebase verification failed: {e}")
+            raise HTTPException(status_code=401, detail="Invalid code or session expired")
+    
+    if not verified_phone:
+        raise HTTPException(status_code=400, detail="Verification failed: No valid token provided")
+
+    customer = get_customer(verified_phone)
     if not customer:
-        raise HTTPException(status_code=404, detail="No account found for this number")
-    try:
-        valid = bcrypt.checkpw(body.pin.encode(), customer["pin_hash"].encode())
-    except Exception:
-        raise HTTPException(status_code=500, detail="Authentication error")
-    if not valid:
-        raise HTTPException(status_code=401, detail="Incorrect PIN")
+        if not body.name or not body.address:
+             raise HTTPException(status_code=400, detail="Name and Address are required for new users")
+        create_or_update_customer(verified_phone, body.name, body.address)
+        customer = get_customer(verified_phone)
         
-    token = create_access_token({"role": "customer", "phone": body.phone}, timedelta(days=7))
-    return {"verified": True, "phone": body.phone, "access_token": token}
+    token = create_access_token({"role": "customer", "phone": verified_phone}, timedelta(days=7))
+    return {
+        "verified": True,
+        "phone": verified_phone,
+        "name": customer.get("name"),
+        "address": customer.get("address"),
+        "access_token": token
+    }
 
 # ── WebSocket ─────────────────────────────────────────────
-
 @app.websocket("/ws/{channel}")
 async def websocket_endpoint(websocket: WebSocket, channel: str):
     if channel not in ("customer", "admin"):
@@ -272,11 +300,9 @@ async def websocket_endpoint(websocket: WebSocket, channel: str):
         manager.disconnect(websocket, channel)
 
 # ── Health ────────────────────────────────────────────────
-
 @app.get("/health")
 def health_check():
     return {"status": "healthy", "service": "KGS Grain Store API", "version": "3.0.0"}
 
-# ── Entry Point ───────────────────────────────────────────
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
