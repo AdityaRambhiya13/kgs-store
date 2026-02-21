@@ -333,11 +333,18 @@ function OrderCard({ order, onAction, toggling, expanded, onExpand, inlineError 
             <div className="order-card-header" onClick={() => onExpand(order.token)}>
                 <div>
                     <div className="order-token">{order.token}</div>
-                    <div className="order-meta">📱 {order.phone}</div>
+                    <div className="order-meta">
+                        📱 {order.phone} {order.customer_name ? `• 👤 ${order.customer_name}` : ''}
+                    </div>
                     {/* Delivery badge */}
                     <span className={`admin-delivery-badge ${deliveryType}`}>
                         {deliveryType === 'delivery' ? '🚚 Home Delivery' : '🏪 Store Pickup'}
                     </span>
+                    {deliveryType === 'delivery' && order.address && (
+                        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8, maxWidth: '280px', lineHeight: 1.4 }}>
+                            📍 {order.address}
+                        </div>
+                    )}
                 </div>
                 <div style={{ textAlign: 'right' }}>
                     <div className="order-amount">₹{order.total?.toFixed(0)}</div>

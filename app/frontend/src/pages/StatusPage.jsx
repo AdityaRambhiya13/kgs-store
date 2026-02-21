@@ -164,11 +164,11 @@ export default function StatusPage() {
                             {isDelivered ? '✅' : isReady ? (deliveryType === 'delivery' ? '🚚' : '🎉') : '⏳'}
                         </div>
                         <h3>
-                            {isDelivered ? 'Order Delivered!' : isReady ? (deliveryType === 'delivery' ? 'Out for Delivery!' : 'Order Ready!') : 'Preparing Your Order'}
+                            {isDelivered ? 'Thank You!' : isReady ? (deliveryType === 'delivery' ? 'Out for Delivery!' : 'Order Ready!') : 'Preparing Your Order'}
                         </h3>
                         <p>
                             {isDelivered
-                                ? 'Your order has been delivered! Please order again.'
+                                ? 'Your order is successfully completed. Thank you for shopping with KGS! Please order again.'
                                 : isReady
                                     ? (deliveryType === 'delivery' ? 'Hey there! We will soon be at your doorstep.' : 'Please collect your order from the counter. Thanks for shopping!')
                                     : "We're preparing your items. You'll be notified automatically when ready."}

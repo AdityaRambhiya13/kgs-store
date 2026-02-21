@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../CartContext'
-import { placeOrder } from '../api'
+import { placeOrder, checkPhone } from '../api'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../AuthContext'
 
@@ -13,6 +13,7 @@ export default function ConfirmPage() {
     const [phone, setPhone] = useState(user?.phone || '')
     const [name, setName] = useState(user?.name || '')
     const [pin, setPin] = useState('')
+    const [isExistingUser, setIsExistingUser] = useState(false)
 
     const [address, setAddress] = useState(user?.address || '')
     const [error, setError] = useState('')
@@ -39,10 +40,19 @@ export default function ConfirmPage() {
         }
     }, [user])
 
+    // Check if phone belongs to an existing user dynamically
+    useEffect(() => {
+        if (!user && phone.length === 10) {
+            checkPhone(phone).then(res => setIsExistingUser(res.exists)).catch(() => { })
+        } else {
+            setIsExistingUser(false)
+        }
+    }, [phone, user])
+
     const handleSubmit = async () => {
         if (!user) {
             if (phone.length !== 10) { setError('Valid 10-digit phone required'); return }
-            if (pin.length !== 4) { setError('4-digit Security PIN required'); return }
+            if (!isExistingUser && pin.length !== 4) { setError('4-digit Security PIN required for new accounts'); return }
         }
         if (deliveryType === 'delivery' && !address.trim()) {
             setError('Please provide a delivery address.')
@@ -171,38 +181,59 @@ export default function ConfirmPage() {
                                         </div>
                                     </div>
 
-                                    <div className="confirm-phone-group" style={{ marginTop: 12 }}>
-                                        <label>Name (Optional for returning users)</label>
-                                        <input
-                                            className="input"
-                                            type="text"
-                                            value={name}
-                                            onChange={e => {
-                                                setName(e.target.value)
-                                                if (error) setError('')
-                                            }}
-                                            placeholder="John Doe"
-                                        />
-                                    </div>
+                                    <AnimatePresence>
+                                        {!isExistingUser && phone.length === 10 && (
+                                            <motion.div
+                                                initial={{ opacity: 0, height: 0 }}
+                                                animate={{ opacity: 1, height: 'auto' }}
+                                                exit={{ opacity: 0, height: 0 }}
+                                            >
+                                                <div className="confirm-phone-group" style={{ marginTop: 12 }}>
+                                                    <label>Name (Optional)</label>
+                                                    <input
+                                                        className="input"
+                                                        type="text"
+                                                        value={name}
+                                                        onChange={e => {
+                                                            setName(e.target.value)
+                                                            if (error) setError('')
+                                                        }}
+                                                        placeholder="John Doe"
+                                                    />
+                                                </div>
 
-                                    <div className="confirm-phone-group" style={{ marginTop: 12 }}>
-                                        <label>Security PIN (4-digits)</label>
-                                        <input
-                                            className="input"
-                                            type="password"
-                                            inputMode="numeric"
-                                            maxLength={4}
-                                            value={pin}
-                                            onChange={e => {
-                                                setPin(e.target.value.replace(/\D/g, '').slice(0, 4))
-                                                if (error) setError('')
-                                            }}
-                                            placeholder="••••"
-                                        />
-                                        <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                                            Used to secure your orders. New users will be automatically registered.
-                                        </p>
-                                    </div>
+                                                <div className="confirm-phone-group" style={{ marginTop: 12 }}>
+                                                    <label>Set Security PIN (4-digits)</label>
+                                                    <input
+                                                        className="input"
+                                                        type="password"
+                                                        inputMode="numeric"
+                                                        maxLength={4}
+                                                        value={pin}
+                                                        onChange={e => {
+                                                            setPin(e.target.value.replace(/\D/g, '').slice(0, 4))
+                                                            if (error) setError('')
+                                                        }}
+                                                        placeholder="••••"
+                                                    />
+                                                    <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                                                        Used to secure your orders. Creating a new account automatically.
+                                                    </p>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                        {isExistingUser && (
+                                            <motion.div
+                                                initial={{ opacity: 0, height: 0 }}
+                                                animate={{ opacity: 1, height: 'auto' }}
+                                                exit={{ opacity: 0, height: 0 }}
+                                            >
+                                                <div style={{ marginTop: 12, padding: '12px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '8px', color: 'var(--primary)', fontSize: 13, border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                                                    ✅ Account detected. You can proceed with your order immediately.
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                 </>
                             ) : (
                                 <div className="confirm-phone-group">

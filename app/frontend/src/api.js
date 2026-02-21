@@ -45,10 +45,13 @@ export const updateStatus = (token, status, adminToken, otp = null) =>
 export const loginRegister = (phone, pin, name, address) =>
     request('POST', '/api/auth/login-register', {
         phone: `+91${phone}`,
-        pin: String(pin),
+        pin: pin ? String(pin) : undefined,
         ...(name && { name }),
         ...(address && { address })
     })
+
+export const checkPhone = (phone) =>
+    request('GET', `/api/auth/check-phone?phone=${encodeURIComponent(phone)}`)
 
 // ── Order History ──────────────────────────────────────────────
 export const getOrderHistory = (token) =>
