@@ -64,7 +64,7 @@ export default function ConfirmPage() {
                 quantity: item.quantity,
             }))
             const payload = {
-                phone: `+91${user.phone}`,
+                phone: `+91${user?.phone || phone}`,
                 items,
                 total: cartTotal,
                 delivery_type: deliveryType

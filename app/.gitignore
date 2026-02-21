@@ -28,6 +28,9 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
+# Firebase
+firebase-adminsdk.json
+
 # OS/System
 .DS_Store
 Thumbs.db
