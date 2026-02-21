@@ -24,6 +24,13 @@ from dotenv import load_dotenv
 import firebase_admin
 from firebase_admin import credentials, auth as firebase_auth
 
+import os
+from dotenv import load_dotenv
+
+# MUST be loaded before local imports
+env_path = os.path.join(os.path.dirname(__file__), ".env")
+load_dotenv(env_path)
+
 from database import (
     init_db, get_all_products, create_order,
     get_all_orders, get_order_by_token, update_order_status, mark_delivered,
@@ -31,8 +38,6 @@ from database import (
 )
 from models import OrderCreate, OrderOut, OrderStatusUpdate, ProductOut, OTPRequest, OTPVerifyRequest, CustomerOut, LoginRegisterRequest
 from websocket import manager
-
-load_dotenv()
 
 # Initialize Firebase Admin
 try:
