@@ -27,6 +27,9 @@ export const getOrder = (token, signal) => request('GET', `/api/orders/${token}`
 export const listOrders = (password, signal) =>
     request('GET', `/api/orders?password=${encodeURIComponent(password)}`, null, signal)
 
+export const listCustomers = (password, signal) =>
+    request('GET', `/api/admin/customers?password=${encodeURIComponent(password)}`, null, signal)
+
 export const updateStatus = (token, status, password) =>
     request('PATCH', `/api/orders/${token}/status?password=${encodeURIComponent(password)}`, { status })
 

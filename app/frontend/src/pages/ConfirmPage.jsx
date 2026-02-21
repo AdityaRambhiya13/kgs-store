@@ -1,35 +1,36 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../CartContext'
-import { placeOrder, setupPin } from '../api'
+import { placeOrder } from '../api'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useAuth } from '../AuthContext'
 
 export default function ConfirmPage() {
     const { cartItems, cartTotal, clearCart } = useCart()
+    const { user } = useAuth()
     const navigate = useNavigate()
-    const [phone, setPhone] = useState('')
+    const [address, setAddress] = useState('')
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
     const [apiError, setApiError] = useState('')
     const [orderPlaced, setOrderPlaced] = useState(false)
     const [deliveryType, setDeliveryType] = useState('pickup')
 
-    // PIN setup step
-    const [step, setStep] = useState('form')   // 'form' | 'pin'
+    const [step, setStep] = useState('form')   // 'form' | 'success'
     const [token, setToken] = useState('')
-    const [pin, setPin] = useState('')
-    const [pinConfirm, setPinConfirm] = useState('')
 
     // If cart is empty, redirect home (unless order was just placed)
     useEffect(() => {
         if (cartItems.length === 0 && !orderPlaced) navigate('/')
     }, [cartItems, navigate, orderPlaced])
 
-    const isValidPhone = /^[6-9]\d{9}$/.test(phone)
-
     const handleSubmit = async () => {
-        if (!isValidPhone) {
-            setError('Please enter a valid 10-digit mobile number (starting with 6-9)')
+        if (!user || (!user.phone)) {
+            setError('User not authenticated')
+            return
+        }
+        if (deliveryType === 'delivery' && !address.trim()) {
+            setError('Please provide a delivery address.')
             return
         }
         setError('')
@@ -43,31 +44,27 @@ export default function ConfirmPage() {
                 price: item.price,
                 quantity: item.quantity,
             }))
-            const result = await placeOrder({ phone: `+91${phone}`, items, total: cartTotal, delivery_type: deliveryType })
+            const payload = {
+                phone: `+91${user.phone}`,
+                items,
+                total: cartTotal,
+                delivery_type: deliveryType
+            }
+            if (deliveryType === 'delivery') {
+                payload.address = address
+            }
+
+            const result = await placeOrder(payload)
             setToken(result.token)
             setOrderPlaced(true)
             clearCart()
-            setStep('pin')
+            setStep('success')
         } catch (err) {
             setApiError(err.message || 'Something went wrong. Please try again.')
         } finally {
             setLoading(false)
         }
     }
-
-    const handlePinSetup = async () => {
-        setLoading(true)
-        try {
-            await setupPin(phone, pin)
-        } catch {
-            // Non-blocking — proceed even if PIN setup fails
-        } finally {
-            setLoading(false)
-            navigate(`/status/${token}`)
-        }
-    }
-
-    const pinValid = pin.length === 4 && pinConfirm.length === 4 && pin === pinConfirm
 
     return (
         <div>
@@ -130,35 +127,55 @@ export default function ConfirmPage() {
                                 </div>
                             </div>
 
-                            {/* Phone Input */}
                             <div className="confirm-phone-group">
-                                <label htmlFor="phone-input">Mobile Number</label>
-                                <div className="phone-input-row">
+                                <label>Mobile Number</label>
+                                <div className="phone-input-row" style={{ opacity: 0.7 }}>
                                     <span className="phone-prefix">🇮🇳 +91</span>
                                     <input
-                                        id="phone-input"
-                                        className={`input ${error ? 'error' : ''}`}
+                                        className="input"
                                         type="tel"
-                                        inputMode="numeric"
-                                        placeholder="9876543210"
-                                        maxLength={10}
-                                        value={phone}
-                                        onChange={e => {
-                                            setPhone(e.target.value.replace(/\D/g, ''))
-                                            if (error) setError('')
-                                        }}
-                                        onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                                        value={user?.phone || ''}
+                                        disabled
+                                        style={{ backgroundColor: 'var(--bg-card)' }}
                                     />
                                 </div>
-                                {error && <p className="error-msg">⚠️ {error}</p>}
                             </div>
+
+                            {/* Address Input */}
+                            <AnimatePresence>
+                                {deliveryType === 'delivery' && (
+                                    <motion.div
+                                        className="confirm-phone-group"
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        style={{ overflow: 'hidden' }}
+                                    >
+                                        <label htmlFor="address-input">Delivery Address</label>
+                                        <textarea
+                                            id="address-input"
+                                            className={`input ${error && !address.trim() ? 'error' : ''}`}
+                                            placeholder="Enter your full address"
+                                            value={address}
+                                            onChange={e => {
+                                                setAddress(e.target.value)
+                                                if (error) setError('')
+                                            }}
+                                            rows={3}
+                                            style={{ resize: 'vertical' }}
+                                        />
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            {error && <p className="error-msg">⚠️ {error}</p>}
 
                             {/* Submit */}
                             <motion.button
                                 className="btn btn-primary"
                                 style={{ width: '100%', justifyContent: 'center', fontSize: 16, padding: '15px', marginBottom: 12 }}
                                 onClick={handleSubmit}
-                                disabled={loading || !isValidPhone}
+                                disabled={loading || (deliveryType === 'delivery' && !address.trim())}
                                 whileTap={{ scale: 0.97 }}
                             >
                                 {loading ? (
@@ -179,10 +196,10 @@ export default function ConfirmPage() {
                         </motion.div>
                     )}
 
-                    {/* ── Step 2: PIN Setup ── */}
-                    {step === 'pin' && (
+                    {/* ── Step 2: Success Step ── */}
+                    {step === 'success' && (
                         <motion.div
-                            key="pin"
+                            key="success"
                             className="confirm-card"
                             initial={{ opacity: 0, y: 24 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -198,63 +215,19 @@ export default function ConfirmPage() {
                                     <span style={{ fontSize: 13, color: 'var(--text-muted)', display: 'block' }}>Your Order Token</span>
                                     <span style={{ fontSize: 28, fontWeight: 900, color: 'var(--text)' }}>{token}</span>
                                 </div>
-                                <h3 style={{ fontWeight: 800, fontSize: 18, marginBottom: 6 }}>Secure Your Account</h3>
                                 <p style={{ color: 'var(--text-muted)', fontSize: 14, lineHeight: 1.5 }}>
-                                    Set a 4-digit PIN to securely view your order history anytime.
+                                    You can track your order status anytime from the 'My Orders' section.
                                 </p>
                             </div>
-
-                            <div className="confirm-phone-group">
-                                <label>Create 4-digit PIN</label>
-                                <input
-                                    className="input pin-input"
-                                    type="password"
-                                    inputMode="numeric"
-                                    maxLength={4}
-                                    value={pin}
-                                    onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
-                                    placeholder="••••"
-                                    autoFocus
-                                />
-                            </div>
-
-                            <div className="confirm-phone-group" style={{ marginTop: 12 }}>
-                                <label>Confirm PIN</label>
-                                <input
-                                    className="input pin-input"
-                                    type="password"
-                                    inputMode="numeric"
-                                    maxLength={4}
-                                    value={pinConfirm}
-                                    onChange={e => setPinConfirm(e.target.value.replace(/\D/g, ''))}
-                                    placeholder="••••"
-                                    onKeyDown={e => e.key === 'Enter' && pinValid && handlePinSetup()}
-                                />
-                            </div>
-
-                            {pin.length === 4 && pinConfirm.length === 4 && pin !== pinConfirm && (
-                                <p className="error-msg" style={{ marginTop: 6 }}>⚠️ PINs don't match</p>
-                            )}
 
                             <motion.button
                                 className="btn btn-primary"
                                 style={{ width: '100%', justifyContent: 'center', padding: '15px', marginTop: 20 }}
-                                disabled={!pinValid || loading}
-                                onClick={handlePinSetup}
+                                onClick={() => navigate(`/status/${token}`)}
                                 whileTap={{ scale: 0.97 }}
                             >
-                                {loading ? (
-                                    <><span className="spinner spinner-sm" /> Saving...</>
-                                ) : '✅ Save PIN & Track Order'}
+                                🎯 Track Order Now
                             </motion.button>
-
-                            <button
-                                className="btn btn-ghost"
-                                style={{ width: '100%', justifyContent: 'center', marginTop: 10 }}
-                                onClick={() => navigate(`/status/${token}`)}
-                            >
-                                Skip for now
-                            </button>
                         </motion.div>
                     )}
                 </AnimatePresence>

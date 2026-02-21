@@ -52,7 +52,8 @@ def init_db():
             items_json TEXT NOT NULL,
             status TEXT NOT NULL DEFAULT 'Processing',
             total REAL NOT NULL,
-            timestamp TEXT NOT NULL
+            timestamp TEXT NOT NULL,
+            address TEXT
         )
     """)
 
@@ -77,6 +78,7 @@ def init_db():
     migrations = [
         ("orders", "delivery_type", "TEXT NOT NULL DEFAULT 'pickup'"),
         ("orders", "delivered_at",  "TEXT"),
+        ("orders", "address",       "TEXT"),
         ("products", "base_name",   "TEXT NOT NULL DEFAULT ''"),
     ]
     for table, col, defn in migrations:
@@ -187,9 +189,16 @@ def create_or_update_customer(phone: str, pin_hash: str):
     conn.commit()
     conn.close()
 
+def get_all_customers():
+    """Fetch all signed-up customers."""
+    conn = get_connection()
+    rows = conn.execute("SELECT phone, created_at FROM customers ORDER BY created_at DESC").fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
 # ── Orders ────────────────────────────────────────────────
 
-def create_order(phone: str, items: list, total: float, delivery_type: str = "pickup") -> str:
+def create_order(phone: str, items: list, total: float, delivery_type: str = "pickup", address: str = None) -> str:
     """Create a new order and return the generated token."""
     conn = get_connection()
     cursor = conn.cursor()
@@ -205,8 +214,8 @@ def create_order(phone: str, items: list, total: float, delivery_type: str = "pi
     items_json = json.dumps(items)
 
     cursor.execute(
-        "INSERT INTO orders (token, phone, items_json, status, total, timestamp, delivery_type) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (token, phone, items_json, "Processing", total, timestamp, delivery_type),
+        "INSERT INTO orders (token, phone, items_json, status, total, timestamp, delivery_type, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (token, phone, items_json, "Processing", total, timestamp, delivery_type, address),
     )
 
     conn.commit()

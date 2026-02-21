@@ -2,37 +2,37 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getOrderHistory } from '../api'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useAuth } from '../AuthContext'
 
 export default function OrderHistoryPage() {
-    const [phone, setPhone] = useState('')
-    const [pin, setPin] = useState('')
+    const { user } = useAuth()
     const [orders, setOrders] = useState(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
-    const mountedRef = useRef(true)
     const navigate = useNavigate()
 
     useEffect(() => {
-        mountedRef.current = true
-        return () => { mountedRef.current = false }
-    }, [])
-
-    const isValidPhone = /^[6-9]\d{9}$/.test(phone)
-    const isValidPin = pin.length === 4
-
-    const handleSearch = async () => {
-        if (!isValidPhone || !isValidPin) { setError('Enter phone and 4-digit PIN'); return }
-        setError('')
-        setLoading(true)
-        try {
-            const data = await getOrderHistory(phone, pin)
-            if (mountedRef.current) setOrders(Array.isArray(data) ? data : [])
-        } catch (e) {
-            if (mountedRef.current) setError(e.message || 'Invalid phone or PIN')
-        } finally {
-            if (mountedRef.current) setLoading(false)
+        if (!user) {
+            navigate('/')
+            return
         }
-    }
+
+        const fetchHistory = async () => {
+            setLoading(true)
+            try {
+                const data = await getOrderHistory(user.phone, user.pin)
+                setOrders(Array.isArray(data) ? data : [])
+            } catch (e) {
+                setError(e.message || 'Failed to load order history')
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchHistory()
+    }, [user, navigate])
+
+
 
     const statusColor = s => s === 'Delivered' ? '#10B981' : s === 'Ready for Pickup' ? '#F59E0B' : 'var(--primary)'
     const statusEmoji = s => s === 'Delivered' ? '✅' : s === 'Ready for Pickup' ? '🟡' : '⏳'
@@ -52,54 +52,12 @@ export default function OrderHistoryPage() {
                         <div style={{ fontSize: 40, marginBottom: 8 }}>📋</div>
                         <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 6 }}>My Orders</h2>
                         <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
-                            Enter your mobile & PIN to view past orders
+                            {user?.phone ? `Orders for +91 ${user.phone}` : ''}
                         </p>
                     </div>
 
-                    {/* Phone */}
-                    <div className="confirm-phone-group">
-                        <label>Mobile Number</label>
-                        <div className="phone-input-row">
-                            <span className="phone-prefix">🇮🇳 +91</span>
-                            <input
-                                className={`input ${error ? 'error' : ''}`}
-                                type="tel"
-                                inputMode="numeric"
-                                placeholder="9876543210"
-                                maxLength={10}
-                                value={phone}
-                                onChange={e => { setPhone(e.target.value.replace(/\D/g, '')); setError('') }}
-                                onKeyDown={e => e.key === 'Enter' && isValidPhone && handleSearch()}
-                            />
-                        </div>
-                    </div>
-
-                    {/* PIN */}
-                    <div className="confirm-phone-group" style={{ marginTop: 12 }}>
-                        <label>Security PIN</label>
-                        <input
-                            className={`input pin-input ${error ? 'error' : ''}`}
-                            type="password"
-                            inputMode="numeric"
-                            maxLength={4}
-                            placeholder="••••"
-                            value={pin}
-                            onChange={e => { setPin(e.target.value.replace(/\D/g, '')); setError('') }}
-                            onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                        />
-                    </div>
-
                     {error && <p className="error-msg" style={{ marginTop: 8 }}>⚠️ {error}</p>}
-
-                    <motion.button
-                        className="btn btn-primary"
-                        style={{ width: '100%', justifyContent: 'center', fontSize: 16, padding: '15px', marginTop: 16, marginBottom: 24 }}
-                        onClick={handleSearch}
-                        disabled={loading || !isValidPhone || !isValidPin}
-                        whileTap={{ scale: 0.97 }}
-                    >
-                        {loading ? <><span className="spinner spinner-sm" /> Verifying...</> : '🔍 View My Orders'}
-                    </motion.button>
+                    {loading && <div style={{ textAlign: 'center', margin: '20px 0' }}><span className="spinner spinner-sm" /> Loading orders...</div>}
 
                     <AnimatePresence>
                         {orders !== null && (

@@ -17,9 +17,9 @@ from dotenv import load_dotenv
 from database import (
     init_db, get_all_products, create_order,
     get_all_orders, get_order_by_token, update_order_status, mark_delivered,
-    get_orders_by_phone, get_customer, create_or_update_customer,
+    get_orders_by_phone, get_customer, create_or_update_customer, get_all_customers,
 )
-from models import OrderCreate, OrderOut, OrderStatusUpdate, ProductOut, CustomerAuth
+from models import OrderCreate, OrderOut, OrderStatusUpdate, ProductOut, CustomerAuth, CustomerOut
 from websocket import manager
 
 load_dotenv()
@@ -113,8 +113,8 @@ def place_order(order: OrderCreate, request: Request):
     if abs(calculated_total - order.total) > 1.0:
         raise HTTPException(status_code=400, detail="Total mismatch — please refresh and retry")
 
-    token = create_order(order.phone, validated_items, calculated_total, order.delivery_type)
-    return {"token": token, "total": calculated_total, "status": "Processing", "delivery_type": order.delivery_type}
+    token = create_order(order.phone, validated_items, calculated_total, order.delivery_type, order.address)
+    return {"token": token, "total": calculated_total, "status": "Processing", "delivery_type": order.delivery_type, "address": order.address}
 
 @app.get("/api/orders")
 def list_orders(password: str, request: Request):
@@ -122,6 +122,13 @@ def list_orders(password: str, request: Request):
     if not verify_admin_password(password):
         raise HTTPException(status_code=401, detail="Invalid admin password")
     return get_all_orders()
+
+@app.get("/api/admin/customers", response_model=List[CustomerOut])
+def list_customers(password: str, request: Request):
+    check_rate_limit(request)
+    if not verify_admin_password(password):
+        raise HTTPException(status_code=401, detail="Invalid admin password")
+    return get_all_customers()
 
 # ── IMPORTANT: /history and /auth routes MUST be before /{token} ──
 

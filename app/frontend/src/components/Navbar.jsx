@@ -1,9 +1,11 @@
 import { useCart } from '../CartContext'
+import { useAuth } from '../AuthContext'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 
 export default function Navbar({ searchQuery, onSearchChange }) {
     const { cartCount, setCartOpen } = useCart()
+    const { user, logout } = useAuth()
     const navigate = useNavigate()
 
     const toggleTheme = () => {
@@ -36,14 +38,30 @@ export default function Navbar({ searchQuery, onSearchChange }) {
                 {/* Actions */}
                 <div className="nav-actions">
                     <button className="icon-btn" onClick={toggleTheme} title="Toggle dark mode">🌙</button>
-                    <motion.button
-                        className="icon-btn"
-                        whileTap={{ scale: 0.88 }}
-                        onClick={() => navigate('/orders')}
-                        title="My Orders"
-                    >
-                        📋
-                    </motion.button>
+                    {user && (
+                        <>
+                            <motion.button
+                                className="icon-btn"
+                                whileTap={{ scale: 0.88 }}
+                                onClick={() => navigate('/orders')}
+                                title="My Orders"
+                            >
+                                📋
+                            </motion.button>
+                            <motion.button
+                                className="icon-btn"
+                                whileTap={{ scale: 0.88 }}
+                                onClick={() => {
+                                    logout()
+                                    navigate('/')
+                                }}
+                                title="Logout"
+                                style={{ fontSize: '18px' }}
+                            >
+                                🚪
+                            </motion.button>
+                        </>
+                    )}
                     <motion.button
                         className="nav-cart-btn"
                         whileTap={{ scale: 0.92 }}
