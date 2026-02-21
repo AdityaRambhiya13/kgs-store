@@ -139,6 +139,11 @@ export default function StatusPage() {
                         <Suspense fallback={<div style={{ width: 220, height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="spinner" /></div>}>
                             <Token3D token={token} isReady={isReady || isDelivered} />
                         </Suspense>
+                        {order?.delivery_otp && (
+                            <div style={{ position: 'absolute', bottom: 10, background: 'rgba(56, 189, 248, 0.9)', padding: '6px 14px', borderRadius: 20, fontSize: 13, fontWeight: 800, color: '#fff', boxShadow: '0 2px 10px rgba(56, 189, 248, 0.4)', letterSpacing: '1px' }}>
+                                OTP: {order.delivery_otp}
+                            </div>
+                        )}
                     </motion.div>
 
                     {/* Progress steps */}

@@ -79,6 +79,7 @@ def init_db():
         ("orders", "delivery_type", "TEXT NOT NULL DEFAULT 'pickup'"),
         ("orders", "delivered_at",  "TEXT"),
         ("orders", "address",       "TEXT"),
+        ("orders", "delivery_otp",  "TEXT"),
         ("products", "base_name",   "TEXT NOT NULL DEFAULT ''"),
     ]
     for table, col, defn in migrations:
@@ -212,10 +213,13 @@ def create_order(phone: str, items: list, total: float, delivery_type: str = "pi
 
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     items_json = json.dumps(items)
+    
+    import random
+    delivery_otp = str(random.randint(1000, 9999)) if delivery_type == "delivery" else None
 
     cursor.execute(
-        "INSERT INTO orders (token, phone, items_json, status, total, timestamp, delivery_type, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        (token, phone, items_json, "Processing", total, timestamp, delivery_type, address),
+        "INSERT INTO orders (token, phone, items_json, status, total, timestamp, delivery_type, address, delivery_otp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (token, phone, items_json, "Processing", total, timestamp, delivery_type, address, delivery_otp),
     )
 
     conn.commit()

@@ -30,8 +30,8 @@ export const listOrders = (password, signal) =>
 export const listCustomers = (password, signal) =>
     request('GET', `/api/admin/customers?password=${encodeURIComponent(password)}`, null, signal)
 
-export const updateStatus = (token, status, password) =>
-    request('PATCH', `/api/orders/${token}/status?password=${encodeURIComponent(password)}`, { status })
+export const updateStatus = (token, status, password, otp = null) =>
+    request('PATCH', `/api/orders/${token}/status?password=${encodeURIComponent(password)}`, { status, ...(otp && { otp }) })
 
 // ── Auth ───────────────────────────────────────────────────────
 export const setupPin = (phone, pin) =>

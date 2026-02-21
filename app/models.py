@@ -44,12 +44,13 @@ class OrderOut(BaseModel):
     timestamp: str
     delivery_type: str = "pickup"
     address: Optional[str] = None
+    delivery_otp: Optional[str] = None
     delivered_at: Optional[str] = None
-
 
 class OrderStatusUpdate(BaseModel):
     """Request body for updating order status."""
     status: str = Field(..., pattern=r"^(Processing|Ready for Pickup|Delivered)$")
+    otp: Optional[str] = Field(None, description="4-digit OTP required for home delivery")
 
 
 class ProductOut(BaseModel):

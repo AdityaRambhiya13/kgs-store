@@ -18,6 +18,7 @@ export default function ConfirmPage() {
 
     const [step, setStep] = useState('form')   // 'form' | 'success'
     const [token, setToken] = useState('')
+    const [deliveryOtp, setDeliveryOtp] = useState('')
 
     // If cart is empty, redirect home (unless order was just placed)
     useEffect(() => {
@@ -56,6 +57,9 @@ export default function ConfirmPage() {
 
             const result = await placeOrder(payload)
             setToken(result.token)
+            if (result.delivery_otp) {
+                setDeliveryOtp(result.delivery_otp)
+            }
             setOrderPlaced(true)
             clearCart()
             setStep('success')
@@ -215,6 +219,12 @@ export default function ConfirmPage() {
                                     <span style={{ fontSize: 13, color: 'var(--text-muted)', display: 'block' }}>Your Order Token</span>
                                     <span style={{ fontSize: 28, fontWeight: 900, color: 'var(--text)' }}>{token}</span>
                                 </div>
+                                {deliveryOtp && (
+                                    <div style={{ background: 'rgba(56, 189, 248, 0.1)', border: '1px dashed rgba(56, 189, 248, 0.4)', padding: '12px', borderRadius: '8px', marginBottom: '16px', display: 'inline-block', marginLeft: '12px' }}>
+                                        <span style={{ fontSize: 13, color: 'var(--primary)', display: 'block' }}>Delivery OTP</span>
+                                        <span style={{ fontSize: 24, fontWeight: 800, color: 'var(--primary)', letterSpacing: '2px' }}>{deliveryOtp}</span>
+                                    </div>
+                                )}
                                 <p style={{ color: 'var(--text-muted)', fontSize: 14, lineHeight: 1.5 }}>
                                     You can track your order status anytime from the 'My Orders' section.
                                 </p>

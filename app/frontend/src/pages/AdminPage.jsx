@@ -48,11 +48,11 @@ export default function AdminPage() {
         }
     }
 
-    const handleStatusAction = async (token, nextStatus) => {
+    const handleStatusAction = async (token, nextStatus, otp = null) => {
         setTogglingToken(token)
         setCardError(prev => ({ ...prev, [token]: '' }))
         try {
-            await updateStatus(token, nextStatus, password)
+            await updateStatus(token, nextStatus, password, otp)
             setOrders(prev => prev.map(o => o.token === token ? { ...o, status: nextStatus } : o))
         } catch (e) {
             setCardError(prev => ({ ...prev, [token]: e.message || 'Update failed' }))
@@ -293,6 +293,29 @@ function OrderCard({ order, onAction, toggling, expanded, onExpand, inlineError 
     let items = []
     try { items = JSON.parse(order.items_json) } catch { }
 
+    const [otpInput, setOtpInput] = useState('')
+    const [showOtpInput, setShowOtpInput] = useState(false)
+
+    const handleActionClick = () => {
+        // If it's a delivery order moving to 'Delivered', and we aren't showing the input, show it.
+        if (!isProcessing && deliveryType === 'delivery' && !showOtpInput) {
+            setShowOtpInput(true)
+            return
+        }
+
+        // If we're already showing it, pass the OTP
+        if (showOtpInput) {
+            if (!otpInput) {
+                // If they don't enter anything, we fall through to let the backend reject, or we could handle it here.
+                // It's cleaner to just pass it.
+            }
+            onAction(order.token, 'Delivered', otpInput)
+        } else {
+            // Normal branch
+            onAction(order.token, isProcessing ? (deliveryType === 'delivery' ? 'Ready for Pickup' : 'Ready for Pickup') : 'Delivered')
+        }
+    }
+
     return (
         <motion.div
             className={`order-card ${isReady ? 'ready' : isDelivered ? 'delivered' : 'processing'}`}
@@ -378,19 +401,39 @@ function OrderCard({ order, onAction, toggling, expanded, onExpand, inlineError 
                             </motion.button>
                         )}
 
-                        <motion.button
-                            className={`btn ${isProcessing ? 'btn-secondary' : 'btn-primary'}`}
-                            style={{ padding: '7px 16px', fontSize: 13 }}
-                            onClick={() => onAction(order.token, isProcessing ? 'Ready for Pickup' : 'Delivered')}
-                            disabled={toggling}
-                            whileTap={{ scale: 0.95 }}
-                        >
-                            {toggling
-                                ? <span className="spinner spinner-sm" />
-                                : isProcessing
-                                    ? (deliveryType === 'delivery' ? '🚚 Out for Delivery' : '✅ Mark Ready')
-                                    : '📦 Mark Delivered'}
-                        </motion.button>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <AnimatePresence>
+                                {showOtpInput && (
+                                    <motion.input
+                                        initial={{ opacity: 0, width: 0 }}
+                                        animate={{ opacity: 1, width: 80 }}
+                                        exit={{ opacity: 0, width: 0 }}
+                                        className="input"
+                                        style={{ padding: '6px 10px', fontSize: 13, height: '32px' }}
+                                        placeholder="OTP"
+                                        value={otpInput}
+                                        onChange={(e) => setOtpInput(e.target.value)}
+                                        maxLength={4}
+                                    />
+                                )}
+                            </AnimatePresence>
+
+                            <motion.button
+                                className={`btn ${isProcessing ? 'btn-secondary' : 'btn-primary'}`}
+                                style={{ padding: '7px 16px', fontSize: 13, height: '32px' }}
+                                onClick={handleActionClick}
+                                disabled={toggling}
+                                whileTap={{ scale: 0.95 }}
+                            >
+                                {toggling
+                                    ? <span className="spinner spinner-sm" />
+                                    : showOtpInput
+                                        ? '✅ Confirm'
+                                        : isProcessing
+                                            ? (deliveryType === 'delivery' ? '🚚 Out for Delivery' : '✅ Mark Ready')
+                                            : '📦 Mark Delivered'}
+                            </motion.button>
+                        </div>
                     </div>
                 </div>
             )}

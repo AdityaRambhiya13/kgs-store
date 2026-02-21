@@ -165,6 +165,17 @@ async def toggle_order_status(token: str, body: OrderStatusUpdate, password: str
         raise HTTPException(status_code=401, detail="Invalid admin password")
 
     if body.status == "Delivered":
+        order = get_order_by_token(token)
+        if not order:
+            raise HTTPException(status_code=404, detail="Order not found")
+        
+        # Verify OTP for home delivery
+        if order["delivery_type"] == "delivery":
+            if not body.otp:
+                raise HTTPException(status_code=400, detail="Delivery OTP is required for home deliveries")
+            if body.otp != order["delivery_otp"]:
+                raise HTTPException(status_code=400, detail="Invalid Delivery OTP")
+
         updated = mark_delivered(token)
     else:
         updated = update_order_status(token, body.status)
