@@ -313,7 +313,7 @@ function OrderCard({ order, onAction, toggling, expanded, onExpand, inlineError 
                 <div style={{ textAlign: 'right' }}>
                     <div className="order-amount">₹{order.total?.toFixed(0)}</div>
                     <span className={`status-pill ${isReady ? 'ready' : isDelivered ? 'delivered' : 'processing'}`}>
-                        {isDelivered ? '✅ Delivered' : isReady ? '🟡 Ready' : '⏳ Processing'}
+                        {isDelivered ? '✅ Delivered' : isReady ? (deliveryType === 'delivery' ? '🚚 Out for Delivery' : '🟡 Ready') : '⏳ Processing'}
                     </span>
                 </div>
             </div>
@@ -388,7 +388,7 @@ function OrderCard({ order, onAction, toggling, expanded, onExpand, inlineError 
                             {toggling
                                 ? <span className="spinner spinner-sm" />
                                 : isProcessing
-                                    ? '✅ Mark Ready'
+                                    ? (deliveryType === 'delivery' ? '🚚 Out for Delivery' : '✅ Mark Ready')
                                     : '📦 Mark Delivered'}
                         </motion.button>
                     </div>

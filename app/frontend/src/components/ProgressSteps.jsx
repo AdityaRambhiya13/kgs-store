@@ -1,9 +1,10 @@
 import { motion } from 'framer-motion'
 
-const STEPS = [
+// Dynamic generation of steps based on deliveryType
+const getSteps = (deliveryType) => [
     { id: 1, emoji: '✅', label: 'Order Placed' },
     { id: 2, emoji: '🛒', label: 'Being Prepared' },
-    { id: 3, emoji: '🎉', label: 'Ready for Pickup' },
+    { id: 3, emoji: deliveryType === 'delivery' ? '🚚' : '🎉', label: deliveryType === 'delivery' ? 'Out for Delivery' : 'Ready' },
 ]
 
 function getStepState(stepId, status) {
@@ -16,10 +17,12 @@ function getStepState(stepId, status) {
     return 'pending'
 }
 
-export default function ProgressSteps({ status }) {
+export default function ProgressSteps({ status, deliveryType }) {
+    const steps = getSteps(deliveryType)
+
     return (
         <div className="progress-steps">
-            {STEPS.map((step, idx) => {
+            {steps.map((step, idx) => {
                 const state = getStepState(step.id, status)
                 return (
                     <div key={step.id} style={{ display: 'flex', alignItems: 'flex-start', flex: 1 }}>
@@ -34,7 +37,7 @@ export default function ProgressSteps({ status }) {
                             </motion.div>
                             <div className="progress-step-label">{step.label}</div>
                         </div>
-                        {idx < STEPS.length - 1 && (
+                        {idx < steps.length - 1 && (
                             <div className="progress-connector" style={{ marginTop: 22 }}>
                                 <motion.div
                                     className="progress-connector-fill"

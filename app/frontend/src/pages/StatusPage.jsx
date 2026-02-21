@@ -142,7 +142,7 @@ export default function StatusPage() {
                     </motion.div>
 
                     {/* Progress steps */}
-                    <ProgressSteps status={order.status} />
+                    <ProgressSteps status={order.status} deliveryType={deliveryType} />
 
                     {/* Delivery badge */}
                     <div className="delivery-badge">
@@ -156,16 +156,16 @@ export default function StatusPage() {
                         transition={{ duration: 0.4 }}
                     >
                         <div className="status-emoji">
-                            {isDelivered ? '✅' : isReady ? '🎉' : '⏳'}
+                            {isDelivered ? '✅' : isReady ? (deliveryType === 'delivery' ? '🚚' : '🎉') : '⏳'}
                         </div>
                         <h3>
-                            {isDelivered ? 'Order Delivered!' : isReady ? 'Order Ready!' : 'Preparing Your Order'}
+                            {isDelivered ? 'Order Delivered!' : isReady ? (deliveryType === 'delivery' ? 'Out for Delivery!' : 'Order Ready!') : 'Preparing Your Order'}
                         </h3>
                         <p>
                             {isDelivered
-                                ? 'Your order has been delivered. Thank you for shopping with us!'
+                                ? 'Your order has been delivered! Please order again.'
                                 : isReady
-                                    ? 'Please collect your order from the counter. Thanks for shopping!'
+                                    ? (deliveryType === 'delivery' ? 'Hey there! We will soon be at your doorstep.' : 'Please collect your order from the counter. Thanks for shopping!')
                                     : "We're preparing your items. You'll be notified automatically when ready."}
                         </p>
                     </motion.div>
