@@ -2071,11 +2071,7 @@ p {
   flex-shrink: 0;
 }
 
-/* ── Nav search — hidden (left for graceful degradation) ─────── */
-.nav-search {
-  display: none;
-}
-
+/* Search bar is restored based on user request */
 /* ── Catalog bottom padding for FAB clearance ────────────────── */
 .catalog-page {
   padding-bottom: 100px;

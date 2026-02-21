@@ -12,20 +12,20 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         // Init from local storage
         const storedPhone = localStorage.getItem('kgsPhone');
-        const storedPin = localStorage.getItem('kgsPin');
+        const storedToken = localStorage.getItem('kgsToken');
 
-        if (storedPhone && storedPin) {
-            setUser({ phone: storedPhone, pin: storedPin });
+        if (storedPhone && storedToken) {
+            setUser({ phone: storedPhone, token: storedToken });
         }
         setLoading(false);
     }, []);
 
     const login = async (phone, pin) => {
         try {
-            await verifyPin(phone, pin);
+            const res = await verifyPin(phone, pin);
             localStorage.setItem('kgsPhone', phone);
-            localStorage.setItem('kgsPin', pin);
-            setUser({ phone, pin });
+            localStorage.setItem('kgsToken', res.access_token);
+            setUser({ phone, token: res.access_token });
             return true;
         } catch (error) {
             throw error;
@@ -34,10 +34,10 @@ export const AuthProvider = ({ children }) => {
 
     const signup = async (phone, pin) => {
         try {
-            await setupPin(phone, pin);
+            const res = await setupPin(phone, pin);
             localStorage.setItem('kgsPhone', phone);
-            localStorage.setItem('kgsPin', pin);
-            setUser({ phone, pin });
+            localStorage.setItem('kgsToken', res.access_token);
+            setUser({ phone, token: res.access_token });
             return true;
         } catch (error) {
             throw error;
@@ -46,7 +46,7 @@ export const AuthProvider = ({ children }) => {
 
     const logout = () => {
         localStorage.removeItem('kgsPhone');
-        localStorage.removeItem('kgsPin');
+        localStorage.removeItem('kgsToken');
         setUser(null);
     };
 

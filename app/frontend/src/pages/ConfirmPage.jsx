@@ -140,6 +140,7 @@ export default function ConfirmPage() {
                                         type="tel"
                                         value={user?.phone || ''}
                                         disabled
+                                        autoComplete="off"
                                         style={{ backgroundColor: 'var(--bg-card)' }}
                                     />
                                 </div>
@@ -166,6 +167,7 @@ export default function ConfirmPage() {
                                                 if (error) setError('')
                                             }}
                                             rows={3}
+                                            autoComplete="off"
                                             style={{ resize: 'vertical' }}
                                         />
                                     </motion.div>

@@ -3,10 +3,13 @@
 // Uses VITE_API_URL for production (Vercel), or fallback to local Vite proxy ('')
 const BASE = import.meta.env.VITE_API_URL || ''
 
-async function request(method, path, body = null, signal = null) {
+async function request(method, path, body = null, signal = null, token = null) {
     const opts = {
         method,
         headers: { 'Content-Type': 'application/json' },
+    }
+    if (token) {
+        opts.headers['Authorization'] = `Bearer ${token}`
     }
     if (body) opts.body = JSON.stringify(body)
     if (signal) opts.signal = signal
@@ -24,14 +27,16 @@ export const placeOrder = (data) => request('POST', '/api/orders', data)
 
 export const getOrder = (token, signal) => request('GET', `/api/orders/${token}`, null, signal)
 
-export const listOrders = (password, signal) =>
-    request('GET', `/api/orders?password=${encodeURIComponent(password)}`, null, signal)
+export const adminLogin = (password) => request('POST', '/api/auth/admin-login', { password })
 
-export const listCustomers = (password, signal) =>
-    request('GET', `/api/admin/customers?password=${encodeURIComponent(password)}`, null, signal)
+export const listOrders = (token, signal) =>
+    request('GET', '/api/orders', null, signal, token)
 
-export const updateStatus = (token, status, password, otp = null) =>
-    request('PATCH', `/api/orders/${token}/status?password=${encodeURIComponent(password)}`, { status, ...(otp && { otp }) })
+export const listCustomers = (token, signal) =>
+    request('GET', '/api/admin/customers', null, signal, token)
+
+export const updateStatus = (token, status, adminToken, otp = null) =>
+    request('PATCH', `/api/orders/${token}/status`, { status, ...(otp && { otp }) }, null, adminToken)
 
 // ── Auth ───────────────────────────────────────────────────────
 export const setupPin = (phone, pin) =>
@@ -41,5 +46,5 @@ export const verifyPin = (phone, pin) =>
     request('POST', '/api/auth/verify', { phone: `+91${phone}`, pin })
 
 // ── Order History ──────────────────────────────────────────────
-export const getOrderHistory = (phone, pin) =>
-    request('GET', `/api/orders/history?phone=${encodeURIComponent(phone)}&pin=${encodeURIComponent(pin)}`)
+export const getOrderHistory = (token) =>
+    request('GET', '/api/orders/history', null, null, token)

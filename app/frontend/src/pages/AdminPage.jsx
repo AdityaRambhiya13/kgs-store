@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
-import { listOrders, updateStatus, listCustomers } from '../api'
+import { listOrders, updateStatus, listCustomers, adminLogin } from '../api'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function AdminPage() {
     const [password, setPassword] = useState('')
+    const [adminToken, setAdminToken] = useState(null)
     const [authed, setAuthed] = useState(false)
     const [activeTab, setActiveTab] = useState('orders') // 'orders' | 'customers'
     const [orders, setOrders] = useState([])
@@ -17,14 +18,14 @@ export default function AdminPage() {
 
     // Poll orders every 8s when authed
     useEffect(() => {
-        if (!authed) return
+        if (!authed || !adminToken) return
         const fetchData = async () => {
             try {
                 if (activeTab === 'orders') {
-                    const data = await listOrders(password)
+                    const data = await listOrders(adminToken)
                     setOrders(Array.isArray(data) ? data : [])
                 } else if (activeTab === 'customers') {
-                    const data = await listCustomers(password)
+                    const data = await listCustomers(adminToken)
                     setCustomers(Array.isArray(data) ? data : [])
                 }
             } catch (err) { }
@@ -32,13 +33,17 @@ export default function AdminPage() {
         fetchData()
         intervalRef.current = setInterval(fetchData, 8000)
         return () => clearInterval(intervalRef.current)
-    }, [authed, password, activeTab])
+    }, [authed, adminToken, activeTab])
 
     const handleLogin = async () => {
         setLoginError('')
         setLoading(true)
         try {
-            const data = await listOrders(password)
+            const res = await adminLogin(password)
+            const token = res.access_token
+            setAdminToken(token)
+
+            const data = await listOrders(token)
             setOrders(Array.isArray(data) ? data : [])
             setAuthed(true)
         } catch (e) {
@@ -52,7 +57,7 @@ export default function AdminPage() {
         setTogglingToken(token)
         setCardError(prev => ({ ...prev, [token]: '' }))
         try {
-            await updateStatus(token, nextStatus, password, otp)
+            await updateStatus(token, nextStatus, adminToken, otp)
             setOrders(prev => prev.map(o => o.token === token ? { ...o, status: nextStatus } : o))
         } catch (e) {
             setCardError(prev => ({ ...prev, [token]: e.message || 'Update failed' }))
@@ -93,6 +98,7 @@ export default function AdminPage() {
                             value={password}
                             onChange={e => setPassword(e.target.value)}
                             onKeyDown={e => e.key === 'Enter' && handleLogin()}
+                            autoComplete="off"
                             style={{ marginBottom: 12 }}
                         />
                         {loginError && <p className="error-msg" style={{ marginBottom: 8 }}>⚠️ {loginError}</p>}
@@ -144,7 +150,7 @@ export default function AdminPage() {
                 <button
                     className="btn btn-ghost"
                     style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', fontSize: 13 }}
-                    onClick={() => { setAuthed(false); setOrders([]); setCustomers([]); clearInterval(intervalRef.current) }}
+                    onClick={() => { setAuthed(false); setAdminToken(null); setPassword(''); setOrders([]); setCustomers([]); clearInterval(intervalRef.current) }}
                 >
                     Sign Out
                 </button>
@@ -414,6 +420,7 @@ function OrderCard({ order, onAction, toggling, expanded, onExpand, inlineError 
                                         value={otpInput}
                                         onChange={(e) => setOtpInput(e.target.value)}
                                         maxLength={4}
+                                        autoComplete="off"
                                     />
                                 )}
                             </AnimatePresence>

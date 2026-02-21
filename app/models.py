@@ -4,14 +4,27 @@
 from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional, Literal
 import re
+import html
+
+def sanitize_text(v: str) -> str:
+    if not isinstance(v, str): return v
+    # Strip HTML tags
+    v = re.sub(r'<[^>]*>', '', v)
+    # Escape characters
+    return html.escape(v.strip())
 
 
 class CartItem(BaseModel):
     """Single item in the cart."""
     product_id: int = Field(..., gt=0, description="Product ID")
-    name: str = Field(..., min_length=1, max_length=100)
+    name: str = Field(..., min_length=1, max_length=100, description="Product name")
     price: float = Field(..., gt=0)
     quantity: int = Field(..., ge=1, le=100, description="Quantity in kg (1-100)")
+
+    @field_validator("name")
+    @classmethod
+    def sanitize_name(cls, v):
+        return sanitize_text(v)
 
 
 class OrderCreate(BaseModel):
@@ -20,7 +33,14 @@ class OrderCreate(BaseModel):
     items: List[CartItem] = Field(..., min_length=1, description="Cart items")
     total: float = Field(..., gt=0, description="Total bill amount")
     delivery_type: Literal["pickup", "delivery"] = "pickup"
-    address: Optional[str] = Field(None, description="Delivery address if delivery_type is delivery")
+    address: Optional[str] = Field(None, max_length=500, description="Delivery address if delivery_type is delivery")
+
+    @field_validator("address")
+    @classmethod
+    def validate_address(cls, v):
+        if v is not None:
+            return sanitize_text(v)
+        return v
 
     @field_validator("phone")
     @classmethod
@@ -50,7 +70,14 @@ class OrderOut(BaseModel):
 class OrderStatusUpdate(BaseModel):
     """Request body for updating order status."""
     status: str = Field(..., pattern=r"^(Processing|Ready for Pickup|Delivered)$")
-    otp: Optional[str] = Field(None, description="4-digit OTP required for home delivery")
+    otp: Optional[str] = Field(None, min_length=4, max_length=4, pattern=r"^\d{4}$", description="4-digit OTP required for home delivery")
+
+    @field_validator("status", "otp")
+    @classmethod
+    def sanitize_inputs(cls, v):
+        if v is not None:
+            return sanitize_text(v)
+        return v
 
 
 class ProductOut(BaseModel):

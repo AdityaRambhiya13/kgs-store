@@ -7,11 +7,17 @@ import json
 import time
 from typing import List
 from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager
+from datetime import datetime, timedelta
 
 import bcrypt
+import jwt
 import uvicorn
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request, Depends
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from pydantic import BaseModel
 from dotenv import load_dotenv
 
 from database import (
@@ -32,18 +38,51 @@ rate_limit_store: dict = {}
 RATE_LIMIT  = int(os.getenv("RATE_LIMIT", "60"))
 RATE_WINDOW = 60
 
-def check_rate_limit(request: Request):
+def check_rate_limit(request: Request, limit: int = RATE_LIMIT, window: int = RATE_WINDOW, scope: str = "global"):
     client_ip = request.client.host if request.client else "unknown"
+    key = f"{client_ip}:{scope}"
     now = time.time()
-    if client_ip not in rate_limit_store:
-        rate_limit_store[client_ip] = []
-    rate_limit_store[client_ip] = [t for t in rate_limit_store[client_ip] if now - t < RATE_WINDOW]
-    if len(rate_limit_store[client_ip]) >= RATE_LIMIT:
+    if key not in rate_limit_store:
+        rate_limit_store[key] = []
+    rate_limit_store[key] = [t for t in rate_limit_store[key] if now - t < window]
+    if len(rate_limit_store[key]) >= limit:
         raise HTTPException(status_code=429, detail="Too many requests. Please slow down.")
-    rate_limit_store[client_ip].append(now)
+    rate_limit_store[key].append(now)
 
 def verify_admin_password(password: str) -> bool:
     return password == ADMIN_PASSWORD
+
+# ── JWT Authentication ─────────────────────────────────────
+security = HTTPBearer()
+ALGORITHM = "HS256"
+
+def create_access_token(data: dict, expires_delta: timedelta):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + expires_delta
+    to_encode.update({"exp": expire.timestamp()})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+def get_current_admin(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("role") != "admin":
+            raise HTTPException(status_code=403, detail="Not an admin")
+        return payload
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+def get_current_customer(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("role") != "customer":
+            raise HTTPException(status_code=403, detail="Not a customer")
+        return payload
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 def _clean_phone(phone: str) -> str:
     """Strip +91, spaces, dashes. Return 10-digit number."""
@@ -80,6 +119,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    # Log the full exception internally, return generic error to client
+    import traceback
+    print(f"CRITICAL UNHANDLED ERROR: {exc}\n{traceback.format_exc()}")
+    return JSONResponse(status_code=500, content={"detail": "Something went wrong. Please try again later."})
+
 # ── Products ──────────────────────────────────────────────
 
 @app.get("/api/products", response_model=List[ProductOut])
@@ -91,7 +137,9 @@ def list_products(request: Request):
 
 @app.post("/api/orders")
 def place_order(order: OrderCreate, request: Request):
-    check_rate_limit(request)
+    # Business logic protection: max 3 orders per 10 minutes per IP
+    check_rate_limit(request, limit=3, window=600, scope="orders")
+    
     products = {p["id"]: p for p in get_all_products()}
     validated_items = []
     calculated_total = 0.0
@@ -117,38 +165,23 @@ def place_order(order: OrderCreate, request: Request):
     return {"token": token, "total": calculated_total, "status": "Processing", "delivery_type": order.delivery_type, "address": order.address}
 
 @app.get("/api/orders")
-def list_orders(password: str, request: Request):
+def list_orders(request: Request, admin: dict = Depends(get_current_admin)):
     check_rate_limit(request)
-    if not verify_admin_password(password):
-        raise HTTPException(status_code=401, detail="Invalid admin password")
     return get_all_orders()
 
 @app.get("/api/admin/customers", response_model=List[CustomerOut])
-def list_customers(password: str, request: Request):
+def list_customers(request: Request, admin: dict = Depends(get_current_admin)):
     check_rate_limit(request)
-    if not verify_admin_password(password):
-        raise HTTPException(status_code=401, detail="Invalid admin password")
     return get_all_customers()
 
 # ── IMPORTANT: /history and /auth routes MUST be before /{token} ──
 
 @app.get("/api/orders/history")
-def order_history(phone: str, pin: str, request: Request):
-    """Get all orders for a customer — requires phone + PIN."""
+def order_history(request: Request, customer: dict = Depends(get_current_customer)):
+    """Get all orders for a customer — requires JWT auth."""
     check_rate_limit(request)
-    cleaned = _clean_phone(phone)
-    if not re.match(r"^[6-9]\d{9}$", cleaned):
-        raise HTTPException(status_code=422, detail="Invalid phone number")
-    customer = get_customer(cleaned)
-    if not customer:
-        raise HTTPException(status_code=404, detail="No account found for this number. Place an order first and set a PIN.")
-    try:
-        valid = bcrypt.checkpw(pin.encode(), customer["pin_hash"].encode())
-    except Exception:
-        raise HTTPException(status_code=500, detail="Authentication error")
-    if not valid:
-        raise HTTPException(status_code=401, detail="Incorrect PIN. Please try again.")
-    return get_orders_by_phone(cleaned)
+    phone = customer.get("phone")
+    return get_orders_by_phone(phone)
 
 @app.get("/api/orders/{token}")
 def get_order(token: str, request: Request):
@@ -159,11 +192,9 @@ def get_order(token: str, request: Request):
     return order
 
 @app.patch("/api/orders/{token}/status")
-async def toggle_order_status(token: str, body: OrderStatusUpdate, password: str, request: Request):
+async def toggle_order_status(token: str, body: OrderStatusUpdate, request: Request, admin: dict = Depends(get_current_admin)):
     check_rate_limit(request)
-    if not verify_admin_password(password):
-        raise HTTPException(status_code=401, detail="Invalid admin password")
-
+    
     if body.status == "Delivered":
         order = get_order_by_token(token)
         if not order:
@@ -186,20 +217,33 @@ async def toggle_order_status(token: str, body: OrderStatusUpdate, password: str
     await manager.broadcast_all({"type": "status_update", "token": token, "status": body.status})
     return {"token": token, "status": body.status}
 
-# ── Customer PIN Auth ─────────────────────────────────────
+# ── Authentication ─────────────────────────────────────
+
+class AdminLoginInfo(BaseModel):
+    password: str
+
+@app.post("/api/auth/admin-login")
+def admin_login(body: AdminLoginInfo, request: Request):
+    check_rate_limit(request, limit=5, window=60, scope="admin-auth")
+    if not verify_admin_password(body.password):
+        raise HTTPException(status_code=401, detail="Invalid admin password")
+    token = create_access_token({"role": "admin"}, timedelta(hours=12))
+    return {"access_token": token, "role": "admin"}
+
 
 @app.post("/api/auth/setup-pin")
 def setup_pin(body: CustomerAuth, request: Request):
     """Set or update a customer's 4-digit security PIN."""
-    check_rate_limit(request)
+    check_rate_limit(request, limit=5, window=60, scope="auth")
     pin_hash = bcrypt.hashpw(body.pin.encode(), bcrypt.gensalt()).decode()
     create_or_update_customer(body.phone, pin_hash)
-    return {"message": "PIN set successfully", "phone": body.phone}
+    token = create_access_token({"role": "customer", "phone": body.phone}, timedelta(days=7))
+    return {"message": "PIN set successfully", "phone": body.phone, "access_token": token}
 
 @app.post("/api/auth/verify")
 def verify_customer(body: CustomerAuth, request: Request):
-    """Verify phone + PIN. Returns verified status."""
-    check_rate_limit(request)
+    """Verify phone + PIN. Returns verified status and JWT token."""
+    check_rate_limit(request, limit=5, window=60, scope="auth")
     customer = get_customer(body.phone)
     if not customer:
         raise HTTPException(status_code=404, detail="No account found for this number")
@@ -209,7 +253,9 @@ def verify_customer(body: CustomerAuth, request: Request):
         raise HTTPException(status_code=500, detail="Authentication error")
     if not valid:
         raise HTTPException(status_code=401, detail="Incorrect PIN")
-    return {"verified": True, "phone": body.phone}
+        
+    token = create_access_token({"role": "customer", "phone": body.phone}, timedelta(days=7))
+    return {"verified": True, "phone": body.phone, "access_token": token}
 
 # ── WebSocket ─────────────────────────────────────────────
 

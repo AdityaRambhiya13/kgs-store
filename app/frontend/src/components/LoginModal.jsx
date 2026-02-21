@@ -105,6 +105,7 @@ export default function LoginModal() {
                                     value={phone}
                                     onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
                                     style={{ flex: 1 }}
+                                    autoComplete="off"
                                     autoFocus
                                 />
                             </div>
@@ -120,6 +121,7 @@ export default function LoginModal() {
                                 placeholder="••••"
                                 value={pin}
                                 onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
+                                autoComplete="off"
                                 style={{ letterSpacing: '8px', textAlign: 'center', fontSize: '24px' }}
                             />
                         </div>

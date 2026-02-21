@@ -20,7 +20,7 @@ export default function OrderHistoryPage() {
         const fetchHistory = async () => {
             setLoading(true)
             try {
-                const data = await getOrderHistory(user.phone, user.pin)
+                const data = await getOrderHistory(user.token)
                 setOrders(Array.isArray(data) ? data : [])
             } catch (e) {
                 setError(e.message || 'Failed to load order history')
