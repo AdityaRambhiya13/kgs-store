@@ -2279,4 +2279,16 @@ p {
   .hero-visual {
     display: none;
   }
+
+  .navbar-inner {
+    flex-wrap: wrap;
+  }
+
+  .nav-search {
+    order: 3;
+    width: 100%;
+    max-width: 100%;
+    margin: 8px 0 0 0;
+    flex: 0 0 100%;
+  }
 }
