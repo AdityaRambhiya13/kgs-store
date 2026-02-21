@@ -7,9 +7,14 @@ import { useAuth } from '../AuthContext'
 
 export default function ConfirmPage() {
     const { cartItems, cartTotal, clearCart } = useCart()
-    const { user } = useAuth()
+    const { user, login } = useAuth()
     const navigate = useNavigate()
-    const [address, setAddress] = useState('')
+
+    const [phone, setPhone] = useState(user?.phone || '')
+    const [name, setName] = useState(user?.name || '')
+    const [pin, setPin] = useState('')
+
+    const [address, setAddress] = useState(user?.address || '')
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
     const [apiError, setApiError] = useState('')
@@ -25,10 +30,19 @@ export default function ConfirmPage() {
         if (cartItems.length === 0 && !orderPlaced) navigate('/')
     }, [cartItems, navigate, orderPlaced])
 
+    // Sync user data if they log in or load late
+    useEffect(() => {
+        if (user) {
+            if (!phone) setPhone(user.phone)
+            if (user.name && !name) setName(user.name)
+            if (user.address && !address) setAddress(user.address)
+        }
+    }, [user])
+
     const handleSubmit = async () => {
-        if (!user || (!user.phone)) {
-            setError('User not authenticated')
-            return
+        if (!user) {
+            if (phone.length !== 10) { setError('Valid 10-digit phone required'); return }
+            if (pin.length !== 4) { setError('4-digit Security PIN required'); return }
         }
         if (deliveryType === 'delivery' && !address.trim()) {
             setError('Please provide a delivery address.')
@@ -39,6 +53,10 @@ export default function ConfirmPage() {
         setLoading(true)
 
         try {
+            if (!user) {
+                await login(phone, pin, name, address)
+            }
+
             const items = cartItems.map(item => ({
                 product_id: item.id,
                 name: item.name,
@@ -131,20 +149,79 @@ export default function ConfirmPage() {
                                 </div>
                             </div>
 
-                            <div className="confirm-phone-group">
-                                <label>Mobile Number</label>
-                                <div className="phone-input-row" style={{ opacity: 0.7 }}>
-                                    <span className="phone-prefix">🇮🇳 +91</span>
-                                    <input
-                                        className="input"
-                                        type="tel"
-                                        value={user?.phone || ''}
-                                        disabled
-                                        autoComplete="off"
-                                        style={{ backgroundColor: 'var(--bg-card)' }}
-                                    />
+                            {!user ? (
+                                <>
+                                    <div className="confirm-phone-group">
+                                        <label>Mobile Number</label>
+                                        <div className="phone-input-row" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                                            <span className="phone-prefix" style={{ padding: '0 12px' }}>🇮🇳 +91</span>
+                                            <input
+                                                className="input"
+                                                type="tel"
+                                                inputMode="numeric"
+                                                maxLength={10}
+                                                value={phone}
+                                                onChange={e => {
+                                                    setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))
+                                                    if (error) setError('')
+                                                }}
+                                                placeholder="9876543210"
+                                                style={{ border: 'none', background: 'transparent', boxShadow: 'none' }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="confirm-phone-group" style={{ marginTop: 12 }}>
+                                        <label>Name (Optional for returning users)</label>
+                                        <input
+                                            className="input"
+                                            type="text"
+                                            value={name}
+                                            onChange={e => {
+                                                setName(e.target.value)
+                                                if (error) setError('')
+                                            }}
+                                            placeholder="John Doe"
+                                        />
+                                    </div>
+
+                                    <div className="confirm-phone-group" style={{ marginTop: 12 }}>
+                                        <label>Security PIN (4-digits)</label>
+                                        <input
+                                            className="input"
+                                            type="password"
+                                            inputMode="numeric"
+                                            maxLength={4}
+                                            value={pin}
+                                            onChange={e => {
+                                                setPin(e.target.value.replace(/\D/g, '').slice(0, 4))
+                                                if (error) setError('')
+                                            }}
+                                            placeholder="••••"
+                                        />
+                                        <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                                            Used to secure your orders. New users will be automatically registered.
+                                        </p>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="confirm-phone-group">
+                                    <label>Logged in as</label>
+                                    <div className="phone-input-row" style={{ opacity: 0.7 }}>
+                                        <span className="phone-prefix">🇮🇳 +91</span>
+                                        <input
+                                            className="input"
+                                            type="tel"
+                                            value={user.phone}
+                                            disabled
+                                            style={{ backgroundColor: 'var(--bg-card)' }}
+                                        />
+                                    </div>
+                                    <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>
+                                        Welcome back, {user.name || 'User'}!
+                                    </p>
                                 </div>
-                            </div>
+                            )}
 
                             {/* Address Input */}
                             <AnimatePresence>
@@ -154,7 +231,7 @@ export default function ConfirmPage() {
                                         initial={{ opacity: 0, height: 0 }}
                                         animate={{ opacity: 1, height: 'auto' }}
                                         exit={{ opacity: 0, height: 0 }}
-                                        style={{ overflow: 'hidden' }}
+                                        style={{ overflow: 'hidden', marginTop: 12 }}
                                     >
                                         <label htmlFor="address-input">Delivery Address</label>
                                         <textarea
@@ -166,7 +243,7 @@ export default function ConfirmPage() {
                                                 setAddress(e.target.value)
                                                 if (error) setError('')
                                             }}
-                                            rows={3}
+                                            rows={2}
                                             autoComplete="off"
                                             style={{ resize: 'vertical' }}
                                         />
@@ -174,19 +251,19 @@ export default function ConfirmPage() {
                                 )}
                             </AnimatePresence>
 
-                            {error && <p className="error-msg">⚠️ {error}</p>}
+                            {error && <p className="error-msg" style={{ marginTop: 12 }}>⚠️ {error}</p>}
 
                             {/* Submit */}
                             <motion.button
                                 className="btn btn-primary"
-                                style={{ width: '100%', justifyContent: 'center', fontSize: 16, padding: '15px', marginBottom: 12 }}
+                                style={{ width: '100%', justifyContent: 'center', fontSize: 16, padding: '15px', marginBottom: 12, marginTop: 16 }}
                                 onClick={handleSubmit}
-                                disabled={loading || (deliveryType === 'delivery' && !address.trim())}
+                                disabled={loading}
                                 whileTap={{ scale: 0.97 }}
                             >
                                 {loading ? (
-                                    <><span className="spinner spinner-sm" /> Placing Order...</>
-                                ) : '🎉 Place Order'}
+                                    <><span className="spinner spinner-sm" /> Processing...</>
+                                ) : '🎉 Proceed with Order'}
                             </motion.button>
 
                             {apiError && (

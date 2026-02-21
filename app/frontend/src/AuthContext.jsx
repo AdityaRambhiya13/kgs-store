@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { verifyPin, setupPin } from './api';
+import { loginRegister } from './api';
 
 const AuthContext = createContext();
 
@@ -10,34 +10,26 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Init from local storage
-        const storedPhone = localStorage.getItem('kgsPhone');
-        const storedToken = localStorage.getItem('kgsToken');
+        const phone = localStorage.getItem('kgsPhone');
+        const token = localStorage.getItem('kgsToken');
+        const name = localStorage.getItem('kgsName');
+        const address = localStorage.getItem('kgsAddress');
 
-        if (storedPhone && storedToken) {
-            setUser({ phone: storedPhone, token: storedToken });
+        if (phone && token) {
+            setUser({ phone, token, name, address });
         }
         setLoading(false);
     }, []);
 
-    const login = async (phone, pin) => {
+    const login = async (phone, pin, name = null, address = null) => {
         try {
-            const res = await verifyPin(phone, pin);
+            const res = await loginRegister(phone, pin, name, address);
             localStorage.setItem('kgsPhone', phone);
             localStorage.setItem('kgsToken', res.access_token);
-            setUser({ phone, token: res.access_token });
-            return true;
-        } catch (error) {
-            throw error;
-        }
-    };
+            if (res.name) localStorage.setItem('kgsName', res.name);
+            if (res.address) localStorage.setItem('kgsAddress', res.address);
 
-    const signup = async (phone, pin) => {
-        try {
-            const res = await setupPin(phone, pin);
-            localStorage.setItem('kgsPhone', phone);
-            localStorage.setItem('kgsToken', res.access_token);
-            setUser({ phone, token: res.access_token });
+            setUser({ phone, token: res.access_token, name: res.name, address: res.address });
             return true;
         } catch (error) {
             throw error;
@@ -47,12 +39,14 @@ export const AuthProvider = ({ children }) => {
     const logout = () => {
         localStorage.removeItem('kgsPhone');
         localStorage.removeItem('kgsToken');
+        localStorage.removeItem('kgsName');
+        localStorage.removeItem('kgsAddress');
         setUser(null);
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
-            {children}
+        <AuthContext.Provider value={{ user, loading, login, logout }}>
+            {!loading && children}
         </AuthContext.Provider>
     );
 };

@@ -4,13 +4,15 @@
 const BASE = import.meta.env.VITE_API_URL || ''
 
 async function request(method, path, body = null, signal = null, token = null) {
+    const defaultToken = localStorage.getItem('kgsToken')
+    const activeToken = token || defaultToken
     const opts = {
         method,
         headers: { 'Content-Type': 'application/json' },
         cache: 'no-store'
     }
-    if (token) {
-        opts.headers['Authorization'] = `Bearer ${token}`
+    if (activeToken) {
+        opts.headers['Authorization'] = `Bearer ${activeToken}`
     }
     if (body) opts.body = JSON.stringify(body)
     if (signal) opts.signal = signal
@@ -40,11 +42,13 @@ export const updateStatus = (token, status, adminToken, otp = null) =>
     request('PATCH', `/api/orders/${token}/status`, { status, ...(otp && { otp }) }, null, adminToken)
 
 // ── Auth ───────────────────────────────────────────────────────
-export const setupPin = (phone, pin) =>
-    request('POST', '/api/auth/setup-pin', { phone: `+91${phone}`, pin })
-
-export const verifyPin = (phone, pin) =>
-    request('POST', '/api/auth/verify', { phone: `+91${phone}`, pin })
+export const loginRegister = (phone, pin, name, address) =>
+    request('POST', '/api/auth/login-register', {
+        phone: `+91${phone}`,
+        pin: String(pin),
+        ...(name && { name }),
+        ...(address && { address })
+    })
 
 // ── Order History ──────────────────────────────────────────────
 export const getOrderHistory = (token) =>

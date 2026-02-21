@@ -57,11 +57,13 @@ def init_db():
         )
     """)
 
-    # ── Customers table (PIN auth) ────────────────────────
+    # ── Customers table (OTP auth) ────────────────────────
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS customers (
             phone TEXT PRIMARY KEY,
-            pin_hash TEXT NOT NULL,
+            name TEXT,
+            address TEXT,
+            pin_hash TEXT,
             created_at TEXT NOT NULL
         )
     """)
@@ -81,6 +83,8 @@ def init_db():
         ("orders", "address",       "TEXT"),
         ("orders", "delivery_otp",  "TEXT"),
         ("products", "base_name",   "TEXT NOT NULL DEFAULT ''"),
+        ("customers", "name",       "TEXT"),
+        ("customers", "address",    "TEXT"),
     ]
     for table, col, defn in migrations:
         try:
@@ -171,7 +175,7 @@ def get_all_products():
     _products_cache_time = now
     return _products_cache
 
-# ── Customer PIN auth ─────────────────────────────────────
+# ── Customer OTP auth ─────────────────────────────────────
 
 def get_customer(phone: str):
     """Fetch customer record by phone."""
@@ -180,20 +184,42 @@ def get_customer(phone: str):
     conn.close()
     return dict(row) if row else None
 
-def create_or_update_customer(phone: str, pin_hash: str):
-    """Insert or replace customer PIN."""
+def create_or_update_customer(phone: str, name: str = None, address: str = None, pin_hash: str = None):
+    """Insert or update customer details."""
     conn = get_connection()
-    conn.execute(
-        "INSERT OR REPLACE INTO customers (phone, pin_hash, created_at) VALUES (?, ?, ?)",
-        (phone, pin_hash, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-    )
+    existing = get_customer(phone)
+    if existing:
+        # Update existing
+        if name or address or pin_hash:
+            query = "UPDATE customers SET "
+            params = []
+            if name:
+                query += "name = ?, "
+                params.append(name)
+            if address:
+                query += "address = ?, "
+                params.append(address)
+            if pin_hash:
+                query += "pin_hash = ?, "
+                params.append(pin_hash)
+            
+            query = query.rstrip(', ')
+            query += " WHERE phone = ?"
+            params.append(phone)
+            conn.execute(query, tuple(params))
+    else:
+        # Insert new
+        conn.execute(
+            "INSERT INTO customers (phone, name, address, pin_hash, created_at) VALUES (?, ?, ?, ?, ?)",
+            (phone, name, address, pin_hash, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        )
     conn.commit()
     conn.close()
 
 def get_all_customers():
     """Fetch all signed-up customers."""
     conn = get_connection()
-    rows = conn.execute("SELECT phone, created_at FROM customers ORDER BY created_at DESC").fetchall()
+    rows = conn.execute("SELECT phone, name, address, created_at FROM customers ORDER BY created_at DESC").fetchall()
     conn.close()
     return [dict(row) for row in rows]
 

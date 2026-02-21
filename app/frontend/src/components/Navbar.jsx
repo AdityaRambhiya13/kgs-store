@@ -18,8 +18,9 @@ export default function Navbar({ searchQuery, onSearchChange }) {
         <nav className="navbar">
             <div className="navbar-inner">
                 {/* Logo */}
-                <span className="nav-logo" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
+                <span className="nav-logo" onClick={() => navigate('/')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span className="nav-logo-text gradient-text" style={{ fontSize: '22px' }}>Ketan General Stores</span>
+                    <span style={{ fontSize: '10px', background: 'var(--primary)', color: 'white', padding: '2px 6px', borderRadius: '4px', opacity: 0.6 }}>v4-OTP</span>
                 </span>
 
                 {/* Search Bar - only show if searchQuery is provided (customer side) */}

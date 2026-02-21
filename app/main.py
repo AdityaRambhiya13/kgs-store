@@ -8,12 +8,14 @@ import time
 from typing import List, Optional
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
+import hashlib
 
 import bcrypt
 import jwt
 import uvicorn
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request, Depends
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
@@ -27,7 +29,7 @@ from database import (
     get_all_orders, get_order_by_token, update_order_status, mark_delivered,
     get_orders_by_phone, get_customer, create_or_update_customer, get_all_customers,
 )
-from models import OrderCreate, OrderOut, OrderStatusUpdate, ProductOut, OTPRequest, OTPVerifyRequest, CustomerOut
+from models import OrderCreate, OrderOut, OrderStatusUpdate, ProductOut, OTPRequest, OTPVerifyRequest, CustomerOut, LoginRegisterRequest
 from websocket import manager
 
 load_dotenv()
@@ -44,8 +46,17 @@ try:
             print(f"🔧 Initializing Firebase Admin from path: {service_account_json}")
             cred = credentials.Certificate(service_account_json)
     else:
-        print("🔧 Initializing Firebase Admin from local file (firebase-adminsdk.json)...")
-        cred = credentials.Certificate("firebase-adminsdk.json")
+        # Try local path first, then app/ path
+        cert_path = "firebase-adminsdk.json"
+        if not os.path.exists(cert_path):
+            cert_path = os.path.join("app", "firebase-adminsdk.json")
+            
+        if os.path.exists(cert_path):
+            print(f"🔧 Initializing Firebase Admin from file: {cert_path}")
+            cred = credentials.Certificate(cert_path)
+        else:
+            print("⚠️ Firebase Admin config not found (checked firebase-adminsdk.json and app/firebase-adminsdk.json)")
+            raise FileNotFoundError("firebase-adminsdk.json not found")
     
     firebase_admin.initialize_app(cred)
 except Exception as e:
@@ -91,6 +102,9 @@ def get_current_admin(credentials: HTTPAuthorizationCredentials = Depends(securi
         raise HTTPException(status_code=401, detail="Token expired")
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid token")
+
+def hash_pin(pin: str) -> str:
+    return hashlib.sha256(pin.encode()).hexdigest()
 
 def get_current_customer(credentials: HTTPAuthorizationCredentials = Depends(security)):
     try:
@@ -213,42 +227,30 @@ def admin_login(body: AdminLoginInfo, request: Request):
     token = create_access_token({"role": "admin"}, timedelta(hours=12))
     return {"access_token": token, "role": "admin"}
 
-otp_store = {}
-
-@app.post("/api/auth/send-otp")
-def send_otp(body: OTPRequest, request: Request):
+@app.post("/api/auth/login-register")
+def login_register(body: LoginRegisterRequest, request: Request):
     check_rate_limit(request, limit=5, window=60, scope="auth")
-    customer = get_customer(body.phone)
-    return {"message": "Success", "is_new": customer is None}
-
-@app.post("/api/auth/verify-otp")
-def verify_otp(body: OTPVerifyRequest, request: Request):
-    check_rate_limit(request, limit=5, window=60, scope="auth")
-    verified_phone = None
-
-    if body.firebase_token:
-        try:
-            decoded_token = firebase_auth.verify_id_token(body.firebase_token)
-            verified_phone = decoded_token.get('phone_number')
-            if verified_phone and verified_phone.startswith("+91"):
-                verified_phone = verified_phone[3:]
-        except Exception as e:
-            raise HTTPException(status_code=401, detail=f"Verification failed: {e}")
     
-    if not verified_phone:
-        raise HTTPException(status_code=400, detail="No valid token")
-
-    customer = get_customer(verified_phone)
-    if not customer:
+    customer = get_customer(body.phone)
+    pin_hash = hash_pin(body.pin)
+    
+    if customer:
+        if customer.get("pin_hash") != pin_hash:
+            raise HTTPException(status_code=401, detail="Incorrect PIN")
+        # Update name/address if provided
+        if body.name or body.address:
+            create_or_update_customer(body.phone, body.name, body.address)
+            customer = get_customer(body.phone)
+    else:
         if not body.name or not body.address:
-             raise HTTPException(status_code=400, detail="Details required")
-        create_or_update_customer(verified_phone, body.name, body.address)
-        customer = get_customer(verified_phone)
+             raise HTTPException(status_code=400, detail="Name and Address are required for new users")
+        create_or_update_customer(body.phone, body.name, body.address, pin_hash)
+        customer = get_customer(body.phone)
         
-    token = create_access_token({"role": "customer", "phone": verified_phone}, timedelta(days=7))
+    token = create_access_token({"role": "customer", "phone": body.phone}, timedelta(days=7))
     return {
         "verified": True,
-        "phone": verified_phone,
+        "phone": body.phone,
         "name": customer.get("name"),
         "address": customer.get("address"),
         "access_token": token
@@ -269,6 +271,24 @@ async def websocket_endpoint(websocket: WebSocket, channel: str):
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+# ── Serve Frontend ────────────────────────────────────────
+# Check if dist exists and mount it
+DIST_PATH = os.path.join(os.path.dirname(__file__), "frontend", "dist")
+if os.path.exists(DIST_PATH):
+    print(f"📦 Serving frontend from: {DIST_PATH}")
+    app.mount("/assets", StaticFiles(directory=os.path.join(DIST_PATH, "assets")), name="assets")
+    
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        # If the path starts with api/, it's a 404 for API
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="API endpoint not found")
+        
+        index_file = os.path.join(DIST_PATH, "index.html")
+        return FileResponse(index_file)
+else:
+    print(f"⚠️ Frontend dist not found at {DIST_PATH}. Frontend will not be served.")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

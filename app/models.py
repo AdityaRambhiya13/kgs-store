@@ -115,3 +115,24 @@ class CustomerOut(BaseModel):
     name: Optional[str] = None
     address: Optional[str] = None
     created_at: str
+
+class LoginRegisterRequest(BaseModel):
+    phone: str = Field(..., description="10-digit Indian phone number")
+    pin: str = Field(..., min_length=4, max_length=4, pattern=r"^\d{4}$", description="4-digit security PIN")
+    name: Optional[str] = Field(None, max_length=100)
+    address: Optional[str] = Field(None, max_length=500)
+
+    @field_validator("phone")
+    @classmethod
+    def validate_phone(cls, v):
+        cleaned = re.sub(r"[\s\-\+]", "", v)
+        if cleaned.startswith("91") and len(cleaned) == 12:
+            cleaned = cleaned[2:]
+        if not re.match(r"^[6-9]\d{9}$", cleaned):
+            raise ValueError("Invalid Indian phone number")
+        return cleaned
+        
+    @field_validator("name", "address")
+    @classmethod
+    def sanitize_inputs(cls, v):
+        return sanitize_text(v) if v else v

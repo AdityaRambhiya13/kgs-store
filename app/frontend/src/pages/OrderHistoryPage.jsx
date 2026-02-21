@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getOrderHistory } from '../api'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -32,8 +32,6 @@ export default function OrderHistoryPage() {
         fetchHistory()
     }, [user, navigate])
 
-
-
     const statusColor = s => s === 'Delivered' ? '#10B981' : s === 'Ready for Pickup' ? '#F59E0B' : 'var(--primary)'
     const statusEmoji = s => s === 'Delivered' ? '✅' : s === 'Ready for Pickup' ? '🟡' : '⏳'
 
@@ -60,7 +58,7 @@ export default function OrderHistoryPage() {
                     {loading && <div style={{ textAlign: 'center', margin: '20px 0' }}><span className="spinner spinner-sm" /> Loading orders...</div>}
 
                     <AnimatePresence>
-                        {orders !== null && (
+                        {orders !== null && !loading && (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                                 {orders.length === 0 ? (
                                     <div className="empty-state" style={{ marginTop: 0 }}>

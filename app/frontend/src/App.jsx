@@ -8,8 +8,6 @@ import AdminPage from './pages/AdminPage'
 import OrderHistoryPage from './pages/OrderHistoryPage'
 import CartPanel from './components/CartPanel'
 import Navbar from './components/Navbar'
-import LoginModal from './components/LoginModal'
-
 export default function App() {
   const location = useLocation()
   const [searchQuery, setSearchQuery] = useState('')
@@ -17,7 +15,6 @@ export default function App() {
   return (
     <>
       <Navbar searchQuery={searchQuery} onSearchChange={setSearchQuery} />
-      <LoginModal />
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
           <Route path="/" element={<CatalogPage searchQuery={searchQuery} />} />
