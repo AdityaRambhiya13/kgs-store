@@ -1,19 +1,37 @@
 import { motion } from 'framer-motion'
 
-// Dynamic generation of steps based on deliveryType
-const getSteps = (deliveryType) => [
-    { id: 1, emoji: '✅', label: 'Order Placed' },
-    { id: 2, emoji: '🛒', label: 'Being Prepared' },
-    { id: 3, emoji: deliveryType === 'delivery' ? '🚚' : '🎉', label: deliveryType === 'delivery' ? 'Out for Delivery' : 'Ready' },
-]
-
-function getStepState(stepId, status) {
-    if (status === 'Ready for Pickup') {
-        return stepId <= 3 ? 'done' : 'pending'
+const getSteps = (deliveryType) => {
+    const steps = [
+        { id: 1, emoji: '✅', label: 'Order Placed' },
+        { id: 2, emoji: '🛒', label: 'Being Prepared' },
+        { id: 3, emoji: deliveryType === 'delivery' ? '🚚' : '🎉', label: deliveryType === 'delivery' ? 'Out for Delivery' : 'Ready' },
+    ]
+    if (deliveryType === 'delivery') {
+        steps.push({ id: 4, emoji: '🏠', label: 'Delivered' })
     }
-    // Processing
+    return steps
+}
+
+function getStepState(stepId, status, deliveryType) {
+    if (status === 'Delivered') {
+        return 'done'
+    }
+    if (status === 'Ready for Pickup') {
+        if (deliveryType === 'delivery') {
+            if (stepId <= 2) return 'done'
+            if (stepId === 3) return 'active'
+            return 'pending'
+        } else {
+            return stepId <= 3 ? 'done' : 'pending'
+        }
+    }
+    if (status === 'Processing') {
+        if (stepId === 1) return 'done'
+        if (stepId === 2) return 'active'
+        return 'pending'
+    }
+    // Cancelled
     if (stepId === 1) return 'done'
-    if (stepId === 2) return 'active'
     return 'pending'
 }
 
@@ -23,7 +41,7 @@ export default function ProgressSteps({ status, deliveryType }) {
     return (
         <div className="progress-steps">
             {steps.map((step, idx) => {
-                const state = getStepState(step.id, status)
+                const state = getStepState(step.id, status, deliveryType)
                 return (
                     <div key={step.id} style={{ display: 'flex', alignItems: 'flex-start', flex: 1 }}>
                         <div className="progress-step">
