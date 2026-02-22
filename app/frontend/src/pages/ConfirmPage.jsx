@@ -64,7 +64,7 @@ export default function ConfirmPage() {
         setCancelLoading(true)
         try {
             const res = await cancelOrder(token)
-            setCancelMsg(res.message)
+            navigate('/', { state: { cancelMessage: res.message } })
         } catch (err) {
             setCancelMsg(err.message || 'Failed to cancel order')
         } finally {

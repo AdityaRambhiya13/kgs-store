@@ -12,8 +12,8 @@ export default function ProductCard({ product, onClick }) {
     const minPrice = Math.min(...variants.map(v => v.price))
     const maxPrice = Math.max(...variants.map(v => v.price))
     const priceLabel = minPrice === maxPrice
-        ? `₹${minPrice}`
-        : `₹${minPrice} – ₹${maxPrice}`
+        ? `₹${minPrice} / kg`
+        : `₹${minPrice} – ₹${maxPrice} / kg`
     const variantCount = variants.length
     const emoji = CATEGORY_EMOJI[product.category] || '🌾'
 
@@ -37,31 +37,29 @@ export default function ProductCard({ product, onClick }) {
                         e.target.src = 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=300&fit=crop'
                     }}
                 />
-                {/* Dark gradient overlay */}
                 <div className="pc-overlay" />
-
-                {/* Category badge top-left */}
-                <span className="pc-cat-badge">{emoji} {product.category}</span>
-
-                {/* Name + price pinned bottom-left on image */}
-                <div className="pc-img-info">
-                    <div className="pc-name">{product.base_name || product.name}</div>
-                    <div className="pc-price">{priceLabel}<span>/kg</span></div>
-                </div>
             </div>
 
-            {/* Bottom strip */}
-            <div className="pc-footer">
-                <span className="pc-variants-label">
-                    {variantCount} {variantCount === 1 ? 'price' : 'prices'}
-                </span>
+            {/* Body */}
+            <div className="product-card-body">
+                <div className="product-card-title-row">
+                    <span className="product-card-emoji">{emoji}</span>
+                    <h3 className="product-card-name">{product.base_name || product.name}</h3>
+                </div>
+                <div className="product-card-subtitle">{product.category}</div>
+
+                <div className="product-card-footer">
+                    <div className="product-price">
+                        {priceLabel}
+                    </div>
+                </div>
+
                 <motion.button
-                    className="pc-choose-btn"
+                    className="btn btn-primary"
                     onClick={e => { e.stopPropagation(); onClick() }}
-                    variants={{ hover: { paddingRight: '22px', background: 'var(--secondary)' } }}
-                    whileTap={{ scale: 0.93 }}
+                    whileTap={{ scale: 0.95 }}
                 >
-                    Choose →
+                    {variantCount > 1 ? `Choose options (${variantCount})` : 'Select'}
                 </motion.button>
             </div>
         </motion.div>

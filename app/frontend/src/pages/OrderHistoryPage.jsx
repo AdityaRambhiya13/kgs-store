@@ -39,9 +39,7 @@ export default function OrderHistoryPage() {
         setCancelLoading(token)
         try {
             const res = await cancelOrder(token)
-            setCancelMsg(res.message)
-            // update local state
-            setOrders(prev => prev.map(o => o.token === token ? { ...o, status: 'Cancelled' } : o))
+            navigate('/', { state: { cancelMessage: res.message } })
         } catch (err) {
             setCancelMsg(err.message || 'Failed to cancel order')
         } finally {

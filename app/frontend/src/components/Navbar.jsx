@@ -18,9 +18,8 @@ export default function Navbar({ searchQuery, onSearchChange }) {
         <nav className="navbar">
             <div className="navbar-inner">
                 {/* Logo */}
-                <span className="nav-logo" onClick={() => navigate('/')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span className="nav-logo-text gradient-text" style={{ fontSize: '22px' }}>Ketan General Stores</span>
-                    <span style={{ fontSize: '10px', background: 'var(--primary)', color: 'white', padding: '2px 6px', borderRadius: '4px', opacity: 0.6 }}>v4-OTP</span>
+                <span className="nav-logo" onClick={() => navigate('/')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', minWidth: 'max-content' }}>
+                    <span className="nav-logo-text gradient-text" style={{ fontSize: '20px' }}>Ketan General Stores</span>
                 </span>
 
                 {/* Search Bar - only show if searchQuery is provided (customer side) */}
@@ -38,30 +37,31 @@ export default function Navbar({ searchQuery, onSearchChange }) {
 
                 {/* Actions */}
                 <div className="nav-actions">
-                    <button className="icon-btn" onClick={toggleTheme} title="Toggle dark mode">🌙</button>
-                    {user && (
-                        <>
+                    <button className="icon-btn" onClick={toggleTheme} title="Toggle dark mode" style={{ fontSize: '18px' }}>🌙</button>
+                    <button className="icon-btn" title="Help" style={{ fontSize: '18px' }}>❓</button>
+
+                    {user ? (
+                        <div className="nav-dropdown-wrapper">
                             <motion.button
                                 className="icon-btn"
                                 whileTap={{ scale: 0.88 }}
                                 onClick={() => navigate('/orders')}
-                                title="My Orders"
-                            >
-                                📋
-                            </motion.button>
-                            <motion.button
-                                className="icon-btn"
-                                whileTap={{ scale: 0.88 }}
-                                onClick={() => {
-                                    logout()
-                                    navigate('/')
-                                }}
-                                title="Logout"
+                                title="My Profile / Orders"
                                 style={{ fontSize: '18px' }}
                             >
-                                🚪
+                                👤
                             </motion.button>
-                        </>
+                        </div>
+                    ) : (
+                        <motion.button
+                            className="icon-btn"
+                            whileTap={{ scale: 0.88 }}
+                            onClick={() => navigate('/login')}
+                            title="Login"
+                            style={{ fontSize: '18px' }}
+                        >
+                            👤
+                        </motion.button>
                     )}
                     <motion.button
                         className="nav-cart-btn"
