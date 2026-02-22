@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getOrderHistory } from '../api'
+import { getOrderHistory, cancelOrder } from '../api'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../AuthContext'
 
@@ -10,6 +10,8 @@ export default function OrderHistoryPage() {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
     const navigate = useNavigate()
+    const [cancelLoading, setCancelLoading] = useState(null) // store token being cancelled
+    const [cancelMsg, setCancelMsg] = useState('')
 
     useEffect(() => {
         if (!user) {
@@ -31,6 +33,21 @@ export default function OrderHistoryPage() {
 
         fetchHistory()
     }, [user, navigate])
+
+    const handleCancel = async (e, token) => {
+        e.stopPropagation() // prevent navigating
+        setCancelLoading(token)
+        try {
+            const res = await cancelOrder(token)
+            setCancelMsg(res.message)
+            // update local state
+            setOrders(prev => prev.map(o => o.token === token ? { ...o, status: 'Cancelled' } : o))
+        } catch (err) {
+            setCancelMsg(err.message || 'Failed to cancel order')
+        } finally {
+            setCancelLoading(null)
+        }
+    }
 
     const statusColor = s => s === 'Delivered' ? '#10B981' : s === 'Ready for Pickup' ? '#F59E0B' : 'var(--primary)'
     const statusEmoji = s => s === 'Delivered' ? '✅' : s === 'Ready for Pickup' ? '🟡' : '⏳'
@@ -55,6 +72,11 @@ export default function OrderHistoryPage() {
                     </div>
 
                     {error && <p className="error-msg" style={{ marginTop: 8 }}>⚠️ {error}</p>}
+                    {cancelMsg && (
+                        <div style={{ padding: '12px', background: cancelMsg.includes('blocked') ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)', borderRadius: '8px', marginBottom: '16px', color: cancelMsg.includes('blocked') ? 'var(--danger)' : 'var(--accent)', fontSize: '13px', textAlign: 'center' }}>
+                            {cancelMsg}
+                        </div>
+                    )}
                     {loading && <div style={{ textAlign: 'center', margin: '20px 0' }}><span className="spinner spinner-sm" /> Loading orders...</div>}
 
                     <AnimatePresence>
@@ -95,6 +117,18 @@ export default function OrderHistoryPage() {
                                                         </div>
                                                     </div>
                                                 </div>
+                                                {order.status === 'Processing' && (
+                                                    <div style={{ marginTop: 12, textAlign: 'right' }}>
+                                                        <button
+                                                            className="btn btn-danger"
+                                                            style={{ fontSize: 12, padding: '6px 12px' }}
+                                                            onClick={(e) => handleCancel(e, order.token)}
+                                                            disabled={cancelLoading === order.token}
+                                                        >
+                                                            {cancelLoading === order.token ? 'Cancelling...' : 'Cancel Order'}
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </motion.div>
                                         ))}
                                     </div>

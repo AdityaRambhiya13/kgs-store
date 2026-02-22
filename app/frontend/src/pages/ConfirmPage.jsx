@@ -1,21 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../CartContext'
-import { placeOrder, checkPhone } from '../api'
+import { placeOrder, cancelOrder } from '../api'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../AuthContext'
 
 export default function ConfirmPage() {
     const { cartItems, cartTotal, clearCart } = useCart()
-    const { user, login } = useAuth()
+    const { user } = useAuth()
     const navigate = useNavigate()
 
-    const [phone, setPhone] = useState(user?.phone || '')
-    const [name, setName] = useState(user?.name || '')
-    const [pin, setPin] = useState('')
-    const [isExistingUser, setIsExistingUser] = useState(false)
-
-    const [address, setAddress] = useState(user?.address || '')
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
     const [apiError, setApiError] = useState('')
@@ -25,48 +19,20 @@ export default function ConfirmPage() {
     const [step, setStep] = useState('form')   // 'form' | 'success'
     const [token, setToken] = useState('')
     const [deliveryOtp, setDeliveryOtp] = useState('')
+    const [cancelLoading, setCancelLoading] = useState(false)
+    const [cancelMsg, setCancelMsg] = useState('')
 
     // If cart is empty, redirect home (unless order was just placed)
     useEffect(() => {
         if (cartItems.length === 0 && !orderPlaced) navigate('/')
     }, [cartItems, navigate, orderPlaced])
 
-    // Sync user data if they log in or load late
-    useEffect(() => {
-        if (user) {
-            if (!phone) setPhone(user.phone)
-            if (user.name && !name) setName(user.name)
-            if (user.address && !address) setAddress(user.address)
-        }
-    }, [user])
-
-    // Check if phone belongs to an existing user dynamically
-    useEffect(() => {
-        if (!user && phone.length === 10) {
-            checkPhone(phone).then(res => setIsExistingUser(res.exists)).catch(() => { })
-        } else {
-            setIsExistingUser(false)
-        }
-    }, [phone, user])
-
     const handleSubmit = async () => {
-        if (!user) {
-            if (phone.length !== 10) { setError('Valid 10-digit phone required'); return }
-            if (!isExistingUser && pin.length !== 4) { setError('4-digit Security PIN required for new accounts'); return }
-        }
-        if (deliveryType === 'delivery' && !address.trim()) {
-            setError('Please provide a delivery address.')
-            return
-        }
         setError('')
         setApiError('')
         setLoading(true)
 
         try {
-            if (!user) {
-                await login(phone, pin, name, address)
-            }
-
             const items = cartItems.map(item => ({
                 product_id: item.id,
                 name: item.name,
@@ -74,13 +40,9 @@ export default function ConfirmPage() {
                 quantity: item.quantity,
             }))
             const payload = {
-                phone: `+91${user?.phone || phone}`,
                 items,
                 total: cartTotal,
                 delivery_type: deliveryType
-            }
-            if (deliveryType === 'delivery') {
-                payload.address = address
             }
 
             const result = await placeOrder(payload)
@@ -98,11 +60,21 @@ export default function ConfirmPage() {
         }
     }
 
+    const handleCancel = async () => {
+        setCancelLoading(true)
+        try {
+            const res = await cancelOrder(token)
+            setCancelMsg(res.message)
+        } catch (err) {
+            setCancelMsg(err.message || 'Failed to cancel order')
+        } finally {
+            setCancelLoading(false)
+        }
+    }
+
     return (
         <div>
-
             <div className="confirm-page">
-
                 {/* ── Step 1: Order Form ── */}
                 <AnimatePresence mode="wait">
                     {step === 'form' && (
@@ -159,128 +131,25 @@ export default function ConfirmPage() {
                                 </div>
                             </div>
 
-                            {!user ? (
-                                <>
-                                    <div className="confirm-phone-group">
-                                        <label>Mobile Number</label>
-                                        <div className="phone-input-row" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                                            <span className="phone-prefix" style={{ padding: '0 12px' }}>🇮🇳 +91</span>
-                                            <input
-                                                className="input"
-                                                type="tel"
-                                                inputMode="numeric"
-                                                maxLength={10}
-                                                value={phone}
-                                                onChange={e => {
-                                                    setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))
-                                                    if (error) setError('')
-                                                }}
-                                                placeholder="9876543210"
-                                                style={{ border: 'none', background: 'transparent', boxShadow: 'none' }}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <AnimatePresence>
-                                        {!isExistingUser && phone.length === 10 && (
-                                            <motion.div
-                                                initial={{ opacity: 0, height: 0 }}
-                                                animate={{ opacity: 1, height: 'auto' }}
-                                                exit={{ opacity: 0, height: 0 }}
-                                            >
-                                                <div className="confirm-phone-group" style={{ marginTop: 12 }}>
-                                                    <label>Name (Optional)</label>
-                                                    <input
-                                                        className="input"
-                                                        type="text"
-                                                        value={name}
-                                                        onChange={e => {
-                                                            setName(e.target.value)
-                                                            if (error) setError('')
-                                                        }}
-                                                        placeholder="John Doe"
-                                                    />
-                                                </div>
-
-                                                <div className="confirm-phone-group" style={{ marginTop: 12 }}>
-                                                    <label>Set Security PIN (4-digits)</label>
-                                                    <input
-                                                        className="input"
-                                                        type="password"
-                                                        inputMode="numeric"
-                                                        maxLength={4}
-                                                        value={pin}
-                                                        onChange={e => {
-                                                            setPin(e.target.value.replace(/\D/g, '').slice(0, 4))
-                                                            if (error) setError('')
-                                                        }}
-                                                        placeholder="••••"
-                                                    />
-                                                    <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                                                        Used to secure your orders. Creating a new account automatically.
-                                                    </p>
-                                                </div>
-                                            </motion.div>
-                                        )}
-                                        {isExistingUser && (
-                                            <motion.div
-                                                initial={{ opacity: 0, height: 0 }}
-                                                animate={{ opacity: 1, height: 'auto' }}
-                                                exit={{ opacity: 0, height: 0 }}
-                                            >
-                                                <div style={{ marginTop: 12, padding: '12px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '8px', color: 'var(--primary)', fontSize: 13, border: '1px solid rgba(59, 130, 246, 0.2)' }}>
-                                                    ✅ Account detected. You can proceed with your order immediately.
-                                                </div>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </>
-                            ) : (
-                                <div className="confirm-phone-group">
-                                    <label>Logged in as</label>
-                                    <div className="phone-input-row" style={{ opacity: 0.7 }}>
-                                        <span className="phone-prefix">🇮🇳 +91</span>
-                                        <input
-                                            className="input"
-                                            type="tel"
-                                            value={user.phone}
-                                            disabled
-                                            style={{ backgroundColor: 'var(--bg-card)' }}
-                                        />
-                                    </div>
-                                    <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>
-                                        Welcome back, {user.name || 'User'}!
-                                    </p>
+                            <div className="confirm-phone-group" style={{ marginBottom: 16 }}>
+                                <label>Delivering To</label>
+                                <div style={{ background: 'var(--bg-surface)', padding: '12px', borderRadius: '8px', fontSize: 14 }}>
+                                    <strong>{user.name || 'User'}</strong>
+                                    <br />
+                                    📞 {user.phone}
+                                    {deliveryType === 'delivery' && (
+                                        <>
+                                            <br />
+                                            📍 {user.address || 'No address registered'}
+                                        </>
+                                    )}
                                 </div>
-                            )}
-
-                            {/* Address Input */}
-                            <AnimatePresence>
-                                {deliveryType === 'delivery' && (
-                                    <motion.div
-                                        className="confirm-phone-group"
-                                        initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: 'auto' }}
-                                        exit={{ opacity: 0, height: 0 }}
-                                        style={{ overflow: 'hidden', marginTop: 12 }}
-                                    >
-                                        <label htmlFor="address-input">Delivery Address</label>
-                                        <textarea
-                                            id="address-input"
-                                            className={`input ${error && !address.trim() ? 'error' : ''}`}
-                                            placeholder="Enter your full address"
-                                            value={address}
-                                            onChange={e => {
-                                                setAddress(e.target.value)
-                                                if (error) setError('')
-                                            }}
-                                            rows={2}
-                                            autoComplete="off"
-                                            style={{ resize: 'vertical' }}
-                                        />
-                                    </motion.div>
+                                {deliveryType === 'delivery' && !user.address && (
+                                    <p style={{ fontSize: 12, color: 'var(--danger)', marginTop: 4 }}>
+                                        ⚠️ Please update your address in profile to use home delivery.
+                                    </p>
                                 )}
-                            </AnimatePresence>
+                            </div>
 
                             {error && <p className="error-msg" style={{ marginTop: 12 }}>⚠️ {error}</p>}
 
@@ -289,7 +158,7 @@ export default function ConfirmPage() {
                                 className="btn btn-primary"
                                 style={{ width: '100%', justifyContent: 'center', fontSize: 16, padding: '15px', marginBottom: 12, marginTop: 16 }}
                                 onClick={handleSubmit}
-                                disabled={loading}
+                                disabled={loading || (deliveryType === 'delivery' && !user.address)}
                                 whileTap={{ scale: 0.97 }}
                             >
                                 {loading ? (
@@ -340,14 +209,31 @@ export default function ConfirmPage() {
                                 </p>
                             </div>
 
-                            <motion.button
-                                className="btn btn-primary"
-                                style={{ width: '100%', justifyContent: 'center', padding: '15px', marginTop: 20 }}
-                                onClick={() => navigate(`/status/${token}`)}
-                                whileTap={{ scale: 0.97 }}
-                            >
-                                🎯 Track Order Now
-                            </motion.button>
+                            {cancelMsg && (
+                                <div style={{ padding: '12px', background: cancelMsg.includes('blocked') ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)', borderRadius: '8px', marginBottom: '16px', color: cancelMsg.includes('blocked') ? 'var(--danger)' : 'var(--accent)', fontSize: '14px', textAlign: 'center' }}>
+                                    {cancelMsg}
+                                </div>
+                            )}
+
+                            <div style={{ display: 'flex', gap: '12px' }}>
+                                <motion.button
+                                    className="btn btn-danger"
+                                    style={{ flex: 1, justifyContent: 'center', padding: '15px' }}
+                                    onClick={handleCancel}
+                                    disabled={cancelLoading || cancelMsg.includes('cancelled')}
+                                    whileTap={{ scale: 0.97 }}
+                                >
+                                    {cancelLoading ? 'Cancelling...' : 'Cancel Order'}
+                                </motion.button>
+                                <motion.button
+                                    className="btn btn-primary"
+                                    style={{ flex: 1, justifyContent: 'center', padding: '15px' }}
+                                    onClick={() => navigate(`/status/${token}`)}
+                                    whileTap={{ scale: 0.97 }}
+                                >
+                                    🎯 Track Order
+                                </motion.button>
+                            </div>
                         </motion.div>
                     )}
                 </AnimatePresence>

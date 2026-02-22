@@ -35,8 +35,9 @@ from database import (
     init_db, get_all_products, create_order,
     get_all_orders, get_order_by_token, update_order_status, mark_delivered,
     get_orders_by_phone, get_customer, create_or_update_customer, get_all_customers,
+    get_customer_by_email, update_customer_cancels
 )
-from models import OrderCreate, OrderOut, OrderStatusUpdate, ProductOut, OTPRequest, OTPVerifyRequest, CustomerOut, LoginRegisterRequest
+from models import OrderCreate, OrderOut, OrderStatusUpdate, ProductOut, OTPRequest, OTPVerifyRequest, CustomerOut, SignupRequest, LoginRequest, ForgotPinRequest, ResetPinRequest
 from websocket import manager
 
 # Initialize Firebase Admin
@@ -151,13 +152,34 @@ async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 @app.get("/api/products", response_model=List[ProductOut])
-def list_products(request: Request):
+def list_products(request: Request, customer: dict = Depends(get_current_customer)):
     check_rate_limit(request)
     return get_all_products()
 
 @app.post("/api/orders")
-def place_order(order: OrderCreate, request: Request):
+def place_order(order: OrderCreate, request: Request, customer_token: dict = Depends(get_current_customer)):
     check_rate_limit(request, limit=3, window=600, scope="orders")
+    
+    phone = customer_token.get("phone")
+    db_cust = get_customer(phone)
+    if not db_cust:
+        raise HTTPException(status_code=404, detail="Customer not found")
+        
+    try:
+        cancels = json.loads(db_cust.get("cancel_timestamps", "[]"))
+    except:
+        cancels = []
+        
+    now = datetime.now()
+    one_hour_ago = now - timedelta(hours=1)
+    recent_cancels = [c for c in cancels if datetime.fromisoformat(c) > one_hour_ago]
+    
+    if len(recent_cancels) >= 3:
+        raise HTTPException(status_code=403, detail="Too many cancellations. You are blocked from placing new orders for 1 hour.")
+        
+    if len(recent_cancels) != len(cancels):
+        update_customer_cancels(phone, json.dumps(recent_cancels))
+
     products = {p["id"]: p for p in get_all_products()}
     validated_items = []
     calculated_total = 0.0
@@ -179,7 +201,7 @@ def place_order(order: OrderCreate, request: Request):
     if abs(calculated_total - order.total) > 1.0:
         raise HTTPException(status_code=400, detail="Total mismatch")
 
-    token = create_order(order.phone, validated_items, calculated_total, order.delivery_type, order.address)
+    token = create_order(phone, validated_items, calculated_total, order.delivery_type, db_cust["address"])
     return {"token": token, "total": calculated_total, "status": "Processing"}
 
 @app.get("/api/orders")
@@ -198,12 +220,52 @@ def order_history(request: Request, customer: dict = Depends(get_current_custome
     return get_orders_by_phone(customer.get("phone"))
 
 @app.get("/api/orders/{token}")
-def get_order(token: str, request: Request):
+def get_order(token: str, request: Request, customer: dict = Depends(get_current_customer)):
     check_rate_limit(request)
     order = get_order_by_token(token)
-    if not order:
+    if not order or order["phone"] != customer.get("phone"):
         raise HTTPException(status_code=404, detail="Order not found")
     return order
+
+@app.post("/api/orders/{token}/cancel")
+async def cancel_order(token: str, request: Request, customer: dict = Depends(get_current_customer)):
+    check_rate_limit(request)
+    phone = customer.get("phone")
+    order = get_order_by_token(token)
+    
+    if not order or order["phone"] != phone:
+        raise HTTPException(status_code=404, detail="Order not found")
+        
+    if order["status"] != "Processing":
+        raise HTTPException(status_code=400, detail="Only 'Processing' orders can be cancelled")
+        
+    updated = update_order_status(token, "Cancelled")
+    if not updated:
+        raise HTTPException(status_code=500, detail="Failed to cancel order")
+        
+    db_cust = get_customer(phone)
+    try:
+        cancels = json.loads(db_cust.get("cancel_timestamps", "[]"))
+    except:
+        cancels = []
+        
+    now = datetime.now()
+    cancels.append(now.isoformat())
+    
+    one_hour_ago = now - timedelta(hours=1)
+    recent_cancels = [c for c in cancels if datetime.fromisoformat(c) > one_hour_ago]
+    
+    update_customer_cancels(phone, json.dumps(recent_cancels))
+    
+    await manager.broadcast_all({"type": "status_update", "token": token, "status": "Cancelled"})
+    
+    count = len(recent_cancels)
+    if count >= 3:
+        msg = f"Order cancelled. You have cancelled {count} of 3 times allowed in this hour. You are now blocked for 1 hour."
+    else:
+        msg = f"Order cancelled. You have cancelled {count} of 3 times allowed in this hour."
+        
+    return {"token": token, "status": "Cancelled", "message": msg}
 
 @app.patch("/api/orders/{token}/status")
 async def toggle_order_status(token: str, body: OrderStatusUpdate, request: Request, admin: dict = Depends(get_current_admin)):
@@ -232,34 +294,96 @@ def admin_login(body: AdminLoginInfo, request: Request):
     token = create_access_token({"role": "admin"}, timedelta(hours=12))
     return {"access_token": token, "role": "admin"}
 
-@app.post("/api/auth/login-register")
-def login_register(body: LoginRegisterRequest, request: Request):
-    check_rate_limit(request, limit=5, window=60, scope="auth")
+@app.get("/api/auth/me")
+def get_me(request: Request, customer: dict = Depends(get_current_customer)):
+    # Needed for checkout page to prefill data/address
+    db_cust = get_customer(customer.get("phone"))
+    if not db_cust:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    return {"phone": db_cust["phone"], "name": db_cust["name"], "email": db_cust["email"], "address": db_cust["address"]}
+
+@app.get("/api/auth/check-phone")
+def check_phone(phone: str, request: Request):
+    # Optional endpoint to check if phone exists
+    cleaned = re.sub(r"[\s\-\+]", "", phone)
+    if cleaned.startswith("91") and len(cleaned) == 12:
+        cleaned = cleaned[2:]
     
-    customer = get_customer(body.phone)
-    pin_hash = hash_pin(body.pin)
+    customer = get_customer(cleaned)
+    return {"exists": bool(customer)}
+
+@app.post("/api/auth/signup")
+def signup(body: SignupRequest, request: Request):
+    check_rate_limit(request, limit=5, window=60, scope="auth-signup")
     
-    if customer:
-        if customer.get("pin_hash") != pin_hash:
-            raise HTTPException(status_code=401, detail="Incorrect PIN")
-        # Update name/address if provided
-        if body.name or body.address:
-            create_or_update_customer(body.phone, body.name, body.address)
-            customer = get_customer(body.phone)
-    else:
-        if not body.name or not body.address:
-             raise HTTPException(status_code=400, detail="Name and Address are required for new users")
-        create_or_update_customer(body.phone, body.name, body.address, pin_hash)
-        customer = get_customer(body.phone)
+    if get_customer(body.phone):
+        raise HTTPException(status_code=400, detail="Phone number is already registered")
+    if get_customer_by_email(body.email):
+        raise HTTPException(status_code=400, detail="Email is already registered")
         
-    token = create_access_token({"role": "customer", "phone": body.phone}, timedelta(days=7))
+    pin_hash = hash_pin(body.pin)
+    create_or_update_customer(body.phone, body.name, body.email, body.address, pin_hash)
+    
+    return {"message": "Signup successful. You can now log in."}
+
+@app.post("/api/auth/login")
+def login(body: LoginRequest, request: Request):
+    check_rate_limit(request, limit=5, window=60, scope="auth-login")
+    
+    customer = get_customer(body.identifier)
+    if not customer:
+        customer = get_customer_by_email(body.identifier)
+        
+    if not customer:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    if customer["pin_hash"] != hash_pin(body.pin):
+        raise HTTPException(status_code=401, detail="Incorrect PIN")
+        
+    token = create_access_token({"role": "customer", "phone": customer["phone"]}, timedelta(days=7))
     return {
         "verified": True,
-        "phone": body.phone,
+        "phone": customer["phone"],
         "name": customer.get("name"),
         "address": customer.get("address"),
         "access_token": token
     }
+
+@app.post("/api/auth/forgot-pin")
+def forgot_pin(body: ForgotPinRequest, request: Request):
+    check_rate_limit(request, limit=3, window=60, scope="forgot-pin")
+    customer = get_customer_by_email(body.email)
+    if not customer:
+        # Don't reveal if email exists or not
+        return {"message": "If this email is registered, a password reset link has been generated."}
+        
+    reset_token = create_access_token({"role": "reset", "phone": customer["phone"]}, timedelta(minutes=15))
+    print(f"\n[EMAIL MOCK] Password Reset Link generated for {body.email}: \nhttp://localhost:5173/reset-pin?token={reset_token}\n")
+    
+    return {"message": "If this email is registered, a password reset link has been generated. Check console for MOCK link."}
+
+@app.post("/api/auth/reset-pin")
+def reset_pin(body: ResetPinRequest, request: Request):
+    check_rate_limit(request, limit=3, window=60, scope="reset-pin")
+    try:
+        payload = jwt.decode(body.token, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("role") != "reset":
+            raise HTTPException(status_code=400, detail="Invalid token type")
+        phone = payload.get("phone")
+        
+        db_cust = get_customer(phone)
+        if not db_cust:
+            raise HTTPException(status_code=404, detail="Customer not found")
+            
+        new_pin_hash = hash_pin(body.new_pin)
+        create_or_update_customer(phone, pin_hash=new_pin_hash)
+        
+        return {"message": "PIN reset successful. You can now log in."}
+        
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=400, detail="Reset token expired")
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid token")
 
 @app.websocket("/ws/{channel}")
 async def websocket_endpoint(websocket: WebSocket, channel: str):

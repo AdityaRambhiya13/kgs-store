@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, Suspense, lazy } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getOrder } from '../api'
+import { getOrder, cancelOrder } from '../api'
 import ProgressSteps from '../components/ProgressSteps'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -33,6 +33,8 @@ export default function StatusPage() {
     const [expanded, setExpanded] = useState(false)
     const celebratedRef = useRef(false)
     const intervalRef = useRef(null)
+    const [cancelLoading, setCancelLoading] = useState(false)
+    const [cancelMsg, setCancelMsg] = useState('')
 
     const fetchOrder = async (signal) => {
         try {
@@ -63,6 +65,19 @@ export default function StatusPage() {
             controller.abort()
         }
     }, [token])
+
+    const handleCancel = async () => {
+        setCancelLoading(true)
+        try {
+            const res = await cancelOrder(token)
+            setCancelMsg(res.message)
+            fetchOrder() // Refresh order
+        } catch (err) {
+            setCancelMsg(err.message || 'Failed to cancel order')
+        } finally {
+            setCancelLoading(false)
+        }
+    }
 
     const isReady = order?.status === 'Ready for Pickup'
     const isDelivered = order?.status === 'Delivered'
@@ -210,12 +225,32 @@ export default function StatusPage() {
                         </div>
                     )}
 
+                    {/* Cancel logic */}
+                    {order?.status === 'Processing' && (
+                        <div style={{ marginBottom: 16, width: '100%' }}>
+                            {cancelMsg && (
+                                <div style={{ padding: '12px', background: cancelMsg.includes('blocked') ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)', borderRadius: '8px', marginBottom: '12px', color: cancelMsg.includes('blocked') ? 'var(--danger)' : 'var(--accent)', fontSize: '13px', textAlign: 'center' }}>
+                                    {cancelMsg}
+                                </div>
+                            )}
+                            <motion.button
+                                className="btn btn-danger"
+                                onClick={handleCancel}
+                                disabled={cancelLoading}
+                                whileTap={{ scale: 0.96 }}
+                                style={{ width: '100%', padding: '12px', fontSize: 15 }}
+                            >
+                                {cancelLoading ? 'Cancelling...' : 'Cancel Order'}
+                            </motion.button>
+                        </div>
+                    )}
+
                     {/* New order button */}
                     <motion.button
                         className="btn btn-primary"
                         onClick={() => navigate('/')}
                         whileTap={{ scale: 0.96 }}
-                        style={{ padding: '14px 40px', fontSize: 15 }}
+                        style={{ width: '100%', padding: '14px', fontSize: 15 }}
                     >
                         🛍️ New Order
                     </motion.button>

@@ -62,8 +62,10 @@ def init_db():
         CREATE TABLE IF NOT EXISTS customers (
             phone TEXT PRIMARY KEY,
             name TEXT,
+            email TEXT,
             address TEXT,
             pin_hash TEXT,
+            cancel_timestamps TEXT DEFAULT '[]',
             created_at TEXT NOT NULL
         )
     """)
@@ -84,7 +86,9 @@ def init_db():
         ("orders", "delivery_otp",  "TEXT"),
         ("products", "base_name",   "TEXT NOT NULL DEFAULT ''"),
         ("customers", "name",       "TEXT"),
+        ("customers", "email",      "TEXT"),
         ("customers", "address",    "TEXT"),
+        ("customers", "cancel_timestamps", "TEXT DEFAULT '[]'"),
     ]
     for table, col, defn in migrations:
         try:
@@ -184,18 +188,28 @@ def get_customer(phone: str):
     conn.close()
     return dict(row) if row else None
 
-def create_or_update_customer(phone: str, name: str = None, address: str = None, pin_hash: str = None):
+def get_customer_by_email(email: str):
+    """Fetch customer record by email."""
+    conn = get_connection()
+    row = conn.execute("SELECT * FROM customers WHERE email = ?", (email,)).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def create_or_update_customer(phone: str, name: str = None, email: str = None, address: str = None, pin_hash: str = None):
     """Insert or update customer details."""
     conn = get_connection()
     existing = get_customer(phone)
     if existing:
         # Update existing
-        if name or address or pin_hash:
+        if name or email or address or pin_hash:
             query = "UPDATE customers SET "
             params = []
             if name:
                 query += "name = ?, "
                 params.append(name)
+            if email:
+                query += "email = ?, "
+                params.append(email)
             if address:
                 query += "address = ?, "
                 params.append(address)
@@ -210,9 +224,16 @@ def create_or_update_customer(phone: str, name: str = None, address: str = None,
     else:
         # Insert new
         conn.execute(
-            "INSERT INTO customers (phone, name, address, pin_hash, created_at) VALUES (?, ?, ?, ?, ?)",
-            (phone, name, address, pin_hash, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            "INSERT INTO customers (phone, name, email, address, pin_hash, cancel_timestamps, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (phone, name, email, address, pin_hash, "[]", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         )
+    conn.commit()
+    conn.close()
+
+def update_customer_cancels(phone: str, cancel_timestamps_json: str):
+    """Update a customer's cancel timestamps JSON string."""
+    conn = get_connection()
+    conn.execute("UPDATE customers SET cancel_timestamps = ? WHERE phone = ?", (cancel_timestamps_json, phone))
     conn.commit()
     conn.close()
 
@@ -253,16 +274,28 @@ def create_order(phone: str, items: list, total: float, delivery_type: str = "pi
     return token
 
 def get_all_orders():
-    """Fetch all orders (newest first)."""
+    """Fetch all orders (newest first) with customer names."""
     conn = get_connection()
-    rows = conn.execute("SELECT * FROM orders ORDER BY id DESC").fetchall()
+    query = '''
+        SELECT o.*, c.name as customer_name 
+        FROM orders o 
+        LEFT JOIN customers c ON o.phone = c.phone 
+        ORDER BY o.id DESC
+    '''
+    rows = conn.execute(query).fetchall()
     conn.close()
     return [dict(row) for row in rows]
 
 def get_order_by_token(token: str):
-    """Fetch a single order by token."""
+    """Fetch a single order by token with customer name."""
     conn = get_connection()
-    row = conn.execute("SELECT * FROM orders WHERE token = ?", (token,)).fetchone()
+    query = '''
+        SELECT o.*, c.name as customer_name 
+        FROM orders o 
+        LEFT JOIN customers c ON o.phone = c.phone 
+        WHERE o.token = ?
+    '''
+    row = conn.execute(query, (token,)).fetchone()
     conn.close()
     return dict(row) if row else None
 

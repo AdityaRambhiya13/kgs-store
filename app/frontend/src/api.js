@@ -28,6 +28,8 @@ export const getProducts = (signal) => request('GET', '/api/products', null, sig
 
 export const placeOrder = (data) => request('POST', '/api/orders', data)
 
+export const cancelOrder = (token) => request('POST', `/api/orders/${token}/cancel`)
+
 export const getOrder = (token, signal) => request('GET', `/api/orders/${token}`, null, signal)
 
 export const adminLogin = (password) => request('POST', '/api/auth/admin-login', { password })
@@ -42,16 +44,30 @@ export const updateStatus = (token, status, adminToken, otp = null) =>
     request('PATCH', `/api/orders/${token}/status`, { status, ...(otp && { otp }) }, null, adminToken)
 
 // ── Auth ───────────────────────────────────────────────────────
-export const loginRegister = (phone, pin, name, address) =>
-    request('POST', '/api/auth/login-register', {
+// ── Auth ───────────────────────────────────────────────────────
+export const signup = (phone, pin, name, email, address) =>
+    request('POST', '/api/auth/signup', {
         phone: `+91${phone}`,
-        pin: pin ? String(pin) : undefined,
-        ...(name && { name }),
-        ...(address && { address })
+        pin: String(pin),
+        name,
+        email,
+        address
     })
 
-export const checkPhone = (phone) =>
-    request('GET', `/api/auth/check-phone?phone=${encodeURIComponent(phone)}`)
+export const login = (identifier, pin) =>
+    request('POST', '/api/auth/login', {
+        identifier: identifier.includes('@') ? identifier : `+91${identifier.replace(/\D/g, '').slice(-10)}`,
+        pin: String(pin)
+    })
+
+export const forgotPin = (email) =>
+    request('POST', '/api/auth/forgot-pin', { email })
+
+export const resetPin = (token, new_pin) =>
+    request('POST', '/api/auth/reset-pin', { token, new_pin: String(new_pin) })
+
+export const getProfile = () =>
+    request('GET', '/api/auth/me')
 
 // ── Order History ──────────────────────────────────────────────
 export const getOrderHistory = (token) =>

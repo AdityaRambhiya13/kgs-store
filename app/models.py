@@ -23,31 +23,15 @@ class CartItem(BaseModel):
         return sanitize_text(v)
 
 class OrderCreate(BaseModel):
-    phone: str = Field(..., description="10-digit Indian phone number")
     items: List[CartItem] = Field(..., min_length=1)
     total: float = Field(..., gt=0)
     delivery_type: Literal["pickup", "delivery"] = "pickup"
-    address: Optional[str] = Field(None, max_length=500)
-
-    @field_validator("address")
-    @classmethod
-    def validate_address(cls, v):
-        return sanitize_text(v) if v else v
-
-    @field_validator("phone")
-    @classmethod
-    def validate_phone(cls, v):
-        cleaned = re.sub(r"[\s\-\+]", "", v)
-        if cleaned.startswith("91") and len(cleaned) == 12:
-            cleaned = cleaned[2:]
-        if not re.match(r"^[6-9]\d{9}$", cleaned):
-            raise ValueError("Invalid Indian phone number")
-        return cleaned
 
 class OrderOut(BaseModel):
     id: int
     token: str
     phone: str
+    customer_name: Optional[str] = None
     items_json: str
     status: str
     total: float
@@ -58,7 +42,7 @@ class OrderOut(BaseModel):
     delivered_at: Optional[str] = None
 
 class OrderStatusUpdate(BaseModel):
-    status: str = Field(..., pattern=r"^(Processing|Ready for Pickup|Delivered)$")
+    status: str = Field(..., pattern=r"^(Processing|Ready for Pickup|Delivered|Cancelled)$")
     otp: Optional[str] = Field(None, min_length=4, max_length=4, pattern=r"^\d{4}$")
 
     @field_validator("status", "otp")
@@ -113,14 +97,16 @@ class OTPVerifyRequest(BaseModel):
 class CustomerOut(BaseModel):
     phone: str
     name: Optional[str] = None
+    email: Optional[str] = None
     address: Optional[str] = None
     created_at: str
 
-class LoginRegisterRequest(BaseModel):
+class SignupRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
     phone: str = Field(..., description="10-digit Indian phone number")
+    email: str = Field(..., pattern=r"^\S+@\S+\.\S+$")
+    address: str = Field(..., min_length=1, max_length=500)
     pin: str = Field(..., min_length=4, max_length=4, pattern=r"^\d{4}$", description="4-digit security PIN")
-    name: Optional[str] = Field(None, max_length=100)
-    address: Optional[str] = Field(None, max_length=500)
 
     @field_validator("phone")
     @classmethod
@@ -131,8 +117,29 @@ class LoginRegisterRequest(BaseModel):
         if not re.match(r"^[6-9]\d{9}$", cleaned):
             raise ValueError("Invalid Indian phone number")
         return cleaned
-        
+
     @field_validator("name", "address")
     @classmethod
     def sanitize_inputs(cls, v):
         return sanitize_text(v) if v else v
+
+class LoginRequest(BaseModel):
+    identifier: str = Field(..., description="Phone number or Email")
+    pin: str = Field(..., min_length=4, max_length=4, pattern=r"^\d{4}$", description="4-digit security PIN")
+
+    @field_validator("identifier")
+    @classmethod
+    def validate_identifier(cls, v):
+        cleaned = re.sub(r"[\s\-\+]", "", v)
+        if cleaned.startswith("91") and len(cleaned) == 12:
+            cleaned = cleaned[2:]
+            return cleaned
+        return v.strip().lower()
+
+class ForgotPinRequest(BaseModel):
+    email: str = Field(..., pattern=r"^\S+@\S+\.\S+$")
+
+class ResetPinRequest(BaseModel):
+    token: str = Field(...)
+    new_pin: str = Field(..., min_length=4, max_length=4, pattern=r"^\d{4}$")
+
