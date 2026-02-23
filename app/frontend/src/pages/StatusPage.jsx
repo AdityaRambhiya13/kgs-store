@@ -81,6 +81,7 @@ export default function StatusPage() {
     const isReady = order?.status === 'Ready for Pickup'
     const isDelivered = order?.status === 'Delivered'
     const deliveryType = order?.delivery_type || 'pickup'
+    const deliveryTime = order?.delivery_time || 'same_day'
     let items = []
     try { items = order ? JSON.parse(order.items_json) : [] } catch { }
 
@@ -165,7 +166,7 @@ export default function StatusPage() {
 
                     {/* Delivery badge */}
                     <div className="delivery-badge">
-                        {deliveryType === 'delivery' ? '🚚 Home Delivery' : '🏪 Store Pickup'}
+                        {deliveryType === 'delivery' ? '🚚 Home Delivery' : '🏪 Store Pickup'} ({deliveryTime === 'next_day' ? 'Next Day' : 'Same Day'})
                     </div>
 
                     {/* Status message */}

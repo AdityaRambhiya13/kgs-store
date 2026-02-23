@@ -209,7 +209,7 @@ def place_order(order: OrderCreate, request: Request, customer_token: dict = Dep
         if order.save_as_home:
             create_or_update_customer(phone=phone, address=address_str)
 
-    token = create_order(phone, validated_items, calculated_total, order.delivery_type, address_str)
+    token = create_order(phone, validated_items, calculated_total, order.delivery_type, order.delivery_time, address_str)
     return {"token": token, "total": calculated_total, "status": "Processing"}
 
 @app.get("/api/orders")

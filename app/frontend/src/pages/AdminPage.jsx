@@ -295,6 +295,7 @@ function OrderCard({ order, onAction, toggling, expanded, onExpand, inlineError 
     const isReady = status === 'Ready for Pickup'
     const isDelivered = status === 'Delivered'
     const deliveryType = order.delivery_type || 'pickup'
+    const deliveryTime = order.delivery_time || 'same_day'
 
     let items = []
     try { items = JSON.parse(order.items_json) } catch { }
@@ -347,7 +348,7 @@ function OrderCard({ order, onAction, toggling, expanded, onExpand, inlineError 
                     </div>
                     {/* Delivery badge */}
                     <span className={`admin-delivery-badge ${deliveryType}`}>
-                        {deliveryType === 'delivery' ? '🚚 Home Delivery' : '🏪 Store Pickup'}
+                        {deliveryType === 'delivery' ? '🚚 Home Delivery' : '🏪 Store Pickup'} ({deliveryTime === 'next_day' ? 'Next Day' : 'Same Day'})
                     </span>
                     {deliveryType === 'delivery' && addressObj && (
                         <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8, maxWidth: '280px', lineHeight: 1.4 }}>

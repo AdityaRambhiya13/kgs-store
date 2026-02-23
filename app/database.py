@@ -81,6 +81,7 @@ def init_db():
     # ── Safe column migrations ────────────────────────────
     migrations = [
         ("orders", "delivery_type", "TEXT NOT NULL DEFAULT 'pickup'"),
+        ("orders", "delivery_time", "TEXT NOT NULL DEFAULT 'same_day'"),
         ("orders", "delivered_at",  "TEXT"),
         ("orders", "address",       "TEXT"),
         ("orders", "delivery_otp",  "TEXT"),
@@ -246,7 +247,7 @@ def get_all_customers():
 
 # ── Orders ────────────────────────────────────────────────
 
-def create_order(phone: str, items: list, total: float, delivery_type: str = "pickup", address: str = None) -> str:
+def create_order(phone: str, items: list, total: float, delivery_type: str = "pickup", delivery_time: str = "same_day", address: str = None) -> str:
     """Create a new order and return the generated token."""
     conn = get_connection()
     cursor = conn.cursor()
@@ -265,8 +266,8 @@ def create_order(phone: str, items: list, total: float, delivery_type: str = "pi
     delivery_otp = str(random.randint(1000, 9999)) if delivery_type == "delivery" else None
 
     cursor.execute(
-        "INSERT INTO orders (token, phone, items_json, status, total, timestamp, delivery_type, address, delivery_otp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (token, phone, items_json, "Processing", total, timestamp, delivery_type, address, delivery_otp),
+        "INSERT INTO orders (token, phone, items_json, status, total, timestamp, delivery_type, delivery_time, address, delivery_otp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (token, phone, items_json, "Processing", total, timestamp, delivery_type, delivery_time, address, delivery_otp),
     )
 
     conn.commit()

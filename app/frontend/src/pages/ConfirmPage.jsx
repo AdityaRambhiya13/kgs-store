@@ -15,6 +15,7 @@ export default function ConfirmPage() {
     const [apiError, setApiError] = useState('')
     const [orderPlaced, setOrderPlaced] = useState(false)
     const [deliveryType, setDeliveryType] = useState('pickup')
+    const [deliveryTime, setDeliveryTime] = useState('same_day')
 
     const [step, setStep] = useState('form')   // 'form' | 'success'
     const [token, setToken] = useState('')
@@ -63,7 +64,8 @@ export default function ConfirmPage() {
             const payload = {
                 items,
                 total: cartTotal,
-                delivery_type: deliveryType
+                delivery_type: deliveryType,
+                delivery_time: deliveryTime
             }
 
             if (deliveryType === 'delivery') {
@@ -163,6 +165,28 @@ export default function ConfirmPage() {
                                         type="button"
                                     >
                                         🚚 Home Delivery
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="delivery-toggle" style={{ marginTop: '16px' }}>
+                                <label>Schedule Time</label>
+                                <div className="delivery-options">
+                                    <button
+                                        className={`delivery-option ${deliveryTime === 'same_day' ? 'active' : ''}`}
+                                        onClick={() => setDeliveryTime('same_day')}
+                                        type="button"
+                                        style={{ fontSize: 14 }}
+                                    >
+                                        ⚡ Same Day
+                                    </button>
+                                    <button
+                                        className={`delivery-option ${deliveryTime === 'next_day' ? 'active' : ''}`}
+                                        onClick={() => setDeliveryTime('next_day')}
+                                        type="button"
+                                        style={{ fontSize: 14 }}
+                                    >
+                                        📅 Next Day
                                     </button>
                                 </div>
                             </div>

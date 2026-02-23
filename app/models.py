@@ -34,6 +34,7 @@ class OrderCreate(BaseModel):
     items: List[CartItem] = Field(..., min_length=1)
     total: float = Field(..., gt=0)
     delivery_type: Literal["pickup", "delivery"] = "pickup"
+    delivery_time: Literal["same_day", "next_day"] = "same_day"
     address: Optional[AddressDetail] = None
     save_as_home: bool = False
 
@@ -47,6 +48,7 @@ class OrderOut(BaseModel):
     total: float
     timestamp: str
     delivery_type: str = "pickup"
+    delivery_time: str = "same_day"
     address: Optional[str] = None
     delivery_otp: Optional[str] = None
     delivered_at: Optional[str] = None

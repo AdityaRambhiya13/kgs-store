@@ -103,7 +103,7 @@ export default function OrderHistoryPage() {
                                                     <div>
                                                         <div style={{ fontWeight: 700, fontSize: 15 }}>{order.token}</div>
                                                         <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                                                            {order.timestamp} · {order.delivery_type === 'delivery' ? '🚚 Delivery' : '🏪 Pickup'}
+                                                            {order.timestamp} · {order.delivery_type === 'delivery' ? '🚚 Delivery' : '🏪 Pickup'} ({order.delivery_time === 'next_day' ? 'Next Day' : 'Same Day'})
                                                         </div>
                                                     </div>
                                                     <div style={{ textAlign: 'right' }}>
