@@ -175,6 +175,17 @@ p {
   color: #fff;
 }
 
+.btn-outline {
+  background: transparent;
+  color: var(--primary);
+  border: 2px solid var(--primary);
+}
+
+.btn-outline:hover {
+  background: var(--primary-glow);
+  transform: translateY(-1px);
+}
+
 .card {
   background: var(--bg-card);
   border-radius: var(--radius);
@@ -1101,12 +1112,14 @@ p {
 .step-done .progress-step-circle {
   background: var(--secondary);
   border-color: var(--secondary);
+  color: #fff;
   box-shadow: 0 0 0 4px var(--secondary-glow);
 }
 
 .step-active .progress-step-circle {
   background: var(--primary);
   border-color: var(--primary);
+  color: #fff;
   box-shadow: 0 0 0 4px var(--primary-glow);
   animation: pulse-ring 1.5s ease infinite;
 }

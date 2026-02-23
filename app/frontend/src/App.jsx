@@ -29,11 +29,11 @@ export default function App() {
 
   // Hide Navbar/Cart on Auth and Admin pages
   const isAuthPage = ['/login', '/signup', '/forgot-pin', '/reset-pin'].includes(location.pathname) || location.pathname.startsWith('/manage-store')
-
+  const showSearch = location.pathname === '/'
 
   return (
     <>
-      {!isAuthPage && <Navbar searchQuery={searchQuery} onSearchChange={setSearchQuery} />}
+      {!isAuthPage && <Navbar searchQuery={showSearch ? searchQuery : undefined} onSearchChange={setSearchQuery} />}
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
           {/* Auth Routes */}

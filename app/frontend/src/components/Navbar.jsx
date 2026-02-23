@@ -37,7 +37,9 @@ export default function Navbar({ searchQuery, onSearchChange }) {
 
                 {/* Actions */}
                 <div className="nav-actions">
-                    <button className="icon-btn" onClick={toggleTheme} title="Toggle dark mode" style={{ fontSize: '18px' }}>🌙</button>
+                    <button className="icon-btn" onClick={toggleTheme} title="Toggle dark mode" style={{ fontSize: '18px', padding: '8px' }}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                    </button>
                     {user ? (
                         <div className="nav-dropdown-wrapper" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                             <motion.button
@@ -45,9 +47,9 @@ export default function Navbar({ searchQuery, onSearchChange }) {
                                 whileTap={{ scale: 0.88 }}
                                 onClick={() => navigate('/orders')}
                                 title="My Profile / Orders"
-                                style={{ fontSize: '18px' }}
+                                style={{ fontSize: '18px', padding: '8px' }}
                             >
-                                👤
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                             </motion.button>
                             <motion.button
                                 className="btn btn-ghost"
@@ -59,6 +61,7 @@ export default function Navbar({ searchQuery, onSearchChange }) {
                                 title="Sign Out"
                                 style={{ fontSize: '13px', padding: '4px 8px' }}
                             >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px' }}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                                 Sign Out
                             </motion.button>
                         </div>
@@ -68,9 +71,9 @@ export default function Navbar({ searchQuery, onSearchChange }) {
                             whileTap={{ scale: 0.88 }}
                             onClick={() => navigate('/login')}
                             title="Login"
-                            style={{ fontSize: '18px' }}
+                            style={{ fontSize: '18px', padding: '8px' }}
                         >
-                            👤
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                         </motion.button>
                     )}
                     <motion.button
@@ -80,8 +83,9 @@ export default function Navbar({ searchQuery, onSearchChange }) {
                         title="Open cart"
                         animate={cartCount > 0 ? { scale: [1, 1.12, 1] } : {}}
                         transition={{ duration: 0.3 }}
+                        style={{ padding: '8px' }}
                     >
-                        🛒
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
                         {cartCount > 0 && (
                             <motion.span
                                 key={cartCount}
