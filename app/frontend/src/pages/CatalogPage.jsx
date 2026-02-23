@@ -6,7 +6,7 @@ import ProductVariantModal from '../components/ProductVariantModal'
 import { useCart } from '../CartContext'
 import { getProducts } from '../api'
 
-const CATEGORY_EMOJI = { Rice: '🍚', Wheat: '🌾', Jowari: '🌽', Bajri: '🫘' }
+const CATEGORY_EMOJI = { Rice: '🍚', Wheat: '🌾', Jowari: '🌽', Bajri: '🫘', 'Daals & Pulses': '🫘' }
 
 
 export default function CatalogPage({ searchQuery = '' }) {
@@ -89,19 +89,43 @@ export default function CatalogPage({ searchQuery = '' }) {
 
     const filtered = useMemo(() => {
         let result = grouped;
-        if (activeCategory !== 'All') {
-            result = result.filter(g => g.category === activeCategory);
-        }
+
+        // If searching, ignore category clamping and show all matches
         if (searchQuery && searchQuery.trim()) {
             const lowerQuery = searchQuery.toLowerCase();
-            result = result.filter(g =>
+            return result.filter(g =>
                 (g.name && g.name.toLowerCase().includes(lowerQuery)) ||
                 (g.base_name && g.base_name.toLowerCase().includes(lowerQuery)) ||
                 (g.description && g.description.toLowerCase().includes(lowerQuery))
             );
         }
-        return result;
-    }, [grouped, activeCategory, searchQuery])
+
+        if (activeCategory !== 'All') {
+            result = result.filter(g => g.category === activeCategory);
+            // Don't clamp when a specific category is selected
+            return [{ category: activeCategory, items: result }];
+        }
+
+        // When "All" is active, group items by category and clamp to 4
+        const categoriesMap = {};
+        result.forEach(g => {
+            const cat = g.category || 'Other';
+            if (!categoriesMap[cat]) categoriesMap[cat] = [];
+            categoriesMap[cat].push(g);
+        });
+
+        const clampedGroups = [];
+        for (const cat of categories) {
+            if (cat === 'All' || !categoriesMap[cat]) continue;
+            clampedGroups.push({
+                category: cat,
+                items: categoriesMap[cat],       // full list
+                clamped: categoriesMap[cat].slice(0, 4) // clamped to 4
+            });
+        }
+
+        return clampedGroups;
+    }, [grouped, activeCategory, searchQuery, categories])
 
     return (
         <div className="catalog-page">
@@ -175,25 +199,101 @@ export default function CatalogPage({ searchQuery = '' }) {
                 </div>
             )}
 
-            {/* Product grid */}
+            {/* Product grid with category headers */}
             {!loading && !error && filtered.length > 0 && (
-                <AnimatePresence>
-                    <div className="product-grid">
-                        {filtered.map((group, i) => (
-                            <motion.div
-                                key={group.base_name || group.name}
-                                initial={{ opacity: 0, y: 24 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.32, delay: Math.min(i * 0.045, 0.5) }}
-                            >
-                                <ProductCard
-                                    product={group}
-                                    onClick={() => setSelectedGroup(group)}
-                                />
-                            </motion.div>
-                        ))}
-                    </div>
-                </AnimatePresence>
+                <div className="product-sections">
+                    {filtered.map((groupObj, groupIndex) => {
+                        // Check if we are in 'search' mode which returns a flat array instead of category objects
+                        const isSearchMode = searchQuery && searchQuery.trim();
+
+                        // Handle flat array structure from search
+                        if (isSearchMode) {
+                            return (
+                                <AnimatePresence key={`search-${groupIndex}`}>
+                                    <div className="product-grid" style={{ marginTop: '16px' }}>
+                                        <motion.div
+                                            key={groupObj.base_name || groupObj.name}
+                                            initial={{ opacity: 0, y: 24 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ duration: 0.32, delay: Math.min(groupIndex * 0.045, 0.5) }}
+                                        >
+                                            <ProductCard
+                                                product={groupObj}
+                                                onClick={() => setSelectedGroup(groupObj)}
+                                            />
+                                        </motion.div>
+                                    </div>
+                                </AnimatePresence>
+                            )
+                        }
+
+                        // Normal category grouped rendering
+                        const hasMore = groupObj.items.length > 4;
+                        const displayItems = activeCategory === 'All' ? groupObj.clamped : groupObj.items;
+
+                        return (
+                            <div key={groupObj.category} className="category-section" style={{ marginBottom: '40px' }}>
+
+                                {/* Category Header */}
+                                {activeCategory === 'All' && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', padding: '0 4px' }}>
+                                        <h2 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text)' }}>
+                                            {CATEGORY_EMOJI[groupObj.category] || ''} {groupObj.category}
+                                        </h2>
+                                        {hasMore && (
+                                            <button
+                                                onClick={() => setActiveCategory(groupObj.category)}
+                                                style={{
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    color: 'var(--primary)',
+                                                    fontWeight: '600',
+                                                    fontSize: '14px',
+                                                    cursor: 'pointer',
+                                                    padding: '4px 8px'
+                                                }}
+                                            >
+                                                See All
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Items Grid */}
+                                <AnimatePresence>
+                                    <div className="product-grid">
+                                        {displayItems.map((item, i) => (
+                                            <motion.div
+                                                key={item.base_name || item.name}
+                                                initial={{ opacity: 0, y: 24 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ duration: 0.32, delay: Math.min(i * 0.045, 0.5) }}
+                                            >
+                                                <ProductCard
+                                                    product={item}
+                                                    onClick={() => setSelectedGroup(item)}
+                                                />
+                                            </motion.div>
+                                        ))}
+                                    </div>
+                                </AnimatePresence>
+
+                                {/* Bottom See All Button for Clamped Groups */}
+                                {activeCategory === 'All' && hasMore && (
+                                    <div style={{ textAlign: 'center', marginTop: '16px' }}>
+                                        <button
+                                            className="btn btn-outline"
+                                            onClick={() => setActiveCategory(groupObj.category)}
+                                            style={{ width: '100%', maxWidth: '300px', padding: '12px' }}
+                                        >
+                                            View all {groupObj.items.length} options
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    })}
+                </div>
             )}
 
             {/* Variant modal */}

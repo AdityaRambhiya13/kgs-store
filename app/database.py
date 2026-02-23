@@ -120,6 +120,7 @@ def _seed_products(cursor):
     WHEAT_IMG  = "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400&h=300&fit=crop"
     JOWARI_IMG = "https://images.unsplash.com/photo-1603833665858-e61d17a86224?w=400&h=300&fit=crop"
     BAJRI_IMG  = "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=400&h=300&fit=crop"
+    PULSES_IMG = "https://images.unsplash.com/photo-1585996611354-972a9e34c901?w=400&h=300&fit=crop"
 
     products = [
         # ── Rice variants ─────────────────────────────────
@@ -144,6 +145,76 @@ def _seed_products(cursor):
         ("Italy Rice",          52,  "₹52/kg — Premium quality",   RICE_IMG,   "Rice",   "Italy Rice"),
         ("Red Rice",            66,  "₹66/kg — Premium quality",   RICE_IMG,   "Rice",   "Red Rice"),
         ("Brown Rice",         126,  "₹126/kg — Premium quality",  RICE_IMG,   "Rice",   "Brown Rice"),
+        # ── Bajri variants ────────────────────────────────
+        ("Brown Bajri",         35,  "₹35/kg — Healthy staple",    BAJRI_IMG,  "Bajri",  "Brown Bajri"),
+        ("Brown Bajri",         40,  "₹40/kg — Healthy staple",    BAJRI_IMG,  "Bajri",  "Brown Bajri"),
+        ("Brown Bajri",         45,  "₹45/kg — Healthy staple",    BAJRI_IMG,  "Bajri",  "Brown Bajri"),
+        ("Green Bajri",         40,  "₹40/kg — Healthy staple",    BAJRI_IMG,  "Bajri",  "Green Bajri"),
+        ("Green Bajri",         45,  "₹45/kg — Healthy staple",    BAJRI_IMG,  "Bajri",  "Green Bajri"),
+        ("Green Bajri",         55,  "₹55/kg — Healthy staple",    BAJRI_IMG,  "Bajri",  "Green Bajri"),
+
+        # ── Daals & Pulses (New) ──────────────────────────
+        ("Toordal",             109, "₹109/kg — Essential Lentil", PULSES_IMG, "Daals & Pulses", "Toordal"),
+        ("Toordal",             196, "₹196/kg — Priority Grade",   PULSES_IMG, "Daals & Pulses", "Toordal"),
+        ("Toordal",             220, "₹220/kg — Premium Grade",    PULSES_IMG, "Daals & Pulses", "Toordal"),
+        ("Toordal",             280, "₹280/kg — Export Quality",   PULSES_IMG, "Daals & Pulses", "Toordal"),
+
+        ("Moongdal",            109, "₹109/kg — Fresh",            PULSES_IMG, "Daals & Pulses", "Moongdal"),
+        ("Moongdal",            180, "₹180/kg — Premium",          PULSES_IMG, "Daals & Pulses", "Moongdal"),
+        
+        ("Chana dal",            88, "₹88/kg — Standard",          PULSES_IMG, "Daals & Pulses", "Chana dal"),
+        ("Chana dal",           108, "₹108/kg — Premium",          PULSES_IMG, "Daals & Pulses", "Chana dal"),
+        
+        ("Udid dal",            120, "₹120/kg — Quality Sort",     PULSES_IMG, "Daals & Pulses", "Udid dal"),
+        ("Udid dal",            196, "₹196/kg — Premium",          PULSES_IMG, "Daals & Pulses", "Udid dal"),
+        
+        ("Masoor dal",          120, "₹120/kg — Farm Fresh",       PULSES_IMG, "Daals & Pulses", "Masoor dal"),
+        ("Chilti Moongdal",     160, "₹160/kg — Quality Select",   PULSES_IMG, "Daals & Pulses", "Chilti Moongdal"),
+        
+        ("Moong",               200, "₹200/kg — 1kg bag",          PULSES_IMG, "Daals & Pulses", "Moong (Whole)"),
+        ("Moong - 500g",        100, "₹100/500g — Half kg bag",    PULSES_IMG, "Daals & Pulses", "Moong (Whole)"),
+        
+        ("Mataki - 500g",        70, "₹70/500g",                   PULSES_IMG, "Daals & Pulses", "Mataki"),
+        ("Mataki - 250g",        35, "₹35/250g",                   PULSES_IMG, "Daals & Pulses", "Mataki"),
+        
+        ("Masur - 500g",         60, "₹60/500g",                   PULSES_IMG, "Daals & Pulses", "Masur"),
+        ("Masur - 250g",         30, "₹30/250g",                   PULSES_IMG, "Daals & Pulses", "Masur"),
+        
+        ("Chana - 500g",         60, "₹60/500g",                   PULSES_IMG, "Daals & Pulses", "Chana"),
+        ("Chana - 250g",         30, "₹30/250g",                   PULSES_IMG, "Daals & Pulses", "Chana"),
+        
+        ("Kabuli Chana - 500g", 110, "₹110/500g",                  PULSES_IMG, "Daals & Pulses", "Kabuli Chana"),
+        ("Kabuli Chana - 250g",  55, "₹55/250g",                   PULSES_IMG, "Daals & Pulses", "Kabuli Chana"),
+        
+        ("Chawali - 500g",       90, "₹90/500g",                   PULSES_IMG, "Daals & Pulses", "Chawali"),
+        ("Chawali - 250g",       45, "₹45/250g",                   PULSES_IMG, "Daals & Pulses", "Chawali"),
+        
+        ("White Vatana - 500g",  80, "₹80/500g",                   PULSES_IMG, "Daals & Pulses", "White Vatana"),
+        ("White Vatana - 250g",  40, "₹40/250g",                   PULSES_IMG, "Daals & Pulses", "White Vatana"),
+        
+        ("Green Vatana - 500g",  80, "₹80/500g",                   PULSES_IMG, "Daals & Pulses", "Green Vatana"),
+        ("Green Vatana - 250g",  40, "₹40/250g",                   PULSES_IMG, "Daals & Pulses", "Green Vatana"),
+        
+        ("Black Vatana - 500g",  80, "₹80/500g",                   PULSES_IMG, "Daals & Pulses", "Black Vatana"),
+        ("Black Vatana - 250g",  40, "₹40/250g",                   PULSES_IMG, "Daals & Pulses", "Black Vatana"),
+
+        # ── 250g Specific Variants ────────────────────────
+        ("Matki Dal - 250g",     45, "₹45/250g",                   PULSES_IMG, "Daals & Pulses", "Matki Dal"),
+        ("Waal Dal - 250g",      80, "₹80/250g",                   PULSES_IMG, "Daals & Pulses", "Waal Dal"),
+        ("Chavli Dal - 250g",    60, "₹60/250g",                   PULSES_IMG, "Daals & Pulses", "Chavli Dal"),
+        ("Mix Dal - 250g",       49, "₹49/250g",                   PULSES_IMG, "Daals & Pulses", "Mix Dal"),
+        ("Black Udid - 250g",    38, "₹38/250g",                   PULSES_IMG, "Daals & Pulses", "Black Udid"),
+        ("Green Chana - 250g",   50, "₹50/250g",                   PULSES_IMG, "Daals & Pulses", "Green Chana"),
+        ("Mosambi Chana - 250g", 45, "₹45/250g",                   PULSES_IMG, "Daals & Pulses", "Mosambi Chana"),
+        ("Rajma Black - 250g",   50, "₹50/250g",                   PULSES_IMG, "Daals & Pulses", "Rajma Black"),
+        ("Red Chawali - 250g",   50, "₹50/250g",                   PULSES_IMG, "Daals & Pulses", "Red Chawali"),
+        ("Kadve Waal - 250g",    65, "₹65/250g",                   PULSES_IMG, "Daals & Pulses", "Kadve Waal"),
+        ("Wal - 250g",           50, "₹50/250g",                   PULSES_IMG, "Daals & Pulses", "Wal"),
+        ("Rajma White - 250g",   50, "₹50/250g",                   PULSES_IMG, "Daals & Pulses", "Rajma White"),
+        ("Barik Chawali - 250g", 65, "₹65/250g",                   PULSES_IMG, "Daals & Pulses", "Barik Chawali"),
+        ("Black Urad - 250g",    40, "₹40/250g",                   PULSES_IMG, "Daals & Pulses", "Black Urad (Whole)"),
+        ("Soyabean - 250g",      40, "₹40/250g",                   PULSES_IMG, "Daals & Pulses", "Soyabean"),
+        ("Kulid - 250g",         35, "₹35/250g",                   PULSES_IMG, "Daals & Pulses", "Kulid"),
         # ── Wheat variants ────────────────────────────────
         ("Lokvan Wheat",        45,  "₹45/kg — Premium quality",   WHEAT_IMG,  "Wheat",  "Lokvan Wheat"),
         ("Lokvan Wheat",        52,  "₹52/kg — Premium quality",   WHEAT_IMG,  "Wheat",  "Lokvan Wheat"),
