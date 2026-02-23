@@ -154,7 +154,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 @app.get("/api/products", response_model=List[ProductOut])
 def list_products(request: Request, customer: dict = Depends(get_current_customer)):
-    check_rate_limit(request)
+    check_rate_limit(request, limit=60, window=60, scope="products")
     return get_all_products()
 
 @app.post("/api/orders")
@@ -219,7 +219,7 @@ def list_all_orders(request: Request, admin_token: dict = Depends(get_current_ad
 
 @app.get("/api/admin/customers", response_model=List[CustomerOut])
 def list_customers(request: Request, admin: dict = Depends(get_current_admin)):
-    check_rate_limit(request)
+    check_rate_limit(request, limit=60, window=60, scope="admin-customers")
     return get_all_customers()
 
 @app.get("/api/orders/history")
