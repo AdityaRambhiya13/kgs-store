@@ -159,7 +159,7 @@ def list_products(request: Request, customer: dict = Depends(get_current_custome
 
 @app.post("/api/orders")
 def place_order(order: OrderCreate, request: Request, customer_token: dict = Depends(get_current_customer)):
-    pass # check_rate_limit(request, limit=3, window=600, scope="orders")
+    check_rate_limit(request, limit=3, window=600, scope="orders")
     
     phone = customer_token.get("phone")
     db_cust = get_customer(phone)
@@ -213,8 +213,8 @@ def place_order(order: OrderCreate, request: Request, customer_token: dict = Dep
     return {"token": token, "total": calculated_total, "status": "Processing"}
 
 @app.get("/api/orders")
-def list_orders(request: Request, admin: dict = Depends(get_current_admin)):
-    check_rate_limit(request)
+def list_all_orders(request: Request, admin_token: dict = Depends(get_current_admin)):
+    check_rate_limit(request, limit=60, window=60, scope="admin-orders")
     return get_all_orders()
 
 @app.get("/api/admin/customers", response_model=List[CustomerOut])
@@ -223,22 +223,22 @@ def list_customers(request: Request, admin: dict = Depends(get_current_admin)):
     return get_all_customers()
 
 @app.get("/api/orders/history")
-def order_history(request: Request, customer: dict = Depends(get_current_customer)):
-    check_rate_limit(request)
-    return get_orders_by_phone(customer.get("phone"))
+def get_customer_orders(request: Request, customer_token: dict = Depends(get_current_customer)):
+    check_rate_limit(request, limit=30, window=60, scope="customer-orders")
+    return get_orders_by_phone(customer_token.get("phone"))
 
 @app.get("/api/orders/{token}")
-def get_order(token: str, request: Request, customer: dict = Depends(get_current_customer)):
-    check_rate_limit(request)
+def get_order_details(token: str, request: Request, customer: dict = Depends(get_current_customer)):
+    check_rate_limit(request, limit=60, window=60, scope="order-status")
     order = get_order_by_token(token)
     if not order or order["phone"] != customer.get("phone"):
         raise HTTPException(status_code=404, detail="Order not found")
     return order
 
 @app.post("/api/orders/{token}/cancel")
-async def cancel_order(token: str, request: Request, customer: dict = Depends(get_current_customer)):
-    check_rate_limit(request)
-    phone = customer.get("phone")
+async def cancel_customer_order(token: str, request: Request, customer_token: dict = Depends(get_current_customer)):
+    check_rate_limit(request, limit=10, window=60, scope="order-cancel")
+    phone = customer_token.get("phone")
     order = get_order_by_token(token)
     
     if not order or order["phone"] != phone:
@@ -276,8 +276,8 @@ async def cancel_order(token: str, request: Request, customer: dict = Depends(ge
     return {"token": token, "status": "Cancelled", "message": msg}
 
 @app.patch("/api/orders/{token}/status")
-async def toggle_order_status(token: str, body: OrderStatusUpdate, request: Request, admin: dict = Depends(get_current_admin)):
-    check_rate_limit(request)
+async def update_status(token: str, body: OrderStatusUpdate, request: Request, admin_token: dict = Depends(get_current_admin)):
+    check_rate_limit(request, limit=60, window=60, scope="admin-orders-update")
     if body.status == "Delivered":
         order = get_order_by_token(token)
         if not order: raise HTTPException(status_code=404, detail="Order not found")
@@ -304,6 +304,7 @@ def admin_login(body: AdminLoginInfo, request: Request):
 
 @app.get("/api/auth/me")
 def get_me(request: Request, customer: dict = Depends(get_current_customer)):
+    check_rate_limit(request, limit=60, window=60, scope="auth-me")
     # Needed for checkout page to prefill data/address
     db_cust = get_customer(customer.get("phone"))
     if not db_cust:
@@ -320,6 +321,7 @@ def get_me(request: Request, customer: dict = Depends(get_current_customer)):
 
 @app.get("/api/auth/check-phone")
 def check_phone(phone: str, request: Request):
+    check_rate_limit(request, limit=60, window=60, scope="auth-check-phone")
     # Optional endpoint to check if phone exists
     cleaned = re.sub(r"[\s\-\+]", "", phone)
     if cleaned.startswith("91") and len(cleaned) == 12:
