@@ -45,13 +45,11 @@ export const updateStatus = (token, status, adminToken, otp = null) =>
 
 // ── Auth ───────────────────────────────────────────────────────
 // ── Auth ───────────────────────────────────────────────────────
-export const signup = (phone, pin, name, email, address) =>
+export const signup = (phone, pin, name) =>
     request('POST', '/api/auth/signup', {
         phone: `+91${phone}`,
         pin: String(pin),
-        name,
-        email,
-        address
+        name
     })
 
 export const login = (identifier, pin) =>
@@ -60,8 +58,8 @@ export const login = (identifier, pin) =>
         pin: String(pin)
     })
 
-export const forgotPin = (email) =>
-    request('POST', '/api/auth/forgot-pin', { email })
+export const forgotPin = (phone) =>
+    request('POST', '/api/auth/forgot-pin', { phone: `+91${phone}` })
 
 export const resetPin = (token, new_pin) =>
     request('POST', '/api/auth/reset-pin', { token, new_pin: String(new_pin) })

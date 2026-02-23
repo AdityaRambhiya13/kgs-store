@@ -22,6 +22,27 @@ export default function ConfirmPage() {
     const [cancelLoading, setCancelLoading] = useState(false)
     const [cancelMsg, setCancelMsg] = useState('')
 
+    const [addressForm, setAddressForm] = useState({
+        flat_no: '',
+        building_name: '',
+        road_name: '',
+        area_name: '',
+        landmark: '',
+        pincode: ''
+    })
+    const [saveAsHome, setSaveAsHome] = useState(true)
+
+    useEffect(() => {
+        if (user?.address) {
+            setAddressForm(prev => ({ ...prev, ...user.address }))
+        }
+    }, [user])
+
+    const handleAddressChange = (e) => {
+        const { name, value } = e.target
+        setAddressForm(prev => ({ ...prev, [name]: value }))
+    }
+
     // If cart is empty, redirect home (unless order was just placed)
     useEffect(() => {
         if (cartItems.length === 0 && !orderPlaced) navigate('/')
@@ -43,6 +64,21 @@ export default function ConfirmPage() {
                 items,
                 total: cartTotal,
                 delivery_type: deliveryType
+            }
+
+            if (deliveryType === 'delivery') {
+                if (!addressForm.flat_no || !addressForm.building_name || !addressForm.road_name || !addressForm.area_name || !addressForm.pincode) {
+                    setError('Please fill in all required address fields.')
+                    setLoading(false)
+                    return
+                }
+                if (addressForm.pincode.length !== 6) {
+                    setError('Pincode must be exactly 6 digits.')
+                    setLoading(false)
+                    return
+                }
+                payload.address = addressForm
+                payload.save_as_home = saveAsHome
             }
 
             const result = await placeOrder(payload)
@@ -132,24 +168,57 @@ export default function ConfirmPage() {
                             </div>
 
                             <div className="confirm-phone-group" style={{ marginBottom: 16 }}>
-                                <label>Delivering To</label>
+                                <label>Customer Details</label>
                                 <div style={{ background: 'var(--bg-surface)', padding: '12px', borderRadius: '8px', fontSize: 14 }}>
                                     <strong>{user.name || 'User'}</strong>
                                     <br />
                                     📞 {user.phone}
-                                    {deliveryType === 'delivery' && (
-                                        <>
-                                            <br />
-                                            📍 {user.address || 'No address registered'}
-                                        </>
-                                    )}
                                 </div>
-                                {deliveryType === 'delivery' && !user.address && (
-                                    <p style={{ fontSize: 12, color: 'var(--danger)', marginTop: 4 }}>
-                                        ⚠️ Please update your address in profile to use home delivery.
-                                    </p>
-                                )}
                             </div>
+
+                            {deliveryType === 'delivery' && (
+                                <div className="address-form-group" style={{ marginBottom: 16 }}>
+                                    <h3 style={{ fontSize: 16, marginBottom: 12 }}>Delivery Address</h3>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                                        <div>
+                                            <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Flat/House No. *</label>
+                                            <input type="text" className="input" name="flat_no" value={addressForm.flat_no} onChange={handleAddressChange} style={{ padding: '10px' }} />
+                                        </div>
+                                        <div>
+                                            <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Building/Apartment *</label>
+                                            <input type="text" className="input" name="building_name" value={addressForm.building_name} onChange={handleAddressChange} style={{ padding: '10px' }} />
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                                        <div>
+                                            <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Road/Street *</label>
+                                            <input type="text" className="input" name="road_name" value={addressForm.road_name} onChange={handleAddressChange} style={{ padding: '10px' }} />
+                                        </div>
+                                        <div>
+                                            <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Area/Locality *</label>
+                                            <input type="text" className="input" name="area_name" value={addressForm.area_name} onChange={handleAddressChange} style={{ padding: '10px' }} />
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                                        <div>
+                                            <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Landmark (Optional)</label>
+                                            <input type="text" className="input" name="landmark" value={addressForm.landmark} onChange={handleAddressChange} style={{ padding: '10px' }} />
+                                        </div>
+                                        <div>
+                                            <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Pincode *</label>
+                                            <input type="text" inputMode="numeric" maxLength={6} className="input" name="pincode" value={addressForm.pincode} onChange={e => setAddressForm(prev => ({ ...prev, pincode: e.target.value.replace(/\D/g, '') }))} style={{ padding: '10px' }} />
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '16px' }}>
+                                        <input type="checkbox" id="saveAsHome" checked={saveAsHome} onChange={(e) => setSaveAsHome(e.target.checked)} style={{ width: '16px', height: '16px', accentColor: 'var(--primary)' }} />
+                                        <label htmlFor="saveAsHome" style={{ fontSize: 14, cursor: 'pointer', margin: 0 }}>Save as Home Address</label>
+                                    </div>
+                                </div>
+                            )}
 
                             {error && <p className="error-msg" style={{ marginTop: 12 }}>⚠️ {error}</p>}
 
@@ -158,7 +227,7 @@ export default function ConfirmPage() {
                                 className="btn btn-primary"
                                 style={{ width: '100%', justifyContent: 'center', fontSize: 16, padding: '15px', marginBottom: 12, marginTop: 16 }}
                                 onClick={handleSubmit}
-                                disabled={loading || (deliveryType === 'delivery' && !user.address)}
+                                disabled={loading}
                                 whileTap={{ scale: 0.97 }}
                             >
                                 {loading ? (

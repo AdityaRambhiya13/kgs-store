@@ -299,6 +299,15 @@ function OrderCard({ order, onAction, toggling, expanded, onExpand, inlineError 
     let items = []
     try { items = JSON.parse(order.items_json) } catch { }
 
+    let addressObj = null
+    if (order.address) {
+        try {
+            addressObj = JSON.parse(order.address)
+        } catch {
+            addressObj = { raw: order.address }
+        }
+    }
+
     const [otpInput, setOtpInput] = useState('')
     const [showOtpInput, setShowOtpInput] = useState(false)
 
@@ -340,9 +349,9 @@ function OrderCard({ order, onAction, toggling, expanded, onExpand, inlineError 
                     <span className={`admin-delivery-badge ${deliveryType}`}>
                         {deliveryType === 'delivery' ? '🚚 Home Delivery' : '🏪 Store Pickup'}
                     </span>
-                    {deliveryType === 'delivery' && order.address && (
+                    {deliveryType === 'delivery' && addressObj && (
                         <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8, maxWidth: '280px', lineHeight: 1.4 }}>
-                            📍 {order.address}
+                            📍 {addressObj.raw ? addressObj.raw : `${addressObj.flat_no}, ${addressObj.building_name}, ${addressObj.area_name}`}
                         </div>
                     )}
                 </div>
@@ -370,10 +379,19 @@ function OrderCard({ order, onAction, toggling, expanded, onExpand, inlineError 
                                     <span>₹{(item.subtotal || item.price * item.quantity)?.toFixed(0)}</span>
                                 </div>
                             ))}
-                            {order.address && (
+                            {addressObj && (
                                 <div style={{ fontSize: 13, background: 'rgba(56, 189, 248, 0.1)', color: 'var(--primary)', padding: '8px 12px', borderRadius: '6px', marginTop: 12, border: '1px solid rgba(56, 189, 248, 0.2)' }}>
                                     <strong>📍 Delivery Address:</strong>
-                                    <div style={{ marginTop: 4, whiteSpace: 'pre-wrap' }}>{order.address}</div>
+                                    {addressObj.raw ? (
+                                        <div style={{ marginTop: 4, whiteSpace: 'pre-wrap' }}>{addressObj.raw}</div>
+                                    ) : (
+                                        <div style={{ marginTop: 4, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                                            {addressObj.flat_no}, {addressObj.building_name}<br />
+                                            {addressObj.road_name}, {addressObj.area_name}<br />
+                                            {addressObj.landmark && <span>Landmark: {addressObj.landmark}<br /></span>}
+                                            Pincode: {addressObj.pincode}
+                                        </div>
+                                    )}
                                 </div>
                             )}
                             {order.delivered_at && (

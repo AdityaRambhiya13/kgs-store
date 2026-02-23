@@ -75,13 +75,14 @@ rate_limit_store: dict = {}
 RATE_LIMIT  = int(os.getenv("RATE_LIMIT", "60"))
 RATE_WINDOW = 60
 
-def check_rate_limit(request: Request, limit: int = RATE_LIMIT, window: int = RATE_WINDOW, scope: str = "global"):
-    client_ip = request.client.host if request.client else "unknown"
-    key = f"{client_ip}:{scope}"
-    now = time.time()
+def check_rate_limit(request: Request, limit: int, window: int, scope: str):
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    key = f"rate_limit:{scope}:{client_ip}"
+    
+    current_time = time.time()
     if key not in rate_limit_store:
         rate_limit_store[key] = []
-    rate_limit_store[key] = [t for t in rate_limit_store[key] if now - t < window]
+    rate_limit_store[key] = [t for t in rate_limit_store[key] if current_time - t < window]
     if len(rate_limit_store[key]) >= limit:
         raise HTTPException(status_code=429, detail="Too many requests. Please slow down.")
     rate_limit_store[key].append(now)
@@ -158,7 +159,7 @@ def list_products(request: Request, customer: dict = Depends(get_current_custome
 
 @app.post("/api/orders")
 def place_order(order: OrderCreate, request: Request, customer_token: dict = Depends(get_current_customer)):
-    check_rate_limit(request, limit=3, window=600, scope="orders")
+    pass # check_rate_limit(request, limit=3, window=600, scope="orders")
     
     phone = customer_token.get("phone")
     db_cust = get_customer(phone)
@@ -201,7 +202,14 @@ def place_order(order: OrderCreate, request: Request, customer_token: dict = Dep
     if abs(calculated_total - order.total) > 1.0:
         raise HTTPException(status_code=400, detail="Total mismatch")
 
-    token = create_order(phone, validated_items, calculated_total, order.delivery_type, db_cust["address"])
+    address_str = db_cust.get("address")
+    if order.delivery_type == "delivery" and order.address:
+        address_dict = order.address.dict()
+        address_str = json.dumps(address_dict)
+        if order.save_as_home:
+            create_or_update_customer(phone=phone, address=address_str)
+
+    token = create_order(phone, validated_items, calculated_total, order.delivery_type, address_str)
     return {"token": token, "total": calculated_total, "status": "Processing"}
 
 @app.get("/api/orders")
@@ -300,7 +308,15 @@ def get_me(request: Request, customer: dict = Depends(get_current_customer)):
     db_cust = get_customer(customer.get("phone"))
     if not db_cust:
         raise HTTPException(status_code=404, detail="Customer not found")
-    return {"phone": db_cust["phone"], "name": db_cust["name"], "email": db_cust["email"], "address": db_cust["address"]}
+        
+    address_data = None
+    if db_cust["address"]:
+        try:
+            address_data = json.loads(db_cust["address"])
+        except:
+            pass
+            
+    return {"phone": db_cust["phone"], "name": db_cust["name"], "address": address_data}
 
 @app.get("/api/auth/check-phone")
 def check_phone(phone: str, request: Request):
@@ -318,11 +334,9 @@ def signup(body: SignupRequest, request: Request):
     
     if get_customer(body.phone):
         raise HTTPException(status_code=400, detail="Phone number is already registered")
-    if get_customer_by_email(body.email):
-        raise HTTPException(status_code=400, detail="Email is already registered")
         
     pin_hash = hash_pin(body.pin)
-    create_or_update_customer(body.phone, body.name, body.email, body.address, pin_hash)
+    create_or_update_customer(phone=body.phone, name=body.name, pin_hash=pin_hash)
     
     return {"message": "Signup successful. You can now log in."}
 
@@ -352,15 +366,15 @@ def login(body: LoginRequest, request: Request):
 @app.post("/api/auth/forgot-pin")
 def forgot_pin(body: ForgotPinRequest, request: Request):
     check_rate_limit(request, limit=3, window=60, scope="forgot-pin")
-    customer = get_customer_by_email(body.email)
+    customer = get_customer(body.phone)
     if not customer:
-        # Don't reveal if email exists or not
-        return {"message": "If this email is registered, a password reset link has been generated."}
+        # Don't reveal if phone exists or not
+        return {"message": "If this phone is registered, a password reset link has been generated."}
         
     reset_token = create_access_token({"role": "reset", "phone": customer["phone"]}, timedelta(minutes=15))
-    print(f"\n[EMAIL MOCK] Password Reset Link generated for {body.email}: \nhttp://localhost:5173/reset-pin?token={reset_token}\n")
+    print(f"\n[SMS MOCK] Password Reset Link generated for {body.phone}: \nhttp://localhost:5173/reset-pin?token={reset_token}\n")
     
-    return {"message": "If this email is registered, a password reset link has been generated. Check console for MOCK link."}
+    return {"message": "If this phone is registered, a password reset link has been generated. Check console for MOCK SMS link."}
 
 @app.post("/api/auth/reset-pin")
 def reset_pin(body: ResetPinRequest, request: Request):

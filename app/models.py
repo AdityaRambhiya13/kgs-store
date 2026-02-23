@@ -22,10 +22,20 @@ class CartItem(BaseModel):
     def sanitize_name(cls, v):
         return sanitize_text(v)
 
+class AddressDetail(BaseModel):
+    flat_no: str = Field(..., min_length=1, max_length=100)
+    building_name: str = Field(..., min_length=1, max_length=100)
+    road_name: str = Field(..., min_length=1, max_length=100)
+    area_name: str = Field(..., min_length=1, max_length=100)
+    landmark: Optional[str] = Field(None, max_length=100)
+    pincode: str = Field(..., min_length=6, max_length=6, pattern=r"^\d{6}$")
+
 class OrderCreate(BaseModel):
     items: List[CartItem] = Field(..., min_length=1)
     total: float = Field(..., gt=0)
     delivery_type: Literal["pickup", "delivery"] = "pickup"
+    address: Optional[AddressDetail] = None
+    save_as_home: bool = False
 
 class OrderOut(BaseModel):
     id: int
@@ -104,8 +114,6 @@ class CustomerOut(BaseModel):
 class SignupRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     phone: str = Field(..., description="10-digit Indian phone number")
-    email: str = Field(..., pattern=r"^\S+@\S+\.\S+$")
-    address: str = Field(..., min_length=1, max_length=500)
     pin: str = Field(..., min_length=4, max_length=4, pattern=r"^\d{4}$", description="4-digit security PIN")
 
     @field_validator("phone")
@@ -118,7 +126,7 @@ class SignupRequest(BaseModel):
             raise ValueError("Invalid Indian phone number")
         return cleaned
 
-    @field_validator("name", "address")
+    @field_validator("name")
     @classmethod
     def sanitize_inputs(cls, v):
         return sanitize_text(v) if v else v
@@ -137,7 +145,17 @@ class LoginRequest(BaseModel):
         return v.strip().lower()
 
 class ForgotPinRequest(BaseModel):
-    email: str = Field(..., pattern=r"^\S+@\S+\.\S+$")
+    phone: str = Field(..., description="10-digit Indian phone number")
+
+    @field_validator("phone")
+    @classmethod
+    def validate_phone(cls, v):
+        cleaned = re.sub(r"[\s\-\+]", "", v)
+        if cleaned.startswith("91") and len(cleaned) == 12:
+            cleaned = cleaned[2:]
+        if not re.match(r"^[6-9]\d{9}$", cleaned):
+            raise ValueError("Invalid Indian phone number")
+        return cleaned
 
 class ResetPinRequest(BaseModel):
     token: str = Field(...)

@@ -256,7 +256,7 @@ def create_order(phone: str, items: list, total: float, delivery_type: str = "pi
     )
     cursor.execute("SELECT value FROM counters WHERE name = 'order_token'")
     token_num = cursor.fetchone()[0]
-    token = f"STORE-{token_num}"
+    token = str(token_num)
 
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     items_json = json.dumps(items)

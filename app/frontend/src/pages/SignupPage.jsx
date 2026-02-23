@@ -4,7 +4,7 @@ import { signup } from '../api'
 import { motion } from 'framer-motion'
 
 export default function SignupPage() {
-    const [formData, setFormData] = useState({ name: '', phone: '', email: '', address: '', pin: '' })
+    const [formData, setFormData] = useState({ name: '', phone: '', pin: '' })
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
     const navigate = useNavigate()
@@ -22,7 +22,7 @@ export default function SignupPage() {
 
         setLoading(true)
         try {
-            await signup(formData.phone, formData.pin, formData.name, formData.email, formData.address)
+            await signup(formData.phone, formData.pin, formData.name)
             // Redirect to login
             navigate('/login')
         } catch (err) {
@@ -53,10 +53,7 @@ export default function SignupPage() {
                         <input type="text" name="name" className="input" value={formData.name} onChange={handleChange} required placeholder="John Doe" />
                     </div>
 
-                    <div className="confirm-phone-group" style={{ marginBottom: 16 }}>
-                        <label>Email Address</label>
-                        <input type="email" name="email" className="input" value={formData.email} onChange={handleChange} required placeholder="john@example.com" />
-                    </div>
+
 
                     <div className="confirm-phone-group" style={{ marginBottom: 16 }}>
                         <label>Phone Number</label>
@@ -72,13 +69,7 @@ export default function SignupPage() {
                         </div>
                     </div>
 
-                    <div className="confirm-phone-group" style={{ marginBottom: 16 }}>
-                        <label>Delivery Address</label>
-                        <textarea
-                            name="address" className="input" value={formData.address} onChange={handleChange} required
-                            placeholder="Full delivery address..." rows={2} style={{ resize: 'vertical' }}
-                        />
-                    </div>
+
 
                     <div className="confirm-phone-group" style={{ marginBottom: 24 }}>
                         <label>Set 4-Digit PIN</label>
