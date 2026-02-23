@@ -38,10 +38,8 @@ export default function Navbar({ searchQuery, onSearchChange }) {
                 {/* Actions */}
                 <div className="nav-actions">
                     <button className="icon-btn" onClick={toggleTheme} title="Toggle dark mode" style={{ fontSize: '18px' }}>🌙</button>
-                    <button className="icon-btn" title="Help" style={{ fontSize: '18px' }}>❓</button>
-
                     {user ? (
-                        <div className="nav-dropdown-wrapper">
+                        <div className="nav-dropdown-wrapper" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                             <motion.button
                                 className="icon-btn"
                                 whileTap={{ scale: 0.88 }}
@@ -50,6 +48,18 @@ export default function Navbar({ searchQuery, onSearchChange }) {
                                 style={{ fontSize: '18px' }}
                             >
                                 👤
+                            </motion.button>
+                            <motion.button
+                                className="btn btn-ghost"
+                                whileTap={{ scale: 0.88 }}
+                                onClick={() => {
+                                    logout()
+                                    navigate('/')
+                                }}
+                                title="Sign Out"
+                                style={{ fontSize: '13px', padding: '4px 8px' }}
+                            >
+                                Sign Out
                             </motion.button>
                         </div>
                     ) : (

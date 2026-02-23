@@ -85,7 +85,7 @@ def check_rate_limit(request: Request, limit: int, window: int, scope: str):
     rate_limit_store[key] = [t for t in rate_limit_store[key] if current_time - t < window]
     if len(rate_limit_store[key]) >= limit:
         raise HTTPException(status_code=429, detail="Too many requests. Please slow down.")
-    rate_limit_store[key].append(now)
+    rate_limit_store[key].append(current_time)
 
 def verify_admin_password(password: str) -> bool:
     return password == ADMIN_PASSWORD
