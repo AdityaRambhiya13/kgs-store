@@ -145,13 +145,6 @@ def _seed_products(cursor):
         ("Italy Rice",          52,  "₹52/kg — Premium quality",   RICE_IMG,   "Rice",   "Italy Rice"),
         ("Red Rice",            66,  "₹66/kg — Premium quality",   RICE_IMG,   "Rice",   "Red Rice"),
         ("Brown Rice",         126,  "₹126/kg — Premium quality",  RICE_IMG,   "Rice",   "Brown Rice"),
-        # ── Bajri variants ────────────────────────────────
-        ("Brown Bajri",         35,  "₹35/kg — Healthy staple",    BAJRI_IMG,  "Bajri",  "Brown Bajri"),
-        ("Brown Bajri",         40,  "₹40/kg — Healthy staple",    BAJRI_IMG,  "Bajri",  "Brown Bajri"),
-        ("Brown Bajri",         45,  "₹45/kg — Healthy staple",    BAJRI_IMG,  "Bajri",  "Brown Bajri"),
-        ("Green Bajri",         40,  "₹40/kg — Healthy staple",    BAJRI_IMG,  "Bajri",  "Green Bajri"),
-        ("Green Bajri",         45,  "₹45/kg — Healthy staple",    BAJRI_IMG,  "Bajri",  "Green Bajri"),
-        ("Green Bajri",         55,  "₹55/kg — Healthy staple",    BAJRI_IMG,  "Bajri",  "Green Bajri"),
 
         # ── Daals & Pulses (New) ──────────────────────────
         ("Toordal",             109, "₹109/kg — Essential Lentil", PULSES_IMG, "Daals & Pulses", "Toordal"),
