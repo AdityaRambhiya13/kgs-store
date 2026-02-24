@@ -87,6 +87,11 @@ export default function StatusPage() {
         try { addressObj = JSON.parse(order.address) } catch { addressObj = { raw: order.address } }
     }
 
+    let items = []
+    if (order?.items_json) {
+        try { items = typeof order.items_json === 'string' ? JSON.parse(order.items_json) : order.items_json } catch { }
+    }
+
     if (loading) {
         return (
             <div className="status-page">
