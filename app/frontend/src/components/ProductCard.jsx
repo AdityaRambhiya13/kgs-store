@@ -11,10 +11,7 @@ export default function ProductCard({ product, onClick }) {
     const variants = product.variants ?? [product]
     const unit = variants[0].unit || 'kg'
     const minPrice = Math.min(...variants.map(v => v.price))
-    const maxPrice = Math.max(...variants.map(v => v.price))
-    const priceLabel = minPrice === maxPrice
-        ? `₹${minPrice} / ${unit}`
-        : `₹${minPrice} – ₹${maxPrice} / ${unit}`
+    const priceLabel = `₹${minPrice} / ${unit}`
     const variantCount = variants.length
     const emoji = CATEGORY_EMOJI[product.category] || '🌾'
 

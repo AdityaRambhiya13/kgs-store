@@ -119,7 +119,7 @@ export default function ProductVariantModal({ group, onClose }) {
                                                     >
                                                         −
                                                     </motion.button>
-                                                    <span className="qty-label">{qty} {variant.unit || 'kg'}</span>
+                                                    <span className="qty-label">{qty}</span>
                                                     <motion.button
                                                         className="qty-btn qty-btn-plus"
                                                         onClick={() => handleIncrease(variant)}
