@@ -80,13 +80,13 @@ export default function ProductVariantModal({ group, onClose }) {
                                 <div className="variant-modal-title">{group.base_name}</div>
                                 <div className="variant-modal-category">{group.category}</div>
                                 <div className="vm-desc">
-                                    {group.variants?.length} price{group.variants?.length !== 1 ? 's' : ''} available · per kg
+                                    {group.variants?.length} price{group.variants?.length !== 1 ? 's' : ''} available · per {group.variants[0].unit || 'kg'}
                                 </div>
                             </div>
                             <button className="modal-close-btn" onClick={onClose} aria-label="Close">✕</button>
                         </div>
 
-                        <p className="variant-modal-hint">Select quantity & price per kg</p>
+                        <p className="variant-modal-hint">Select pack size & price</p>
 
                         {/* Variants list */}
                         <div className="variant-list">
@@ -104,7 +104,7 @@ export default function ProductVariantModal({ group, onClose }) {
                                     >
                                         <div className="variant-info">
                                             <div className="variant-price">
-                                                ₹{variant.price}<span>/kg</span>
+                                                ₹{variant.price}<span>/{variant.unit || 'kg'}</span>
                                             </div>
                                             <div className="variant-grade">{variant.name}</div>
                                         </div>
@@ -119,7 +119,7 @@ export default function ProductVariantModal({ group, onClose }) {
                                                     >
                                                         −
                                                     </motion.button>
-                                                    <span className="qty-label">{qty} kg</span>
+                                                    <span className="qty-label">{qty} {variant.unit || 'kg'}</span>
                                                     <motion.button
                                                         className="qty-btn qty-btn-plus"
                                                         onClick={() => handleIncrease(variant)}
@@ -164,7 +164,7 @@ export default function ProductVariantModal({ group, onClose }) {
                                     transition={{ duration: 0.25 }}
                                 >
                                     <button className="btn btn-secondary vm-view-cart" onClick={handleViewCart}>
-                                        🛒 View Cart ({cartCount} kg) →
+                                        🛒 View Cart ({cartCount} items) →
                                     </button>
                                 </motion.div>
                             )}

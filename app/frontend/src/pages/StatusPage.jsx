@@ -216,7 +216,7 @@ export default function StatusPage() {
                                             <div className="card" style={{ marginTop: 16, padding: 16, textAlign: 'left' }}>
                                                 {items.map((item, i) => (
                                                     <div key={i} className="confirm-item-row" style={{ padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-                                                        <span>{item.name} × {item.quantity} kg</span>
+                                                        <span>{item.name} × {item.quantity} {item.unit || 'kg'}</span>
                                                         <span style={{ fontWeight: 600, color: 'var(--secondary)' }}>
                                                             ₹{(item.subtotal || item.price * item.quantity).toFixed(0)}
                                                         </span>

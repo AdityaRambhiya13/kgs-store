@@ -60,6 +60,7 @@ export default function ConfirmPage() {
                 name: item.name,
                 price: item.price,
                 quantity: item.quantity,
+                unit: item.unit || 'kg'
             }))
             const payload = {
                 items,
@@ -136,7 +137,7 @@ export default function ConfirmPage() {
                                 <h3>Order Summary</h3>
                                 {cartItems.map(item => (
                                     <div key={item.id} className="confirm-item-row">
-                                        <span>{item.name} × {item.quantity} kg</span>
+                                        <span>{item.name} × {item.quantity} {item.unit || 'kg'}</span>
                                         <span style={{ fontWeight: 600, color: 'var(--secondary)' }}>
                                             ₹{(item.price * item.quantity).toFixed(0)}
                                         </span>

@@ -42,7 +42,7 @@ export default function SignupPage() {
             >
                 <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, color: 'var(--primary)' }}>Create Account</h2>
                 <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24 }}>
-                    Join Ketch General Stores today
+                    Join Ketan General Stores today
                 </p>
 
                 {error && <p className="error-msg" style={{ marginBottom: 16 }}>⚠️ {error}</p>}

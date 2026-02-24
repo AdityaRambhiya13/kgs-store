@@ -16,6 +16,7 @@ class CartItem(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     price: float = Field(..., gt=0)
     quantity: int = Field(..., ge=1, le=100)
+    unit: str = "kg"
 
     @field_validator("name")
     @classmethod
@@ -70,6 +71,7 @@ class ProductOut(BaseModel):
     image_url: str
     category: str
     base_name: str = ""
+    unit: str = "kg"
 
 class OTPRequest(BaseModel):
     phone: str = Field(..., description="10-digit Indian phone number")

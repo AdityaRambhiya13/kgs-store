@@ -40,20 +40,20 @@ export default function LoginPage() {
                 >
                     <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, color: 'var(--primary)' }}>Welcome Back</h2>
                     <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24 }}>
-                        Log in to access Ketch General Stores
+                        Log in to access Ketan General Stores
                     </p>
 
                     {error && <p className="error-msg" style={{ marginBottom: 16 }}>⚠️ {error}</p>}
 
                     <form onSubmit={handleSubmit}>
                         <div className="confirm-phone-group" style={{ marginBottom: 16 }}>
-                            <label>Email or Phone Number</label>
+                            <label>Phone Number</label>
                             <input
                                 type="text"
                                 className="input"
                                 value={identifier}
                                 onChange={e => setIdentifier(e.target.value)}
-                                placeholder="Enter email or 10-digit number"
+                                placeholder="Enter 10-digit number"
                                 required
                             />
                         </div>

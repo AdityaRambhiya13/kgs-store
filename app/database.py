@@ -39,7 +39,8 @@ def init_db():
             description TEXT NOT NULL,
             image_url TEXT NOT NULL,
             category TEXT NOT NULL,
-            base_name TEXT NOT NULL DEFAULT ''
+            base_name TEXT NOT NULL DEFAULT '',
+            unit TEXT NOT NULL DEFAULT 'kg'
         )
     """)
 
@@ -86,6 +87,7 @@ def init_db():
         ("orders", "address",       "TEXT"),
         ("orders", "delivery_otp",  "TEXT"),
         ("products", "base_name",   "TEXT NOT NULL DEFAULT ''"),
+        ("products", "unit",        "TEXT NOT NULL DEFAULT 'kg'"),
         ("customers", "name",       "TEXT"),
         ("customers", "email",      "TEXT"),
         ("customers", "address",    "TEXT"),
@@ -118,7 +120,7 @@ def _seed_products(cursor):
     """Seed grain products with base_name for variant grouping."""
     RICE_IMG   = "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=300&fit=crop"
     WHEAT_IMG  = "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400&h=300&fit=crop"
-    JOWARI_IMG = "https://images.unsplash.com/photo-1603833665858-e61d17a86224?w=400&h=300&fit=crop"
+    JOWARI_IMG = "https://images.unsplash.com/photo-1596547609652-9fc5d8d428ce?w=400&h=300&fit=crop"
     BAJRI_IMG  = "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=400&h=300&fit=crop"
     PULSES_IMG = "https://images.unsplash.com/photo-1585996611354-972a9e34c901?w=400&h=300&fit=crop"
 
@@ -226,9 +228,20 @@ def _seed_products(cursor):
         ("Bajri",               56,  "₹56/kg — Premium quality",   BAJRI_IMG,  "Bajri",  "Bajri"),
     ]
 
+    # Derive unit from name explicitly
+    final_products = []
+    for p in products:
+        name = p[0]
+        unit_val = "kg"
+        if "250g" in name or "250g" in p[2]:
+            unit_val = "250g"
+        elif "500g" in name or "500g" in p[2]:
+            unit_val = "500g"
+        final_products.append((*p, unit_val))
+
     cursor.executemany(
-        "INSERT INTO products (name, price, description, image_url, category, base_name) VALUES (?,?,?,?,?,?)",
-        products,
+        "INSERT INTO products (name, price, description, image_url, category, base_name, unit) VALUES (?,?,?,?,?,?,?)",
+        final_products,
     )
 
 def get_all_products():
