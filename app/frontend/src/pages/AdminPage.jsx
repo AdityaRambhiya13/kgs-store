@@ -376,8 +376,8 @@ function OrderCard({ order, onAction, toggling, expanded, onExpand, inlineError 
                         <div className="order-items-detail">
                             {items.map((item, i) => (
                                 <div key={i} className="order-item-row">
-                                    <span>{item.name} × {item.quantity}</span>
-                                    <span>₹{(item.subtotal || item.price * item.quantity)?.toFixed(0)}</span>
+                                    <span>{item?.name} × {item?.quantity || 1}</span>
+                                    <span>₹{Number(item?.subtotal || (item?.price || 0) * (item?.quantity || 1)).toFixed(0)}</span>
                                 </div>
                             ))}
                             {addressObj && (

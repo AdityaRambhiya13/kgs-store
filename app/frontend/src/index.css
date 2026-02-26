@@ -550,6 +550,7 @@ p {
 
 .product-grid {
   display: flex;
+  flex-direction: row;
   flex-wrap: nowrap;
   overflow-x: auto;
   justify-content: flex-start;

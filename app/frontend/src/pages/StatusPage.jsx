@@ -221,15 +221,15 @@ export default function StatusPage() {
                                             <div className="card" style={{ marginTop: 16, padding: 16, textAlign: 'left' }}>
                                                 {items.map((item, i) => (
                                                     <div key={i} className="confirm-item-row" style={{ padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-                                                        <span>{item.name} × {item.quantity}</span>
+                                                        <span>{item.name} × {item?.quantity || 1}</span>
                                                         <span style={{ fontWeight: 600, color: 'var(--secondary)' }}>
-                                                            ₹{(item.subtotal || item.price * item.quantity).toFixed(0)}
+                                                            ₹{Number(item?.subtotal || (item?.price || 0) * (item?.quantity || 1)).toFixed(0)}
                                                         </span>
                                                     </div>
                                                 ))}
                                                 <div className="confirm-total" style={{ paddingTop: 12, marginTop: 4 }}>
                                                     <span style={{ fontWeight: 600 }}>Total</span>
-                                                    <span style={{ color: 'var(--primary)', fontWeight: 700, fontSize: 16 }}>₹{order.total?.toFixed(0)}</span>
+                                                    <span style={{ color: 'var(--primary)', fontWeight: 700, fontSize: 16 }}>₹{Number(order?.total || 0).toFixed(0)}</span>
                                                 </div>
                                             </div>
                                         </motion.div>
