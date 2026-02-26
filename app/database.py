@@ -121,7 +121,7 @@ def _seed_products(cursor):
     RICE_IMG   = "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=300&fit=crop"
     WHEAT_IMG  = "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400&h=300&fit=crop"
     JOWARI_IMG = "https://images.unsplash.com/photo-1596547609652-9fc5d8d428ce?w=400&h=300&fit=crop"
-    BAJRI_IMG  = "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=400&h=300&fit=crop"
+    BAJRI_IMG  = "https://images.unsplash.com/photo-1615485925763-86db9d2d22f0?w=400&h=300&fit=crop"
     PULSES_IMG = "https://images.unsplash.com/photo-1585996611354-972a9e34c901?w=400&h=300&fit=crop"
 
     products = [
@@ -214,16 +214,16 @@ def _seed_products(cursor):
         ("Lokvan Wheat",        45,  "₹45/kg — Premium quality",   WHEAT_IMG,  "Wheat",  "Lokvan Wheat"),
         ("Lokvan Wheat",        52,  "₹52/kg — Premium quality",   WHEAT_IMG,  "Wheat",  "Lokvan Wheat"),
         ("Lokvan Wheat",        56,  "₹56/kg — Premium quality",   WHEAT_IMG,  "Wheat",  "Lokvan Wheat"),
-        ("MPSIOR Wheat",        48,  "₹48/kg — Premium quality",   WHEAT_IMG,  "Wheat",  "MPSIOR Wheat"),
-        ("MPSIOR Wheat",        52,  "₹52/kg — Premium quality",   WHEAT_IMG,  "Wheat",  "MPSIOR Wheat"),
-        ("MPSIOR Wheat",        72,  "₹72/kg — Premium quality",   WHEAT_IMG,  "Wheat",  "MPSIOR Wheat"),
-        ("MPSIOR Wheat",        76,  "₹76/kg — Premium quality",   WHEAT_IMG,  "Wheat",  "MPSIOR Wheat"),
-        ("MPSIOR Wheat",        80,  "₹80/kg — Premium quality",   WHEAT_IMG,  "Wheat",  "MPSIOR Wheat"),
-        ("KhapliWheat",        120,  "₹120/kg — Premium quality",  WHEAT_IMG,  "Wheat",  "KhapliWheat"),
-        # ── Jowari variants ───────────────────────────────
-        ("Jowari",              54,  "₹54/kg — Premium quality",   JOWARI_IMG, "Jowari", "Jowari"),
-        ("Jowari",              60,  "₹60/kg — Premium quality",   JOWARI_IMG, "Jowari", "Jowari"),
-        ("Jowari",              90,  "₹90/kg — Premium quality",   JOWARI_IMG, "Jowari", "Jowari"),
+        ("MPSIOR Wheat — Basic",  48,  "₹48/kg — Basic grade",      WHEAT_IMG,  "Wheat",  "MPSIOR Wheat"),
+        ("MPSIOR Wheat — Regular", 52,  "₹52/kg — Regular grade",    WHEAT_IMG,  "Wheat",  "MPSIOR Wheat"),
+        ("MPSIOR Wheat — Gold",    72,  "₹72/kg — Gold grade",       WHEAT_IMG,  "Wheat",  "MPSIOR Wheat"),
+        ("MPSIOR Wheat — Premium", 76,  "₹76/kg — Premium grade",    WHEAT_IMG,  "Wheat",  "MPSIOR Wheat"),
+        ("MPSIOR Wheat — Select",  80,  "₹80/kg — Select grade",     WHEAT_IMG,  "Wheat",  "MPSIOR Wheat"),
+        ("Khapli Wheat",          120,  "₹120/kg — Nutri wheat",     WHEAT_IMG,  "Wheat",  "Khapli Wheat"),
+        # ── Jowari variants ───────────────────────────────────────────────
+        ("Jowari — White",        54,  "₹54/kg — White variety",    JOWARI_IMG, "Jowari", "Jowari"),
+        ("Jowari — Yellow",       60,  "₹60/kg — Yellow variety",   JOWARI_IMG, "Jowari", "Jowari"),
+        ("Jowari — Red",          90,  "₹90/kg — Red variety",      JOWARI_IMG, "Jowari", "Jowari"),
         # ── Bajri ─────────────────────────────────────────
         ("Bajri",               56,  "₹56/kg — Premium quality",   BAJRI_IMG,  "Bajri",  "Bajri"),
     ]

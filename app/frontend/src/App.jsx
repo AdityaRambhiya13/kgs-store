@@ -13,6 +13,7 @@ import ForgotPinPage from './pages/ForgotPinPage'
 import ResetPinPage from './pages/ResetPinPage'
 import CartPanel from './components/CartPanel'
 import Navbar from './components/Navbar'
+import Footer from './components/Footer'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -53,6 +54,7 @@ export default function App() {
         </Routes>
       </AnimatePresence>
       {!isAuthPage && <CartPanel />}
+      {!isAuthPage && <Footer />}
     </>
   )
 }

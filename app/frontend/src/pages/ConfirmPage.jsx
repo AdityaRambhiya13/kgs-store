@@ -155,14 +155,14 @@ export default function ConfirmPage() {
                                 <div className="delivery-options">
                                     <button
                                         className={`delivery-option ${deliveryType === 'pickup' ? 'active' : ''}`}
-                                        onClick={() => setDeliveryType('pickup')}
+                                        onClick={() => { setDeliveryType('pickup'); setError('') }}
                                         type="button"
                                     >
                                         🏪 Store Pickup
                                     </button>
                                     <button
                                         className={`delivery-option ${deliveryType === 'delivery' ? 'active' : ''}`}
-                                        onClick={() => setDeliveryType('delivery')}
+                                        onClick={() => { setDeliveryType('delivery'); setError('') }}
                                         type="button"
                                     >
                                         🚚 Home Delivery
@@ -309,10 +309,18 @@ export default function ConfirmPage() {
                                 </div>
                             )}
 
-                            <div style={{ display: 'flex', gap: '12px' }}>
+                            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                                <motion.button
+                                    className="btn btn-ghost"
+                                    style={{ flex: 1, justifyContent: 'center', padding: '13px', minWidth: '140px' }}
+                                    onClick={() => navigate('/')}
+                                    whileTap={{ scale: 0.97 }}
+                                >
+                                    🛒 Continue Shopping
+                                </motion.button>
                                 <motion.button
                                     className="btn btn-danger"
-                                    style={{ flex: 1, justifyContent: 'center', padding: '15px' }}
+                                    style={{ flex: 1, justifyContent: 'center', padding: '13px', minWidth: '140px' }}
                                     onClick={handleCancel}
                                     disabled={cancelLoading || cancelMsg.includes('cancelled')}
                                     whileTap={{ scale: 0.97 }}
@@ -321,7 +329,7 @@ export default function ConfirmPage() {
                                 </motion.button>
                                 <motion.button
                                     className="btn btn-primary"
-                                    style={{ flex: 1, justifyContent: 'center', padding: '15px' }}
+                                    style={{ flex: 1, justifyContent: 'center', padding: '13px', minWidth: '140px' }}
                                     onClick={() => navigate(`/status/${token}`)}
                                     whileTap={{ scale: 0.97 }}
                                 >

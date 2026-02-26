@@ -182,9 +182,19 @@ export default function CatalogPage({ searchQuery = '' }) {
 
                     {/* Loading */}
                     {loading && (
-                        <div className="loading-state">
-                            <div className="spinner" />
-                            <p>Loading products…</p>
+                        <div>
+                            <div className="product-grid" style={{ marginTop: 16 }}>
+                                {Array.from({ length: 6 }).map((_, i) => (
+                                    <div key={i} className="skeleton-card">
+                                        <div className="skeleton skeleton-img" />
+                                        <div className="skeleton-body">
+                                            <div className="skeleton skeleton-line medium" />
+                                            <div className="skeleton skeleton-line short" />
+                                            <div className="skeleton skeleton-line medium" style={{ marginTop: 12 }} />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
 
@@ -200,7 +210,7 @@ export default function CatalogPage({ searchQuery = '' }) {
                         <div className="empty-state">
                             <div className="emoji">🌾</div>
                             <h3>No products found</h3>
-                            <p>Try a different category.</p>
+                            <p>{searchQuery ? 'Try a different search term.' : 'Try a different category.'}</p>
                         </div>
                     )}
 

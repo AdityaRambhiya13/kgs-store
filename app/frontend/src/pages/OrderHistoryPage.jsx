@@ -28,11 +28,13 @@ export default function OrderHistoryPage() {
 
         const fetchHistory = async () => {
             setLoading(true)
+            setError('')
             try {
                 const data = await getOrderHistory(user.token)
                 setOrders(Array.isArray(data) ? data : [])
             } catch (e) {
-                setError(e.message || 'Failed to load order history')
+                setError(e.message || 'Failed to load order history. The server may be starting up — please try again.')
+                setOrders([])
             } finally {
                 setLoading(false)
             }
@@ -40,6 +42,17 @@ export default function OrderHistoryPage() {
 
         fetchHistory()
     }, [user, navigate])
+
+    const handleRetry = () => {
+        if (!user) return
+        setLoading(true)
+        setError('')
+        setOrders(null)
+        getOrderHistory(user.token)
+            .then(data => setOrders(Array.isArray(data) ? data : []))
+            .catch(e => { setError(e.message || 'Failed. Please try again.'); setOrders([]) })
+            .finally(() => setLoading(false))
+    }
 
     const handleCancel = async (e, token) => {
         e.stopPropagation() // prevent navigating
@@ -76,13 +89,20 @@ export default function OrderHistoryPage() {
                         </p>
                     </div>
 
-                    {error && <p className="error-msg" style={{ marginTop: 8 }}>⚠️ {error}</p>}
-                    {cancelMsg && (
-                        <div style={{ padding: '12px', background: cancelMsg.includes('blocked') ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)', borderRadius: '8px', marginBottom: '16px', color: cancelMsg.includes('blocked') ? 'var(--danger)' : 'var(--accent)', fontSize: '13px', textAlign: 'center' }}>
-                            {cancelMsg}
+                    {error && (
+                        <div style={{ textAlign: 'center', marginTop: 24 }}>
+                            <p className="error-msg" style={{ marginBottom: 12 }}>⚠️ {error}</p>
+                            <button className="btn btn-ghost" onClick={handleRetry} style={{ fontSize: 13 }}>
+                                🔄 Retry
+                            </button>
                         </div>
                     )}
-                    {loading && <div style={{ textAlign: 'center', margin: '20px 0' }}><span className="spinner spinner-sm" /> Loading orders...</div>}
+                    {loading && (
+                        <div style={{ textAlign: 'center', margin: '32px 0' }}>
+                            <span className="spinner" style={{ width: 32, height: 32 }} />
+                            <p style={{ color: 'var(--text-muted)', marginTop: 12, fontSize: 14 }}>Loading your orders...</p>
+                        </div>
+                    )}
 
                     <AnimatePresence>
                         {orders !== null && !loading && (
