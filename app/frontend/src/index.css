@@ -22,6 +22,18 @@ body {
   margin: 0;
   min-height: 100vh;
   transition: background 0.3s, color 0.3s;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+#root {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 @keyframes gradientBG {
@@ -268,8 +280,9 @@ p {
 
 .navbar-inner {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 16px;
   padding: 12px 16px;
   max-width: 1200px;
@@ -278,7 +291,9 @@ p {
 
 .nav-logo {
   display: flex;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   text-decoration: none;
 }
@@ -293,13 +308,14 @@ p {
 }
 
 .nav-search {
-  flex: 1;
+  flex: none;
+  width: 100%;
   max-width: 500px;
   position: relative;
   display: flex;
   visibility: visible;
   opacity: 1;
-  margin: 0 20px;
+  margin: 10px 0;
 }
 
 .nav-search input {
@@ -333,8 +349,10 @@ p {
 
 .nav-actions {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 12px;
 }
 
 .icon-btn {
@@ -492,8 +510,10 @@ p {
 
 .section-header {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 12px;
   margin-bottom: 16px;
 }
 
@@ -534,12 +554,17 @@ p {
 
 .product-card-body {
   padding: 16px 16px 12px;
-  text-align: left;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .product-card-title-row {
   display: flex;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   margin-bottom: 4px;
 }
@@ -595,7 +620,9 @@ p {
 
 .qty-stepper {
   display: flex;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   padding: 4px 0;
 }
@@ -787,8 +814,10 @@ p {
   padding: 20px;
   border-bottom: 1px solid var(--border);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 12px;
   background: linear-gradient(135deg, var(--primary), var(--primary-light));
   color: #fff;
 }
@@ -828,8 +857,10 @@ p {
 
 .cart-item {
   display: flex;
+  flex-direction: column;
   gap: 12px;
-  align-items: flex-start;
+  align-items: center;
+  text-align: center;
   background: var(--bg-surface);
   border-radius: var(--radius-sm);
   padding: 10px;
@@ -871,7 +902,9 @@ p {
 
 .cart-item-actions {
   display: flex;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   margin-top: 6px;
 }
@@ -903,8 +936,10 @@ p {
 
 .cart-total-row {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  justify-content: center;
   align-items: center;
+  gap: 8px;
   margin-bottom: 16px;
 }
 
@@ -968,12 +1003,15 @@ p {
 
 .confirm-item-row {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  justify-content: center;
   align-items: center;
+  gap: 4px;
   padding: 8px 0;
   border-bottom: 1px solid var(--border);
   font-size: 14px;
   color: var(--text);
+  text-align: center;
 }
 
 .confirm-item-row:last-child {
@@ -982,11 +1020,14 @@ p {
 
 .confirm-total {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  justify-content: center;
   align-items: center;
+  gap: 8px;
   padding-top: 12px;
   font-size: 20px;
   font-weight: 800;
+  text-align: center;
 }
 
 .confirm-phone-group {
@@ -1003,8 +1044,9 @@ p {
 
 .phone-input-row {
   display: flex;
+  flex-direction: column;
   gap: 8px;
-  align-items: stretch;
+  align-items: center;
 }
 
 .phone-prefix {
@@ -1297,14 +1339,17 @@ p {
   background: linear-gradient(135deg, var(--primary), #4F46E5);
   padding: 16px 20px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 12px;
   color: #fff;
 }
 
 .admin-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 12px;
   padding: 20px;
 }
@@ -1356,10 +1401,13 @@ p {
 
 .order-card-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   padding: 14px 16px 10px;
   cursor: pointer;
+  text-align: center;
 }
 
 .order-token {
@@ -1407,11 +1455,15 @@ p {
 
 .order-item-row {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   font-size: 13px;
   padding: 6px 0;
   border-bottom: 1px dashed var(--border);
   color: var(--text);
+  text-align: center;
 }
 
 .order-item-row:last-child {
@@ -1422,8 +1474,10 @@ p {
   padding: 10px 16px;
   border-top: 1px solid var(--border);
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 /* ── Spinner ─────────────────────────────────────────────────── */
@@ -1565,10 +1619,10 @@ p {
 
 .category-scroll {
   display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 8px;
-  overflow-x: auto;
   padding: 16px 0;
-  scrollbar-width: none;
 }
 
 .category-scroll::-webkit-scrollbar {
@@ -1633,11 +1687,14 @@ p {
 
 .variant-modal-header {
   display: flex;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 14px;
   padding: 16px 20px;
   border-bottom: 1px solid var(--border);
   position: relative;
+  text-align: center;
 }
 
 .variant-modal-img {
@@ -1702,11 +1759,13 @@ p {
 
 .variant-row {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   padding: 14px 0;
   border-bottom: 1px solid var(--border);
   gap: 12px;
+  text-align: center;
 }
 
 .variant-row:last-child {
@@ -1738,7 +1797,7 @@ p {
 .variant-actions {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: center;
   gap: 4px;
   flex-shrink: 0;
 }
@@ -1750,11 +1809,12 @@ p {
   justify-content: center;
 }
 
-/* ── Qty Stepper in Modal ─────────────────────────────────── */
 .qty-stepper {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0;
+  justify-content: center;
+  gap: 6px;
   border-radius: 99px;
   overflow: hidden;
   border: 2px solid var(--primary);
@@ -1813,7 +1873,10 @@ p {
 
 .delivery-options {
   display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 10px;
+  width: 100%;
 }
 
 .delivery-option {
@@ -2222,16 +2285,18 @@ p {
    ================================================================ */
 .hero-banner {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 20px;
   background: linear-gradient(135deg, #1E3A8A 0%, #2D5BE3 60%, #10B981 100%);
   border-radius: var(--radius-xl);
-  padding: 28px 28px 28px 32px;
+  padding: 28px;
   margin: 0 0 4px;
   overflow: hidden;
   position: relative;
   min-height: 170px;
+  text-align: center;
 }
 
 /* Subtle noise texture overlay */
