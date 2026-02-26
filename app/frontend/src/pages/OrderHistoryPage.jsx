@@ -10,8 +10,15 @@ export default function OrderHistoryPage() {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
     const navigate = useNavigate()
-    const [cancelLoading, setCancelLoading] = useState(null) // store token being cancelled
+    const [cancelLoading, setCancelLoading] = useState(null)
     const [cancelMsg, setCancelMsg] = useState('')
+
+    // Privacy: show only last 4 digits
+    const maskPhone = (phone = '') => {
+        const digits = phone.replace(/\D/g, '')
+        if (digits.length >= 4) return '+91 ****' + digits.slice(-4)
+        return '****'
+    }
 
     useEffect(() => {
         if (!user) {
@@ -65,7 +72,7 @@ export default function OrderHistoryPage() {
                         <div style={{ fontSize: 40, marginBottom: 8 }}>📋</div>
                         <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 6 }}>My Orders</h2>
                         <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
-                            {user?.phone ? `Orders for +91 ${user.phone}` : ''}
+                            {user?.phone ? `Orders for ${maskPhone(user.phone)}` : ''}
                         </p>
                     </div>
 

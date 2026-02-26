@@ -3,6 +3,12 @@ import { listOrders, updateStatus, listCustomers, adminLogin } from '../api'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function AdminPage() {
+    // Privacy helper: show only last 4 digits
+    const maskPhone = (phone = '') => {
+        const digits = phone.replace(/\D/g, '')
+        if (digits.length >= 4) return '+91 ****' + digits.slice(-4)
+        return '****'
+    }
     const [password, setPassword] = useState('')
     const [adminToken, setAdminToken] = useState(null)
     const [authed, setAuthed] = useState(false)
@@ -248,7 +254,8 @@ export default function AdminPage() {
                                 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px' }}
                             >
                                 <div>
-                                    <div style={{ fontWeight: 700, fontSize: '16px', color: 'var(--text)' }}>📱 {c.phone}</div>
+                                    <div style={{ fontWeight: 700, fontSize: '16px', color: 'var(--text)' }}>📱 {maskPhone(c.phone)}</div>
+                                    {c.name && <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: 2 }}>👤 {c.name}</div>}
                                 </div>
                                 <div style={{ textAlign: 'right', color: 'var(--text-muted)', fontSize: '12px' }}>
                                     <div style={{ marginBottom: 2 }}>Joined</div>
@@ -344,7 +351,10 @@ function OrderCard({ order, onAction, toggling, expanded, onExpand, inlineError 
                 <div>
                     <div className="order-token">{order.token}</div>
                     <div className="order-meta">
-                        📱 {order.phone} {order.customer_name ? `• 👤 ${order.customer_name}` : ''}
+                        📱 {(order.phone || '').replace(/\D/g, '').length >= 4
+                            ? '+91 ****' + (order.phone || '').replace(/\D/g, '').slice(-4)
+                            : '****'}
+                        {order.customer_name ? ` • 👤 ${order.customer_name}` : ''}
                     </div>
                     {/* Delivery badge */}
                     <span className={`admin-delivery-badge ${deliveryType}`}>

@@ -10,6 +10,10 @@ export default function ProductVariantModal({ group, onClose }) {
 
     if (!group) return null
 
+    // Defensive: ensure variants is always a non-empty array
+    const safeVariants = group.variants?.length ? group.variants : [group]
+    const safeGroup = { ...group, variants: safeVariants }
+
     const handleAdd = (variant) => {
         const existing = cart[variant.id]
         if (existing) {
@@ -40,7 +44,7 @@ export default function ProductVariantModal({ group, onClose }) {
 
     return (
         <AnimatePresence>
-            {group && (
+            {safeGroup && (
                 <>
                     {/* Backdrop */}
                     <motion.div
@@ -60,7 +64,7 @@ export default function ProductVariantModal({ group, onClose }) {
                         transition={{ type: 'spring', stiffness: 320, damping: 32 }}
                         role="dialog"
                         aria-modal="true"
-                        aria-label={`Select price for ${group.base_name}`}
+                        aria-label={`Select price for ${safeGroup.base_name || safeGroup.name}`}
                     >
                         <div className="variant-modal-handle" />
 
@@ -68,8 +72,8 @@ export default function ProductVariantModal({ group, onClose }) {
                         <div className="variant-modal-header">
                             <div className="vm-img-wrap">
                                 <img
-                                    src={group.image_url}
-                                    alt={group.base_name}
+                                    src={safeGroup.image_url}
+                                    alt={safeGroup.base_name || safeGroup.name}
                                     className="variant-modal-img"
                                     onError={e => {
                                         e.target.src = 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=300&fit=crop'
@@ -77,10 +81,10 @@ export default function ProductVariantModal({ group, onClose }) {
                                 />
                             </div>
                             <div style={{ flex: 1 }}>
-                                <div className="variant-modal-title">{group.base_name}</div>
-                                <div className="variant-modal-category">{group.category}</div>
+                                <div className="variant-modal-title">{safeGroup.base_name || safeGroup.name}</div>
+                                <div className="variant-modal-category">{safeGroup.category}</div>
                                 <div className="vm-desc">
-                                    {group.variants?.length} price{group.variants?.length !== 1 ? 's' : ''} available · per {group.variants[0].unit || 'kg'}
+                                    {safeVariants.length} price{safeVariants.length !== 1 ? 's' : ''} available · per {safeVariants[0]?.unit || 'kg'}
                                 </div>
                             </div>
                             <button className="modal-close-btn" onClick={onClose} aria-label="Close">✕</button>
@@ -90,7 +94,7 @@ export default function ProductVariantModal({ group, onClose }) {
 
                         {/* Variants list */}
                         <div className="variant-list">
-                            {group.variants.map(variant => {
+                            {safeVariants.map(variant => {
                                 const cartEntry = cart[variant.id]
                                 const qty = cartEntry?.quantity || 0
                                 const justAdded = addedId === variant.id
