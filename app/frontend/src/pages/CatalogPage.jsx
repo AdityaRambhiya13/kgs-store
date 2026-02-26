@@ -312,13 +312,14 @@ export default function CatalogPage({ searchQuery = '' }) {
             {/* Sticky Cart Bar */}
             {cartCount > 0 && (
                 <div className="sticky-cart-bar" onClick={() => setCartOpen(true)}>
-                    <div className="sticky-cart-info">
-                        <span className="sticky-cart-subtitle">{cartCount} {cartCount === 1 ? 'item' : 'items'}</span>
-                        <span style={{ color: 'rgba(255,255,255,0.4)' }}>|</span>
-                        <span className="sticky-cart-total">₹{cartTotal.toFixed(0)}</span>
+                    <div className="sticky-cart-info" style={{ color: '#fff', fontSize: '15px', fontWeight: '600' }}>
+                        🛒 {cartCount} {cartCount === 1 ? 'item' : 'items'}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', fontSize: '15px' }}>
-                        View Cart <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fff' }}>
+                        <span style={{ fontWeight: '800', fontSize: '18px' }}>₹{cartTotal.toFixed(0)}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '700', fontSize: '15px' }}>
+                            View Cart <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        </div>
                     </div>
                 </div>
             )}
