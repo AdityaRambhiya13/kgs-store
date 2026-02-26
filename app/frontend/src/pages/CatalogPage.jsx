@@ -310,7 +310,7 @@ export default function CatalogPage({ searchQuery = '' }) {
             />
 
             {/* Sticky Cart Bar */}
-            {cartCount > 0 && (
+            {cartCount > 0 && !cartOpen && (
                 <div className="sticky-cart-bar" onClick={() => setCartOpen(true)}>
                     <div className="sticky-cart-info" style={{ color: '#fff', fontSize: '15px', fontWeight: '600' }}>
                         {cartCount} item{cartCount > 1 ? 's' : ''} in cart
