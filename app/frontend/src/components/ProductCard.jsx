@@ -11,7 +11,6 @@ export default function ProductCard({ product, onClick }) {
     const variants = product.variants ?? [product]
     const unit = variants[0].unit || 'kg'
     const minPrice = Math.min(...variants.map(v => v.price))
-    const priceLabel = `₹${minPrice} / ${unit}`
     const variantCount = variants.length
     const emoji = CATEGORY_EMOJI[product.category] || '🌾'
 
@@ -48,7 +47,8 @@ export default function ProductCard({ product, onClick }) {
 
                 <div className="product-card-bottom-row">
                     <div className="product-price">
-                        {priceLabel}
+                        <span>₹{minPrice}</span>
+                        <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginLeft: '4px', fontWeight: '500' }}>/ {unit}</span>
                     </div>
 
                     <motion.button
