@@ -46,19 +46,19 @@ export default function ProductCard({ product, onClick }) {
                 </div>
                 <div className="product-card-subtitle">{product.category}</div>
 
-                <div className="product-card-footer">
+                <div className="product-card-bottom-row">
                     <div className="product-price">
                         {priceLabel}
                     </div>
-                </div>
 
-                <motion.button
-                    className="btn btn-primary"
-                    onClick={e => { e.stopPropagation(); onClick() }}
-                    whileTap={{ scale: 0.95 }}
-                >
-                    {variantCount > 1 ? `Choose options (${variantCount})` : 'Select'}
-                </motion.button>
+                    <motion.button
+                        className="product-add-btn"
+                        onClick={e => { e.stopPropagation(); onClick() }}
+                        whileTap={{ scale: 0.95 }}
+                    >
+                        {variantCount > 1 ? `ADD (+${variantCount})` : 'ADD'}
+                    </motion.button>
+                </div>
             </div>
         </motion.div>
     )

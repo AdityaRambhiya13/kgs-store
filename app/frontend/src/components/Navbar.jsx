@@ -19,7 +19,7 @@ export default function Navbar({ searchQuery, onSearchChange }) {
             <div className="navbar-inner">
                 {/* Logo */}
                 <span className="nav-logo" onClick={() => navigate('/')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', minWidth: 'max-content' }}>
-                    <span className="nav-logo-text gradient-text" style={{ fontSize: '20px' }}>Ketan General Stores</span>
+                    <span className="nav-logo-text" style={{ fontSize: '22px', color: 'var(--primary)' }}>Ketan General Stores</span>
                 </span>
 
                 {/* Search Bar - only show if searchQuery is provided (customer side) */}
@@ -28,7 +28,7 @@ export default function Navbar({ searchQuery, onSearchChange }) {
                         <span className="nav-search-icon">🔍</span>
                         <input
                             type="text"
-                            placeholder="Search for grains..."
+                            placeholder="Search for groceries..."
                             value={searchQuery || ''}
                             onChange={e => onSearchChange(e.target.value)}
                         />
@@ -37,9 +37,6 @@ export default function Navbar({ searchQuery, onSearchChange }) {
 
                 {/* Actions */}
                 <div className="nav-actions">
-                    <button className="icon-btn" onClick={toggleTheme} title="Toggle dark mode" style={{ fontSize: '18px', padding: '8px' }}>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-                    </button>
                     {user ? (
                         <div className="nav-dropdown-wrapper" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                             <motion.button
@@ -52,38 +49,37 @@ export default function Navbar({ searchQuery, onSearchChange }) {
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                             </motion.button>
                             <motion.button
-                                className="btn btn-ghost"
+                                className="icon-btn"
                                 whileTap={{ scale: 0.88 }}
                                 onClick={() => {
                                     logout()
                                     navigate('/')
                                 }}
                                 title="Sign Out"
-                                style={{ fontSize: '13px', padding: '4px 8px' }}
+                                style={{ fontSize: '18px', padding: '8px' }}
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px' }}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                                Sign Out
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                             </motion.button>
                         </div>
                     ) : (
                         <motion.button
-                            className="icon-btn"
+                            className="btn btn-primary"
                             whileTap={{ scale: 0.88 }}
                             onClick={() => navigate('/login')}
                             title="Login"
-                            style={{ fontSize: '18px', padding: '8px' }}
+                            style={{ padding: '8px 16px' }}
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                            Login
                         </motion.button>
                     )}
                     <motion.button
-                        className="nav-cart-btn"
+                        className="nav-cart-btn icon-btn"
                         whileTap={{ scale: 0.92 }}
                         onClick={() => setCartOpen(true)}
                         title="Open cart"
                         animate={cartCount > 0 ? { scale: [1, 1.12, 1] } : {}}
                         transition={{ duration: 0.3 }}
-                        style={{ padding: '8px' }}
+                        style={{ padding: '8px', position: 'relative' }}
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
                         {cartCount > 0 && (
