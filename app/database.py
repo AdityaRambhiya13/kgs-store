@@ -1,13 +1,11 @@
-# ============================================================
-# database.py — SQLite Database Setup & Seed Data
-# ============================================================
-import sqlite3
+import psycopg2
+from psycopg2 import extras
 import os
 import json
 import time
 from datetime import datetime
 
-DATABASE_PATH = os.getenv("DATABASE_URL", "store.db")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 # ── Product cache ─────────────────────────────────────────
 _products_cache = None
@@ -18,11 +16,12 @@ def _invalidate_products_cache():
     _products_cache = None
 
 def get_connection():
-    """Get a SQLite connection with row factory."""
-    conn = sqlite3.connect(DATABASE_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA foreign_keys=ON")
+    """Get a PostgreSQL connection with RealDictCursor."""
+    if not DATABASE_URL:
+        raise ValueError("DATABASE_URL environment variable is not set")
+    
+    # Use DictCursor to mimic SQLite row factory (access by key)
+    conn = psycopg2.connect(DATABASE_URL, cursor_factory=extras.RealDictCursor)
     return conn
 
 def init_db():
@@ -33,7 +32,7 @@ def init_db():
     # ── Products table ────────────────────────────────────
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS products (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             name TEXT NOT NULL,
             price REAL NOT NULL,
             description TEXT NOT NULL,
@@ -47,18 +46,22 @@ def init_db():
     # ── Orders table ──────────────────────────────────────
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS orders (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             token TEXT NOT NULL UNIQUE,
             phone TEXT NOT NULL,
             items_json TEXT NOT NULL,
             status TEXT NOT NULL DEFAULT 'Processing',
             total REAL NOT NULL,
             timestamp TEXT NOT NULL,
-            address TEXT
+            address TEXT,
+            delivery_type TEXT NOT NULL DEFAULT 'pickup',
+            delivery_time TEXT NOT NULL DEFAULT 'same_day',
+            delivered_at TEXT,
+            delivery_otp TEXT
         )
     """)
 
-    # ── Customers table (OTP auth) ────────────────────────
+    # ── Customers table ───────────────────────────────────
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS customers (
             phone TEXT PRIMARY KEY,
@@ -101,15 +104,11 @@ def init_db():
 
     # ── Initialize counter ────────────────────────────────
     cursor.execute(
-        "INSERT OR IGNORE INTO counters (name, value) VALUES ('order_token', 100)"
+        "INSERT INTO counters (name, value) VALUES ('order_token', 100) ON CONFLICT DO NOTHING"
     )
 
     # ── Always reseed products ────────────────────────────
-    cursor.execute("DELETE FROM products")
-    try:
-        cursor.execute("DELETE FROM sqlite_sequence WHERE name='products'")
-    except Exception:
-        pass
+    cursor.execute("TRUNCATE TABLE products RESTART IDENTITY")
     _seed_products(cursor)
 
     conn.commit()
@@ -240,7 +239,7 @@ def _seed_products(cursor):
         final_products.append((*p, unit_val))
 
     cursor.executemany(
-        "INSERT INTO products (name, price, description, image_url, category, base_name, unit) VALUES (?,?,?,?,?,?,?)",
+        "INSERT INTO products (name, price, description, image_url, category, base_name, unit) VALUES (%s,%s,%s,%s,%s,%s,%s)",
         final_products,
     )
 
@@ -262,14 +261,18 @@ def get_all_products():
 def get_customer(phone: str):
     """Fetch customer record by phone."""
     conn = get_connection()
-    row = conn.execute("SELECT * FROM customers WHERE phone = ?", (phone,)).fetchone()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM customers WHERE phone = %s", (phone,))
+    row = cursor.fetchone()
     conn.close()
     return dict(row) if row else None
 
 def get_customer_by_email(email: str):
     """Fetch customer record by email."""
     conn = get_connection()
-    row = conn.execute("SELECT * FROM customers WHERE email = ?", (email,)).fetchone()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM customers WHERE email = %s", (email,))
+    row = cursor.fetchone()
     conn.close()
     return dict(row) if row else None
 
@@ -296,13 +299,15 @@ def create_or_update_customer(phone: str, name: str = None, email: str = None, a
                 params.append(pin_hash)
             
             query = query.rstrip(', ')
-            query += " WHERE phone = ?"
+            query += " WHERE phone = %s"
             params.append(phone)
-            conn.execute(query, tuple(params))
+            cursor = conn.cursor()
+            cursor.execute(query, tuple(params))
     else:
         # Insert new
-        conn.execute(
-            "INSERT INTO customers (phone, name, email, address, pin_hash, cancel_timestamps, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO customers (phone, name, email, address, pin_hash, cancel_timestamps, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s)",
             (phone, name, email, address, pin_hash, "[]", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         )
     conn.commit()
@@ -311,14 +316,17 @@ def create_or_update_customer(phone: str, name: str = None, email: str = None, a
 def update_customer_cancels(phone: str, cancel_timestamps_json: str):
     """Update a customer's cancel timestamps JSON string."""
     conn = get_connection()
-    conn.execute("UPDATE customers SET cancel_timestamps = ? WHERE phone = ?", (cancel_timestamps_json, phone))
+    cursor = conn.cursor()
+    cursor.execute("UPDATE customers SET cancel_timestamps = %s WHERE phone = %s", (cancel_timestamps_json, phone))
     conn.commit()
     conn.close()
 
 def get_all_customers():
     """Fetch all signed-up customers."""
     conn = get_connection()
-    rows = conn.execute("SELECT phone, name, address, created_at FROM customers ORDER BY created_at DESC").fetchall()
+    cursor = conn.cursor()
+    cursor.execute("SELECT phone, name, address, created_at FROM customers ORDER BY created_at DESC")
+    rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
 
@@ -330,10 +338,9 @@ def create_order(phone: str, items: list, total: float, delivery_type: str = "pi
     cursor = conn.cursor()
 
     cursor.execute(
-        "UPDATE counters SET value = value + 1 WHERE name = 'order_token'"
+        "UPDATE counters SET value = value + 1 WHERE name = 'order_token' RETURNING value"
     )
-    cursor.execute("SELECT value FROM counters WHERE name = 'order_token'")
-    token_num = cursor.fetchone()[0]
+    token_num = cursor.fetchone()['value']
     token = str(token_num)
 
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -343,7 +350,7 @@ def create_order(phone: str, items: list, total: float, delivery_type: str = "pi
     delivery_otp = str(random.randint(1000, 9999)) if delivery_type == "delivery" else None
 
     cursor.execute(
-        "INSERT INTO orders (token, phone, items_json, status, total, timestamp, delivery_type, delivery_time, address, delivery_otp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO orders (token, phone, items_json, status, total, timestamp, delivery_type, delivery_time, address, delivery_otp) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
         (token, phone, items_json, "Processing", total, timestamp, delivery_type, delivery_time, address, delivery_otp),
     )
 
@@ -354,35 +361,41 @@ def create_order(phone: str, items: list, total: float, delivery_type: str = "pi
 def get_all_orders():
     """Fetch all orders (newest first) with customer names."""
     conn = get_connection()
+    cursor = conn.cursor()
     query = '''
         SELECT o.*, c.name as customer_name 
         FROM orders o 
         LEFT JOIN customers c ON o.phone = c.phone 
         ORDER BY o.id DESC
     '''
-    rows = conn.execute(query).fetchall()
+    cursor.execute(query)
+    rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
 
 def get_order_by_token(token: str):
     """Fetch a single order by token with customer name."""
     conn = get_connection()
+    cursor = conn.cursor()
     query = '''
         SELECT o.*, c.name as customer_name 
         FROM orders o 
         LEFT JOIN customers c ON o.phone = c.phone 
-        WHERE o.token = ?
+        WHERE o.token = %s
     '''
-    row = conn.execute(query, (token,)).fetchone()
+    cursor.execute(query, (token,))
+    row = cursor.fetchone()
     conn.close()
     return dict(row) if row else None
 
 def get_orders_by_phone(phone: str):
     """Fetch all orders for a customer by phone (newest first)."""
     conn = get_connection()
-    rows = conn.execute(
-        "SELECT * FROM orders WHERE phone = ? ORDER BY id DESC", (phone,)
-    ).fetchall()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM orders WHERE phone = %s ORDER BY id DESC", (phone,)
+    )
+    rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
 
@@ -390,7 +403,7 @@ def update_order_status(token: str, status: str) -> bool:
     """Update order status. Returns True if updated."""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("UPDATE orders SET status = ? WHERE token = ?", (status, token))
+    cursor.execute("UPDATE orders SET status = %s WHERE token = %s", (status, token))
     updated = cursor.rowcount > 0
     conn.commit()
     conn.close()
@@ -402,7 +415,7 @@ def mark_delivered(token: str) -> bool:
     cursor = conn.cursor()
     delivered_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     cursor.execute(
-        "UPDATE orders SET status = 'Delivered', delivered_at = ? WHERE token = ?",
+        "UPDATE orders SET status = 'Delivered', delivered_at = %s WHERE token = %s",
         (delivered_at, token)
     )
     updated = cursor.rowcount > 0
