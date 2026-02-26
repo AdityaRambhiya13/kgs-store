@@ -313,7 +313,7 @@ export default function CatalogPage({ searchQuery = '' }) {
             {cartCount > 0 && (
                 <div className="sticky-cart-bar" onClick={() => setCartOpen(true)}>
                     <div className="sticky-cart-info" style={{ color: '#fff', fontSize: '15px', fontWeight: '600' }}>
-                        🛒 {cartCount} {cartCount === 1 ? 'item' : 'items'}
+                        {cartCount} item{cartCount > 1 ? 's' : ''} in cart
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fff' }}>
                         <span style={{ fontWeight: '800', fontSize: '18px' }}>₹{cartTotal.toFixed(0)}</span>
