@@ -367,16 +367,18 @@ def login(body: LoginRequest, request: Request):
 
 @app.post("/api/auth/forgot-pin")
 def forgot_pin(body: ForgotPinRequest, request: Request):
-    check_rate_limit(request, limit=3, window=60, scope="forgot-pin")
+    check_rate_limit(request, limit=5, window=60, scope="forgot-pin")
     customer = get_customer(body.phone)
     if not customer:
-        # Don't reveal if phone exists or not
-        return {"message": "If this phone is registered, a password reset link has been generated."}
+        raise HTTPException(status_code=404, detail="Phone number not registered")
         
     reset_token = create_access_token({"role": "reset", "phone": customer["phone"]}, timedelta(minutes=15))
-    print(f"\n[SMS MOCK] Password Reset Link generated for {body.phone}: \nhttp://localhost:5173/reset-pin?token={reset_token}\n")
     
-    return {"message": "If this phone is registered, a password reset link has been generated. Check console for MOCK SMS link."}
+    return {
+        "verified": True,
+        "name": customer.get("name", "User"),
+        "token": reset_token
+    }
 
 @app.post("/api/auth/reset-pin")
 def reset_pin(body: ResetPinRequest, request: Request):
