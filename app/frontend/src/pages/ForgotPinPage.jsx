@@ -100,13 +100,13 @@ export default function ForgotPinPage() {
                                 type="password"
                                 className="input"
                                 value={newPin}
-                                onChange={e => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                onChange={e => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
                                 required
-                                placeholder="Enter 4-6 digit PIN"
+                                placeholder="Enter 4-digit PIN"
                                 style={{ textAlign: 'center', letterSpacing: '4px', fontSize: '18px' }}
                             />
                         </div>
-                        <motion.button type="submit" className="btn btn-primary" disabled={loading || newPin.length < 4} whileTap={{ scale: 0.98 }} style={{ width: '100%', justifyContent: 'center', padding: '14px', fontSize: 16 }}>
+                        <motion.button type="submit" className="btn btn-primary" disabled={loading || newPin.length !== 4} whileTap={{ scale: 0.98 }} style={{ width: '100%', justifyContent: 'center', padding: '14px', fontSize: 16 }}>
                             {loading ? 'Updating...' : 'Update PIN & Login'}
                         </motion.button>
 
