@@ -204,7 +204,7 @@ def place_order(order: OrderCreate, request: Request, customer_token: dict = Dep
 
     address_str = db_cust.get("address")
     if order.delivery_type == "delivery" and order.address:
-        address_dict = order.address.dict()
+        address_dict = order.address.model_dump()
         address_str = json.dumps(address_dict)
         if order.save_as_home:
             create_or_update_customer(phone=phone, address=address_str)

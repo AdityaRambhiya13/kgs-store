@@ -230,177 +230,206 @@ def get_all_products():
     if _products_cache is not None and (now - _products_cache_time) < 300:
         return _products_cache
     conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM products ORDER BY category, base_name, price")
-    rows = cursor.fetchall()
-    conn.close()
-    _products_cache = [dict(row) for row in rows]
-    _products_cache_time = now
-    return _products_cache
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM products ORDER BY category, base_name, price")
+        rows = cursor.fetchall()
+        _products_cache = [dict(row) for row in rows]
+        _products_cache_time = now
+        return _products_cache
+    finally:
+        conn.close()
 
 # ── Customer OTP auth ─────────────────────────────────────
 
 def get_customer(phone: str):
     """Fetch customer record by phone."""
     conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM customers WHERE phone = %s", (phone,))
-    row = cursor.fetchone()
-    conn.close()
-    return dict(row) if row else None
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM customers WHERE phone = %s", (phone,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
 
 def get_customer_by_email(email: str):
     """Fetch customer record by email."""
     conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM customers WHERE email = %s", (email,))
-    row = cursor.fetchone()
-    conn.close()
-    return dict(row) if row else None
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM customers WHERE email = %s", (email,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
 
 def create_or_update_customer(phone: str, name: str = None, email: str = None, address: str = None, pin_hash: str = None):
     """Insert or update customer details."""
     conn = get_connection()
     existing = get_customer(phone)
-    if existing:
-        # Update existing
-        if name or email or address or pin_hash:
-            query = "UPDATE customers SET "
-            params = []
-            if name:
-                query += "name = ?, "
-                params.append(name)
-            if email:
-                query += "email = ?, "
-                params.append(email)
-            if address:
-                query += "address = ?, "
-                params.append(address)
-            if pin_hash:
-                query += "pin_hash = ?, "
-                params.append(pin_hash)
-            
-            query = query.rstrip(', ')
-            query += " WHERE phone = %s"
-            params.append(phone)
+    try:
+        if existing:
+            # Update existing
+            if name or email or address or pin_hash:
+                query = "UPDATE customers SET "
+                params = []
+                if name:
+                    query += "name = %s, "
+                    params.append(name)
+                if email:
+                    query += "email = %s, "
+                    params.append(email)
+                if address:
+                    query += "address = %s, "
+                    params.append(address)
+                if pin_hash:
+                    query += "pin_hash = %s, "
+                    params.append(pin_hash)
+                
+                query = query.rstrip(', ')
+                query += " WHERE phone = %s"
+                params.append(phone)
+                cursor = conn.cursor()
+                cursor.execute(query, tuple(params))
+        else:
+            # Insert new
             cursor = conn.cursor()
-            cursor.execute(query, tuple(params))
-    else:
-        # Insert new
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO customers (phone, name, email, address, pin_hash, cancel_timestamps, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-            (phone, name, email, address, pin_hash, "[]", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-        )
-    conn.commit()
-    conn.close()
+            cursor.execute(
+                "INSERT INTO customers (phone, name, email, address, pin_hash, cancel_timestamps, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                (phone, name, email, address, pin_hash, "[]", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            )
+        conn.commit()
+    finally:
+        conn.close()
 
 def update_customer_cancels(phone: str, cancel_timestamps_json: str):
     """Update a customer's cancel timestamps JSON string."""
     conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE customers SET cancel_timestamps = %s WHERE phone = %s", (cancel_timestamps_json, phone))
-    conn.commit()
-    conn.close()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE customers SET cancel_timestamps = %s WHERE phone = %s", (cancel_timestamps_json, phone))
+        conn.commit()
+    finally:
+        conn.close()
 
 def get_all_customers():
     """Fetch all signed-up customers."""
     conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT phone, name, address, created_at FROM customers ORDER BY created_at DESC")
-    rows = cursor.fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT phone, name, address, created_at FROM customers ORDER BY created_at DESC")
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        conn.close()
 
 # ── Orders ────────────────────────────────────────────────
 
 def create_order(phone: str, items: list, total: float, delivery_type: str = "pickup", delivery_time: str = "same_day", address: str = None) -> str:
     """Create a new order and return the generated token."""
     conn = get_connection()
-    cursor = conn.cursor()
+    try:
+        cursor = conn.cursor()
+        
+        # Robust increment logic with fallback insertion
+        cursor.execute("""
+            INSERT INTO counters (name, value) 
+            VALUES ('order_token', 101) 
+            ON CONFLICT (name) DO UPDATE 
+            SET value = counters.value + 1 
+            RETURNING value
+        """)
+        token_num = cursor.fetchone()['value']
+        token = str(token_num)
 
-    cursor.execute(
-        "UPDATE counters SET value = value + 1 WHERE name = 'order_token' RETURNING value"
-    )
-    token_num = cursor.fetchone()['value']
-    token = str(token_num)
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        items_json = json.dumps(items)
+        
+        import random
+        delivery_otp = str(random.randint(1000, 9999)) if delivery_type == "delivery" else None
 
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    items_json = json.dumps(items)
-    
-    import random
-    delivery_otp = str(random.randint(1000, 9999)) if delivery_type == "delivery" else None
+        cursor.execute(
+            "INSERT INTO orders (token, phone, items_json, status, total, timestamp, delivery_type, delivery_time, address, delivery_otp) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            (token, phone, items_json, "Processing", total, timestamp, delivery_type, delivery_time, address, delivery_otp),
+        )
 
-    cursor.execute(
-        "INSERT INTO orders (token, phone, items_json, status, total, timestamp, delivery_type, delivery_time, address, delivery_otp) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-        (token, phone, items_json, "Processing", total, timestamp, delivery_type, delivery_time, address, delivery_otp),
-    )
-
-    conn.commit()
-    conn.close()
-    return token
+        conn.commit()
+        return token
+    finally:
+        conn.close()
 
 def get_all_orders():
     """Fetch all orders (newest first) with customer names."""
     conn = get_connection()
-    cursor = conn.cursor()
-    query = '''
-        SELECT o.*, c.name as customer_name 
-        FROM orders o 
-        LEFT JOIN customers c ON o.phone = c.phone 
-        ORDER BY o.id DESC
-    '''
-    cursor.execute(query)
-    rows = cursor.fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
+    try:
+        cursor = conn.cursor()
+        query = '''
+            SELECT o.*, c.name as customer_name 
+            FROM orders o 
+            LEFT JOIN customers c ON o.phone = c.phone 
+            ORDER BY o.id DESC
+        '''
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        conn.close()
 
 def get_order_by_token(token: str):
     """Fetch a single order by token with customer name."""
     conn = get_connection()
-    cursor = conn.cursor()
-    query = '''
-        SELECT o.*, c.name as customer_name 
-        FROM orders o 
-        LEFT JOIN customers c ON o.phone = c.phone 
-        WHERE o.token = %s
-    '''
-    cursor.execute(query, (token,))
-    row = cursor.fetchone()
-    conn.close()
-    return dict(row) if row else None
+    try:
+        cursor = conn.cursor()
+        query = '''
+            SELECT o.*, c.name as customer_name 
+            FROM orders o 
+            LEFT JOIN customers c ON o.phone = c.phone 
+            WHERE o.token = %s
+        '''
+        cursor.execute(query, (token,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
 
 def get_orders_by_phone(phone: str):
     """Fetch all orders for a customer by phone (newest first)."""
     conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT * FROM orders WHERE phone = %s ORDER BY id DESC", (phone,)
-    )
-    rows = cursor.fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT * FROM orders WHERE phone = %s ORDER BY id DESC", (phone,)
+        )
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        conn.close()
 
 def update_order_status(token: str, status: str) -> bool:
     """Update order status. Returns True if updated."""
     conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE orders SET status = %s WHERE token = %s", (status, token))
-    updated = cursor.rowcount > 0
-    conn.commit()
-    conn.close()
-    return updated
+    try:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE orders SET status = %s WHERE token = %s", (status, token))
+        updated = cursor.rowcount > 0
+        conn.commit()
+        return updated
+    finally:
+        conn.close()
 
 def mark_delivered(token: str) -> bool:
     """Mark an order as Delivered with timestamp."""
     conn = get_connection()
-    cursor = conn.cursor()
-    delivered_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    cursor.execute(
-        "UPDATE orders SET status = 'Delivered', delivered_at = %s WHERE token = %s",
-        (delivered_at, token)
-    )
-    updated = cursor.rowcount > 0
-    conn.commit()
-    conn.close()
-    return updated
+    try:
+        cursor = conn.cursor()
+        delivered_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        cursor.execute(
+            "UPDATE orders SET status = 'Delivered', delivered_at = %s WHERE token = %s",
+            (delivered_at, token)
+        )
+        updated = cursor.rowcount > 0
+        conn.commit()
+        return updated
+    finally:
+        conn.close()
