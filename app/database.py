@@ -82,26 +82,6 @@ def init_db():
         )
     """)
 
-    # ── Safe column migrations ────────────────────────────
-    migrations = [
-        ("orders", "delivery_type", "TEXT NOT NULL DEFAULT 'pickup'"),
-        ("orders", "delivery_time", "TEXT NOT NULL DEFAULT 'same_day'"),
-        ("orders", "delivered_at",  "TEXT"),
-        ("orders", "address",       "TEXT"),
-        ("orders", "delivery_otp",  "TEXT"),
-        ("products", "base_name",   "TEXT NOT NULL DEFAULT ''"),
-        ("products", "unit",        "TEXT NOT NULL DEFAULT 'kg'"),
-        ("customers", "name",       "TEXT"),
-        ("customers", "email",      "TEXT"),
-        ("customers", "address",    "TEXT"),
-        ("customers", "cancel_timestamps", "TEXT DEFAULT '[]'"),
-    ]
-    for table, col, defn in migrations:
-        try:
-            conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {defn}")
-        except Exception:
-            pass  # column already exists
-
     # ── Initialize counter ────────────────────────────────
     cursor.execute(
         "INSERT INTO counters (name, value) VALUES ('order_token', 100) ON CONFLICT DO NOTHING"
@@ -250,7 +230,9 @@ def get_all_products():
     if _products_cache is not None and (now - _products_cache_time) < 300:
         return _products_cache
     conn = get_connection()
-    rows = conn.execute("SELECT * FROM products ORDER BY category, base_name, price").fetchall()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM products ORDER BY category, base_name, price")
+    rows = cursor.fetchall()
     conn.close()
     _products_cache = [dict(row) for row in rows]
     _products_cache_time = now
