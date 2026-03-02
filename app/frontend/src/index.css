@@ -2759,3 +2759,53 @@ p {
     gap: 20px;
   }
 }
+
+/* ── Mobile Responsiveness ───────────────────────────────────── */
+@media (max-width: 768px) {
+
+  /* Navbar Responsiveness */
+  .navbar-inner {
+    flex-wrap: wrap;
+    padding: 10px 16px;
+  }
+
+  .nav-actions {
+    margin-left: auto;
+  }
+
+  .nav-search {
+    flex: 1 1 100%;
+    max-width: none;
+    order: 3;
+    margin: 12px 0 0 0;
+  }
+
+  .nav-logo-text {
+    font-size: 18px !important;
+  }
+
+  /* Cart Panel Responsiveness */
+  .cart-panel {
+    max-width: 100vw;
+    width: 100vw;
+  }
+
+  /* Product Grid Responsiveness */
+  .product-grid-multi {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+    gap: 10px;
+  }
+
+  .product-card {
+    min-height: 250px;
+  }
+
+  .pc-img-wrap {
+    height: 120px;
+  }
+
+  /* Universal Adjustments */
+  .main-content {
+    padding: 16px;
+  }
+}
