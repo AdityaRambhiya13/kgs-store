@@ -144,6 +144,23 @@ export default function StatusPage() {
                                         ? (deliveryType === 'delivery' ? "We'll be at your doorstep shortly." : 'Please collect your items at the counter.')
                                         : "We're packing your items. You'll be notified when ready."}
                             </p>
+
+                            {/* ETA Chip — shown while processing */}
+                            {!isDelivered && !isReady && (
+                                <motion.div
+                                    className="order-eta-chip"
+                                    style={{ margin: '16px auto 0', display: 'inline-flex' }}
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: 0.3, type: 'spring', stiffness: 300, damping: 22 }}
+                                >
+                                    {deliveryTime === 'next_day'
+                                        ? '📅 Estimated delivery: tomorrow by 10 AM'
+                                        : deliveryType === 'delivery'
+                                            ? '🚚 Est. delivery in ~60–90 mins'
+                                            : '⚡ Est. ready for pickup in ~60–90 mins'}
+                                </motion.div>
+                            )}
                         </motion.div>
                     </div>
 

@@ -319,6 +319,21 @@ def get_me(request: Request, customer: dict = Depends(get_current_customer)):
             
     return {"phone": db_cust["phone"], "name": db_cust["name"], "address": address_data}
 
+class ProfileUpdateRequest(BaseModel):
+    name: str
+
+@app.patch("/api/auth/profile")
+def update_profile(body: ProfileUpdateRequest, request: Request, customer: dict = Depends(get_current_customer)):
+    check_rate_limit(request, limit=10, window=60, scope="auth-profile-update")
+    name = body.name.strip()
+    if not name or len(name) < 2:
+        raise HTTPException(status_code=400, detail="Name must be at least 2 characters")
+    if len(name) > 60:
+        raise HTTPException(status_code=400, detail="Name too long")
+    phone = customer.get("phone")
+    create_or_update_customer(phone=phone, name=name)
+    return {"message": "Profile updated", "name": name}
+
 @app.get("/api/auth/check-phone")
 def check_phone(phone: str, request: Request):
     check_rate_limit(request, limit=60, window=60, scope="auth-check-phone")

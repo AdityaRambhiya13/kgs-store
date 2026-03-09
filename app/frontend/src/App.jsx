@@ -7,6 +7,7 @@ import ConfirmPage from './pages/ConfirmPage'
 import StatusPage from './pages/StatusPage'
 import AdminPage from './pages/AdminPage'
 import OrderHistoryPage from './pages/OrderHistoryPage'
+import ProfilePage from './pages/ProfilePage'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import ForgotPinPage from './pages/ForgotPinPage'
@@ -48,6 +49,7 @@ export default function App() {
           <Route path="/confirm" element={<ProtectedRoute><ConfirmPage /></ProtectedRoute>} />
           <Route path="/status/:token" element={<ProtectedRoute><StatusPage /></ProtectedRoute>} />
           <Route path="/orders" element={<ProtectedRoute><OrderHistoryPage /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 
           {/* Admin Route */}
           <Route path="/manage-store-99" element={<AdminPage />} />

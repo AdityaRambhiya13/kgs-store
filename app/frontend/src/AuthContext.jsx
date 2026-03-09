@@ -17,6 +17,11 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
     };
 
+    const updateName = (name) => {
+        localStorage.setItem('kgsName', name);
+        setUser(prev => prev ? { ...prev, name } : prev);
+    };
+
     useEffect(() => {
         const phone = localStorage.getItem('kgsPhone');
         const token = localStorage.getItem('kgsToken');
@@ -47,10 +52,8 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // Logout defined above
-
     return (
-        <AuthContext.Provider value={{ user, loading, login: loginFunc, logout }}>
+        <AuthContext.Provider value={{ user, loading, login: loginFunc, logout, updateName }}>
             {!loading && children}
         </AuthContext.Provider>
     );

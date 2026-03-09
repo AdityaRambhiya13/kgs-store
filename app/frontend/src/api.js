@@ -70,6 +70,9 @@ export const resetPin = (token, new_pin) =>
 export const getProfile = () =>
     request('GET', '/api/auth/me')
 
+export const updateProfile = (name) =>
+    request('PATCH', '/api/auth/profile', { name })
+
 // ── Order History ──────────────────────────────────────────────
 export const getOrderHistory = (token) =>
     request('GET', '/api/orders/history', null, null, token)

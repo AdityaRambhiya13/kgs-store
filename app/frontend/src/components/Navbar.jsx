@@ -19,7 +19,7 @@ export default function Navbar({ searchQuery, onSearchChange }) {
                         <span className="nav-logo-text" style={{ fontSize: '26px', color: 'var(--primary)', letterSpacing: '-1px' }}>KGS</span>
                         <div style={{ display: 'flex', flexDirection: 'column', marginLeft: '6px' }}>
                             <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase' }}>Delivery in</span>
-                            <span style={{ fontSize: '16px', fontWeight: 900, color: 'var(--text)' }}>15 mins</span>
+                            <span style={{ fontSize: '16px', fontWeight: 900, color: 'var(--text)' }}>60–90 mins</span>
                         </div>
                     </div>
 
@@ -29,7 +29,7 @@ export default function Navbar({ searchQuery, onSearchChange }) {
                             <motion.button
                                 className="icon-btn"
                                 whileTap={{ scale: 0.88 }}
-                                onClick={() => navigate('/orders')}
+                                onClick={() => navigate('/profile')}
                                 title="My Profile"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
