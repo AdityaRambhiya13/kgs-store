@@ -120,7 +120,7 @@ export default function ConfirmPage() {
                 payload.save_as_home = saveAsHome
             }
 
-            const result = await placeOrder(payload)
+            const result = await placeOrder(payload, user.token)
             setToken(result.token)
             if (result.delivery_otp) setDeliveryOtp(result.delivery_otp)
             setOrderPlaced(true)
@@ -294,10 +294,10 @@ export default function ConfirmPage() {
                         <motion.div
                             key="success"
                             className="confirm-card order-success-card"
-                            initial={{ opacity: 0, scale: 0.93, y: 30 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0 }}
-                            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                            transition={{ duration: 0.2 }}
                         >
                             {/* Animated Checkmark */}
                             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
@@ -306,9 +306,9 @@ export default function ConfirmPage() {
 
                             <motion.h2
                                 className="order-success-title"
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.55, duration: 0.4 }}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.2 }}
                             >
                                 Order Confirmed! 🎉
                             </motion.h2>
@@ -317,7 +317,6 @@ export default function ConfirmPage() {
                                 style={{ color: 'var(--text-muted)', fontSize: 15, marginBottom: 24, textAlign: 'center' }}
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
-                                transition={{ delay: 0.7 }}
                             >
                                 Your order has been placed successfully
                             </motion.p>
@@ -325,9 +324,9 @@ export default function ConfirmPage() {
                             {/* Token Box */}
                             <motion.div
                                 className="order-token-box"
-                                initial={{ opacity: 0, y: 12 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.75, ease: [0.22, 1, 0.36, 1] }}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.2 }}
                             >
                                 <div className="order-token-label">Order Token</div>
                                 <div className="order-token-value">{token}</div>
@@ -336,7 +335,6 @@ export default function ConfirmPage() {
                                     onClick={handleCopyToken}
                                     whileTap={{ scale: 0.88 }}
                                     animate={copied ? { backgroundColor: '#10B981', color: '#fff', borderColor: '#10B981' } : {}}
-                                    transition={{ duration: 0.2 }}
                                 >
                                     {copied ? '✓ Copied!' : '📋 Copy'}
                                 </motion.button>
@@ -344,26 +342,16 @@ export default function ConfirmPage() {
 
                             {/* Delivery OTP */}
                             {deliveryOtp && (
-                                <motion.div
-                                    className="order-otp-box"
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    transition={{ delay: 0.85 }}
-                                >
+                                <div className="order-otp-box">
                                     <span style={{ fontSize: 13, color: 'var(--primary)' }}>Delivery OTP</span>
                                     <span className="order-otp-value">{deliveryOtp}</span>
-                                </motion.div>
+                                </div>
                             )}
 
                             {/* ETA Chip */}
-                            <motion.div
-                                className="order-eta-chip"
-                                initial={{ opacity: 0, scale: 0.88 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ delay: 0.92, type: 'spring', stiffness: 300, damping: 22 }}
-                            >
+                            <div className="order-eta-chip" style={{ marginTop: '12px', marginBottom: '16px' }}>
                                 {etaText}
-                            </motion.div>
+                            </div>
 
                             {cancelMsg && (
                                 <div style={{ padding: '12px', background: cancelMsg.includes('blocked') ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)', borderRadius: '8px', marginBottom: '16px', color: cancelMsg.includes('blocked') ? 'var(--danger)' : 'var(--accent)', fontSize: '14px', textAlign: 'center' }}>
@@ -374,9 +362,9 @@ export default function ConfirmPage() {
                             {/* Buttons */}
                             <motion.div
                                 style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: 8 }}
-                                initial={{ opacity: 0, y: 16 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 1.0, ease: [0.22, 1, 0.36, 1] }}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.2 }}
                             >
                                 <motion.a
                                     href={whatsappUrl}

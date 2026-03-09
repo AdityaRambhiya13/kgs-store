@@ -29,7 +29,7 @@ async function request(method, path, body = null, signal = null, token = null) {
 
 export const getProducts = (signal) => request('GET', '/api/products', null, signal)
 
-export const placeOrder = (data) => request('POST', '/api/orders', data)
+export const placeOrder = (data, token) => request('POST', '/api/orders', data, null, token)
 
 export const cancelOrder = (token) => request('POST', `/api/orders/${token}/cancel`)
 

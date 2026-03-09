@@ -227,17 +227,12 @@ export default function CatalogPage({ searchQuery = '' }) {
                                         <div className="product-grid-wrap" style={{ marginTop: '16px' }}>
                                             <div className="product-grid product-grid-multi">
                                                 {filtered.map((groupObj, groupIndex) => (
-                                                    <motion.div
-                                                        key={groupObj.base_name || groupObj.name}
-                                                        initial={{ opacity: 0, y: 24 }}
-                                                        animate={{ opacity: 1, y: 0 }}
-                                                        transition={{ duration: 0.32, delay: Math.min(groupIndex * 0.045, 0.5) }}
-                                                    >
+                                                    <div key={groupObj.base_name || groupObj.name}>
                                                         <ProductCard
                                                             product={groupObj}
                                                             onClick={() => setSelectedGroup({ ...groupObj, variants: groupObj.variants?.length ? groupObj.variants : [groupObj] })}
                                                         />
-                                                    </motion.div>
+                                                    </div>
                                                 ))}
                                             </div>
                                         </div>
@@ -279,23 +274,16 @@ export default function CatalogPage({ searchQuery = '' }) {
                                             )}
 
                                             {/* Items Grid — use CSS grid for uniform heights when specific category selected */}
-                                            <AnimatePresence>
-                                                <div className={activeCategory !== 'All' ? 'product-grid product-grid-multi' : 'product-grid'}>
-                                                    {displayItems.map((item, i) => (
-                                                        <motion.div
-                                                            key={item.base_name || item.name}
-                                                            initial={{ opacity: 0, y: 24 }}
-                                                            animate={{ opacity: 1, y: 0 }}
-                                                            transition={{ duration: 0.32, delay: Math.min(i * 0.045, 0.5) }}
-                                                        >
-                                                            <ProductCard
-                                                                product={item}
-                                                                onClick={() => setSelectedGroup({ ...item, variants: item.variants?.length ? item.variants : [item] })}
-                                                            />
-                                                        </motion.div>
-                                                    ))}
-                                                </div>
-                                            </AnimatePresence>
+                                            <div className={activeCategory !== 'All' ? 'product-grid product-grid-multi' : 'product-grid'}>
+                                                {displayItems.map((item, i) => (
+                                                    <div key={item.base_name || item.name}>
+                                                        <ProductCard
+                                                            product={item}
+                                                            onClick={() => setSelectedGroup({ ...item, variants: item.variants?.length ? item.variants : [item] })}
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
 
                                             {/* Bottom See All Button for Clamped Groups */}
                                             {activeCategory === 'All' && hasMore && (

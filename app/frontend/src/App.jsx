@@ -36,25 +36,25 @@ export default function App() {
   return (
     <>
       {!isAuthPage && <Navbar searchQuery={showSearch ? searchQuery : undefined} onSearchChange={setSearchQuery} />}
-      <AnimatePresence mode="wait">
-        <Routes location={location} key={location.pathname}>
-          {/* Auth Routes */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
-          <Route path="/forgot-pin" element={<ForgotPinPage />} />
-          <Route path="/reset-pin" element={<ResetPinPage />} />
 
-          {/* Protected Routes */}
-          <Route path="/" element={<ProtectedRoute><CatalogPage searchQuery={searchQuery} /></ProtectedRoute>} />
-          <Route path="/confirm" element={<ProtectedRoute><ConfirmPage /></ProtectedRoute>} />
-          <Route path="/status/:token" element={<ProtectedRoute><StatusPage /></ProtectedRoute>} />
-          <Route path="/orders" element={<ProtectedRoute><OrderHistoryPage /></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+      <Routes location={location} key={location.pathname}>
+        {/* Auth Routes */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/forgot-pin" element={<ForgotPinPage />} />
+        <Route path="/reset-pin" element={<ResetPinPage />} />
 
-          {/* Admin Route */}
-          <Route path="/manage-store-99" element={<AdminPage />} />
-        </Routes>
-      </AnimatePresence>
+        {/* Protected Routes */}
+        <Route path="/" element={<ProtectedRoute><CatalogPage searchQuery={searchQuery} /></ProtectedRoute>} />
+        <Route path="/confirm" element={<ProtectedRoute><ConfirmPage /></ProtectedRoute>} />
+        <Route path="/status/:token" element={<ProtectedRoute><StatusPage /></ProtectedRoute>} />
+        <Route path="/orders" element={<ProtectedRoute><OrderHistoryPage /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+
+        {/* Admin Route */}
+        <Route path="/manage-store-99" element={<AdminPage />} />
+      </Routes>
+
       {!isAuthPage && <CartPanel />}
       {!isAuthPage && <Footer />}
     </>
