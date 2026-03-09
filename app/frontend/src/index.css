@@ -642,6 +642,8 @@ p {
   flex-shrink: 0;
   padding: 8px;
   /* Inset padding to show border */
+  box-sizing: border-box;
+  /* Ensures padding subtracts from width, rather than adding to it */
 }
 
 .pc-img {
