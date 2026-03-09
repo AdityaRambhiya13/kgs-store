@@ -640,7 +640,8 @@ p {
   overflow: hidden;
   background: var(--bg-card);
   flex-shrink: 0;
-  padding: 8px;
+  padding: 18px;
+  /* Greatly increased padding reduces image size inside */
   /* Inset padding to show border */
   box-sizing: border-box;
   /* Ensures padding subtracts from width, rather than adding to it */
@@ -666,14 +667,18 @@ p {
 
 .pc-variants-badge {
   position: absolute;
-  top: 14px;
-  left: 14px;
-  background: var(--primary);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 99px;
+  top: 8px;
+  right: 8px;
+  /* Moved to top right out of the image way */
+  background: rgba(45, 91, 227, 0.08);
+  /* Primary color low opacity */
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(45, 91, 227, 0.2);
+  backdrop-filter: blur(4px);
   letter-spacing: 0.02em;
 }
 
@@ -687,12 +692,13 @@ p {
 }
 
 .pc-name {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 15px;
+  /* Increased from 13px */
+  font-weight: 800;
   color: var(--primary);
   /* Blue like before */
   line-height: 1.3;
-  margin: 0 0 2px;
+  margin: 0 0 4px;
   display: -webkit-box;
   line-clamp: 2;
   -webkit-line-clamp: 2;
@@ -701,12 +707,13 @@ p {
 }
 
 .pc-category {
-  font-size: 10px;
-  font-weight: 500;
+  font-size: 11px;
+  /* Increased from 10px */
+  font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin: 0 0 6px;
+  letter-spacing: 0.05em;
+  margin: 0 0 8px;
 }
 
 /* Footer row: price left, add btn right */
@@ -718,7 +725,8 @@ p {
 }
 
 .pc-price {
-  font-size: 15px;
+  font-size: 18px;
+  /* Increased from 15px */
   font-weight: 900;
   color: var(--secondary);
   /* Green price like before */
