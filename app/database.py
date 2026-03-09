@@ -1,5 +1,5 @@
 import psycopg2
-from psycopg2 import extras
+from psycopg2 import extras, pool
 import os
 import json
 import time
@@ -15,14 +15,28 @@ def _invalidate_products_cache():
     global _products_cache
     _products_cache = None
 
-def get_connection():
-    """Get a PostgreSQL connection with RealDictCursor."""
+_db_pool = None
+
+def init_pool():
+    global _db_pool
     if not DATABASE_URL:
         raise ValueError("DATABASE_URL environment variable is not set")
-    
-    # Use DictCursor to mimic SQLite row factory (access by key)
-    conn = psycopg2.connect(DATABASE_URL, cursor_factory=extras.RealDictCursor)
-    return conn
+    if _db_pool is None:
+        print("🔧 Initializing Postgres Connection Pool...")
+        _db_pool = pool.ThreadedConnectionPool(1, 40, DATABASE_URL, cursor_factory=extras.RealDictCursor)
+
+def get_connection():
+    """Get a PostgreSQL connection from the ThreadedConnectionPool."""
+    if _db_pool is None:
+        init_pool()
+    return _db_pool.getconn()
+
+def release_connection(conn):
+    if _db_pool is not None and conn is not None:
+        try:
+            _db_pool.putconn(conn)
+        except Exception as e:
+            print(f"Error releasing connection: {e}")
 
 def init_db():
     """Create tables, run migrations, and reseed products."""
@@ -92,7 +106,7 @@ def init_db():
     _seed_products(cursor)
 
     conn.commit()
-    conn.close()
+    release_connection(conn)
     _invalidate_products_cache()
 
 def _seed_products(cursor):
@@ -238,7 +252,7 @@ def get_all_products():
         _products_cache_time = now
         return _products_cache
     finally:
-        conn.close()
+        release_connection(conn)
 
 # ── Customer OTP auth ─────────────────────────────────────
 
@@ -251,7 +265,7 @@ def get_customer(phone: str):
         row = cursor.fetchone()
         return dict(row) if row else None
     finally:
-        conn.close()
+        release_connection(conn)
 
 def get_customer_by_email(email: str):
     """Fetch customer record by email."""
@@ -262,7 +276,7 @@ def get_customer_by_email(email: str):
         row = cursor.fetchone()
         return dict(row) if row else None
     finally:
-        conn.close()
+        release_connection(conn)
 
 def create_or_update_customer(phone: str, name: str = None, email: str = None, address: str = None, pin_hash: str = None):
     """Insert or update customer details."""
@@ -301,7 +315,7 @@ def create_or_update_customer(phone: str, name: str = None, email: str = None, a
             )
         conn.commit()
     finally:
-        conn.close()
+        release_connection(conn)
 
 def update_customer_cancels(phone: str, cancel_timestamps_json: str):
     """Update a customer's cancel timestamps JSON string."""
@@ -311,7 +325,7 @@ def update_customer_cancels(phone: str, cancel_timestamps_json: str):
         cursor.execute("UPDATE customers SET cancel_timestamps = %s WHERE phone = %s", (cancel_timestamps_json, phone))
         conn.commit()
     finally:
-        conn.close()
+        release_connection(conn)
 
 def get_all_customers():
     """Fetch all signed-up customers."""
@@ -322,7 +336,7 @@ def get_all_customers():
         rows = cursor.fetchall()
         return [dict(row) for row in rows]
     finally:
-        conn.close()
+        release_connection(conn)
 
 # ── Orders ────────────────────────────────────────────────
 
@@ -357,7 +371,7 @@ def create_order(phone: str, items: list, total: float, delivery_type: str = "pi
         conn.commit()
         return token
     finally:
-        conn.close()
+        release_connection(conn)
 
 def get_all_orders():
     """Fetch all orders (newest first) with customer names."""
@@ -374,7 +388,7 @@ def get_all_orders():
         rows = cursor.fetchall()
         return [dict(row) for row in rows]
     finally:
-        conn.close()
+        release_connection(conn)
 
 def get_order_by_token(token: str):
     """Fetch a single order by token with customer name."""
@@ -391,7 +405,7 @@ def get_order_by_token(token: str):
         row = cursor.fetchone()
         return dict(row) if row else None
     finally:
-        conn.close()
+        release_connection(conn)
 
 def get_orders_by_phone(phone: str):
     """Fetch all orders for a customer by phone (newest first)."""
@@ -404,7 +418,7 @@ def get_orders_by_phone(phone: str):
         rows = cursor.fetchall()
         return [dict(row) for row in rows]
     finally:
-        conn.close()
+        release_connection(conn)
 
 def update_order_status(token: str, status: str) -> bool:
     """Update order status. Returns True if updated."""
@@ -416,7 +430,7 @@ def update_order_status(token: str, status: str) -> bool:
         conn.commit()
         return updated
     finally:
-        conn.close()
+        release_connection(conn)
 
 def mark_delivered(token: str) -> bool:
     """Mark an order as Delivered with timestamp."""
@@ -432,4 +446,4 @@ def mark_delivered(token: str) -> bool:
         conn.commit()
         return updated
     finally:
-        conn.close()
+        release_connection(conn)
