@@ -644,6 +644,8 @@ p {
   /* Inset padding to show border */
   box-sizing: border-box;
   /* Ensures padding subtracts from width, rather than adding to it */
+  border-bottom: 1px solid var(--border);
+  /* subtle separator line below image */
 }
 
 .pc-img {
@@ -677,7 +679,8 @@ p {
 
 /* Card body */
 .pc-body {
-  padding: 8px 10px 10px;
+  padding: 14px 10px 10px;
+  /* Increased top padding from 8px to 14px for better spacing */
   display: flex;
   flex-direction: column;
   flex: 1;
