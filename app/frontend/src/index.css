@@ -283,35 +283,7 @@ p {
   font-weight: 800;
 }
 
-.nav-search {
-  flex: 1;
-  max-width: 500px;
-  position: relative;
-  display: flex;
-  visibility: visible;
-  opacity: 1;
-  margin: 0 20px;
-}
-
-.nav-search input {
-  width: 100%;
-  padding: 10px 16px 10px 42px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--bg-card);
-  color: var(--text);
-  font-family: 'Inter', sans-serif;
-  font-size: 15px;
-  outline: none;
-  transition: all var(--transition);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04);
-}
-
-.nav-search input:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-glow), inset 0 1px 3px rgba(0, 0, 0, 0.02);
-}
-
+/* Custom search icon styling if anything else was left (handled inline mostly) */
 .nav-search-icon {
   position: absolute;
   left: 14px;
