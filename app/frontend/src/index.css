@@ -28,12 +28,13 @@ body {
 
 /* ── CSS Design Tokens ───────────────────────────────────────── */
 :root {
-  --primary: #0C831F;
-  /* Blinkit/Zepto pure green */
-  --primary-light: #16A34A;
-  --primary-glow: rgba(12, 131, 31, 0.15);
-  --secondary: #1E3A8A;
-  --secondary-glow: rgba(30, 58, 138, 0.2);
+  --primary: #1E3A8A;
+  /* Deep Blue theme */
+  --primary-light: #3B82F6;
+  --primary-glow: rgba(30, 58, 138, 0.15);
+  --secondary: #10B981;
+  /* Green accent for active/add */
+  --secondary-glow: rgba(16, 185, 129, 0.2);
   --accent: #F59E0B;
   --danger: #EF4444;
 
@@ -56,27 +57,7 @@ body {
   --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ── Mobile App Shell for Desktop ───────────────────────────── */
-@media (min-width: 600px) {
-  body {
-    background: #E5E7EB;
-    /* Outer background */
-  }
-
-  body[data-theme="dark"] {
-    background: #000;
-  }
-
-  #root {
-    max-width: 480px;
-    margin: 0 auto;
-    background: var(--bg);
-    min-height: 100vh;
-    box-shadow: 0 0 40px rgba(0, 0, 0, 0.1);
-    position: relative;
-    overflow-x: hidden;
-  }
-}
+/* Desktop shell removed to enable full-screen proper layout */
 
 :root[data-theme="dark"] {
   --bg: #0F172A;
@@ -435,6 +416,13 @@ p {
   width: 100%;
 }
 
+@media (min-width: 768px) {
+  .catalog-wrapper {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+
 .category-sidebar {
   width: 100%;
   position: relative;
@@ -453,6 +441,25 @@ p {
   scrollbar-width: none;
   padding: 0 16px;
   gap: 8px;
+}
+
+@media (min-width: 768px) {
+  .category-sidebar {
+    position: sticky;
+    top: 70px;
+    width: 260px;
+    min-width: 260px;
+    height: calc(100vh - 70px);
+    border-right: 1px solid var(--border);
+    border-bottom: none;
+    padding: 24px 16px;
+    overflow-y: auto;
+  }
+
+  .category-sidebar .sidebar-list {
+    flex-direction: column;
+    padding: 0;
+  }
 }
 
 .category-sidebar .sidebar-list::-webkit-scrollbar {
@@ -475,14 +482,35 @@ p {
   transition: all var(--transition);
 }
 
+@media (min-width: 768px) {
+  .sidebar-item {
+    padding: 12px 16px;
+    border-radius: var(--radius-lg);
+    border: none;
+  }
+}
+
 .sidebar-item.active {
   background: var(--primary);
   color: #fff;
   border-color: var(--primary);
 }
 
+@media (min-width: 768px) {
+  .sidebar-item.active {
+    background: var(--primary-glow);
+    color: var(--primary);
+  }
+}
+
 .sidebar-item.active .sidebar-emoji {
   background: rgba(255, 255, 255, 0.2);
+}
+
+@media (min-width: 768px) {
+  .sidebar-item.active .sidebar-emoji {
+    background: #fff;
+  }
 }
 
 .sidebar-emoji {
@@ -500,6 +528,12 @@ p {
   flex: 1;
   padding: 16px;
   min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .main-content {
+    padding: 24px 32px;
+  }
 }
 
 /* ── Product Grid ────────────────────────────────────────────── */
@@ -567,7 +601,7 @@ p {
   flex-wrap: unset;
   flex-direction: unset;
   overflow-x: unset;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 12px;
   padding-bottom: 0;
   align-items: stretch;
@@ -575,8 +609,8 @@ p {
 
 @media (min-width: 600px) {
   .product-grid-multi {
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
   }
 }
 
@@ -823,19 +857,7 @@ p {
   backdrop-filter: blur(2px);
 }
 
-.cart-panel {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 100%;
-  max-width: 400px;
-  background: var(--bg-card);
-  z-index: 201;
-  display: flex;
-  flex-direction: column;
-  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
-}
+/* ── Old Cart Panel block removed (using the one below) ──────────────────────────────────────────────── */
 
 /* ── Sticky Bottom Cart Bar ──────────────────────────────────── */
 
@@ -849,24 +871,21 @@ p {
   color: #fff;
   padding: 0 20px;
   border-radius: var(--radius);
-  box-shadow: 0 4px 16px rgba(12, 131, 31, 0.3);
+  box-shadow: 0 4px 16px var(--primary-glow);
   display: flex;
   align-items: center;
   justify-content: space-between;
   z-index: 1000;
   cursor: pointer;
-  animation: slideUpCenter 0.4s forwards cubic-bezier(0.16, 1, 0.3, 1);
-  max-width: 448px;
-  margin: 0 auto;
 }
 
-@keyframes slideUpCenter {
-  from {
-    transform: translateY(150%);
-  }
-
-  to {
-    transform: translateY(0);
+@media (min-width: 768px) {
+  .sticky-cart-bar {
+    left: auto;
+    right: 32px;
+    bottom: 32px;
+    width: 360px;
+    border-radius: var(--radius-lg);
   }
 }
 
@@ -929,15 +948,12 @@ p {
   flex-direction: column;
   box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
   max-width: 480px;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@media (min-width: 600px) {
-  .cart-panel {
-    right: auto;
-    left: 50%;
-    transform: translateX(-50%);
-  }
-}
+/* We don't center the panel anymore. It stays attached to the right! 
+   The motion.div in React will animate it, but we can set defaults. */
 
 .cart-header {
   padding: 20px;

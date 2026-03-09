@@ -15,6 +15,7 @@
 - `/plan` next milestone or start `/verify 5` for full manual walkthrough
 
 ## Recent Activity
+- 2026-03-09: **UI Revert** — Restored Blue/White theme and full-screen Desktop layout
 - 2026-03-09: **UI Redesign** — Migrated to Quick Commerce aesthetics (sticky cart, stepper, responsive shell)
 - 2026-02-20: **Phase 5 COMPLETE** — grain catalog, PIN auth, delivery type, 3-lane admin, kg display
 - 2026-02-20: **Phase 5 Planned** (4 execution plans created)
