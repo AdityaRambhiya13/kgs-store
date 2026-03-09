@@ -18,6 +18,9 @@ async function request(method, path, body = null, signal = null, token = null) {
     if (signal) opts.signal = signal
     const res = await fetch(`${BASE}${path}`, opts)
     if (!res.ok) {
+        if (res.status === 401) {
+            window.dispatchEvent(new Event('auth-error'))
+        }
         const err = await res.json().catch(() => ({ detail: res.statusText }))
         throw new Error(err.detail || 'Request failed')
     }

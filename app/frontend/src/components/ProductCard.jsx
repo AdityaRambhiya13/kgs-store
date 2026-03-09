@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { useCart } from '../CartContext'
 
 const CATEGORY_EMOJI = {
     Rice: '🍚',
@@ -8,11 +9,32 @@ const CATEGORY_EMOJI = {
 }
 
 export default function ProductCard({ product, onClick }) {
+    const { cartItems, addToCart, removeFromCart } = useCart()
     const variants = product.variants ?? [product]
     const unit = variants[0].unit || 'kg'
     const minPrice = Math.min(...variants.map(v => v.price))
     const variantCount = variants.length
     const emoji = CATEGORY_EMOJI[product.category] || '🌾'
+
+    // Check if the exact item variant is in cart (only used for single variant items for quick + / -)
+    const cartItem = variantCount === 1 ? cartItems.find(item => item.product_id === variants[0].id) : null;
+    const qtyInCart = cartItem ? cartItem.quantity : 0;
+
+    const handleAddClick = (e) => {
+        e.stopPropagation();
+        if (variantCount === 1) {
+            addToCart(variants[0]);
+        } else {
+            onClick(); // Open modal for variants
+        }
+    }
+
+    const handleMinusClick = (e) => {
+        e.stopPropagation();
+        if (variantCount === 1 && qtyInCart > 0) {
+            removeFromCart(variants[0].id);
+        }
+    }
 
     return (
         <motion.div
@@ -48,16 +70,24 @@ export default function ProductCard({ product, onClick }) {
                 <div className="product-card-bottom-row">
                     <div className="product-price">
                         <span>₹{minPrice}</span>
-                        <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginLeft: '4px', fontWeight: '500' }}>/ {unit}</span>
                     </div>
-
-                    <motion.button
-                        className="product-add-btn"
-                        onClick={e => { e.stopPropagation(); onClick() }}
-                        whileTap={{ scale: 0.95 }}
-                    >
-                        {variantCount > 1 ? `ADD (+${variantCount})` : 'ADD'}
-                    </motion.button>
+                    <div className="btn-add-container">
+                        {qtyInCart > 0 && variantCount === 1 ? (
+                            <div className="qty-stepper" onClick={e => e.stopPropagation()}>
+                                <button className="qty-btn" onClick={handleMinusClick}>−</button>
+                                <span className="qty-count">{qtyInCart}</span>
+                                <button className="qty-btn" onClick={handleAddClick}>+</button>
+                            </div>
+                        ) : (
+                            <motion.button
+                                className="product-add-btn"
+                                onClick={handleAddClick}
+                                whileTap={{ scale: 0.95 }}
+                            >
+                                {variantCount > 1 ? `ADD (+${variantCount})` : 'ADD'}
+                            </motion.button>
+                        )}
+                    </div>
                 </div>
             </div>
         </motion.div>

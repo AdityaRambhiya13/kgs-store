@@ -325,19 +325,29 @@ export default function CatalogPage({ searchQuery = '' }) {
                 onClose={() => setSelectedGroup(null)}
             />
 
-            {/* Sticky Cart Bar */}
-            {cartCount > 0 && !cartOpen && cartCount > 0 && (
-                <div className="sticky-cart-bar" onClick={() => setCartOpen(true)}>
-                    <div className="sticky-cart-info" style={{ color: '#fff', fontSize: '15px', fontWeight: '600' }}>
-                        {cartCount} item{cartCount > 1 ? 's' : ''} in cart
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fff' }}>
-                        <span style={{ fontWeight: '800', fontSize: '18px' }}>₹{cartTotal.toFixed(0)}</span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '700', fontSize: '15px' }}>
-                            View Cart <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            {/* Sticky Cart Bar (Quick Commerce Style) */}
+            {cartCount > 0 && !cartOpen && (
+                <motion.div
+                    className="sticky-cart-bar"
+                    onClick={() => setCartOpen(true)}
+                    initial={{ y: 100, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: 100, opacity: 0 }}
+                    transition={{ type: 'spring', damping: 25, stiffness: 400 }}
+                >
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <div style={{ fontSize: '13px', fontWeight: '800', opacity: 0.9 }}>
+                            {cartCount} item{cartCount > 1 ? 's' : ''}
+                        </div>
+                        <div style={{ fontWeight: '900', fontSize: '18px' }}>
+                            ₹{cartTotal.toFixed(0)}
                         </div>
                     </div>
-                </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '800', fontSize: '16px' }}>
+                        View Cart
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </div>
+                </motion.div>
             )}
 
 

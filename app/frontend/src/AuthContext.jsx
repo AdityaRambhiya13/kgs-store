@@ -9,6 +9,14 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    const logout = () => {
+        localStorage.removeItem('kgsPhone');
+        localStorage.removeItem('kgsToken');
+        localStorage.removeItem('kgsName');
+        localStorage.removeItem('kgsAddress');
+        setUser(null);
+    };
+
     useEffect(() => {
         const phone = localStorage.getItem('kgsPhone');
         const token = localStorage.getItem('kgsToken');
@@ -19,6 +27,9 @@ export const AuthProvider = ({ children }) => {
             setUser({ phone, token, name, address });
         }
         setLoading(false);
+
+        window.addEventListener('auth-error', logout);
+        return () => window.removeEventListener('auth-error', logout);
     }, []);
 
     const loginFunc = async (identifier, pin) => {
@@ -36,13 +47,7 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const logout = () => {
-        localStorage.removeItem('kgsPhone');
-        localStorage.removeItem('kgsToken');
-        localStorage.removeItem('kgsName');
-        localStorage.removeItem('kgsAddress');
-        setUser(null);
-    };
+    // Logout defined above
 
     return (
         <AuthContext.Provider value={{ user, loading, login: loginFunc, logout }}>
