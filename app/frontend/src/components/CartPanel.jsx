@@ -20,6 +20,7 @@ export default function CartPanel() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
                     onClick={() => setCartOpen(false)}
                 />
             )}
@@ -31,7 +32,7 @@ export default function CartPanel() {
                     initial={{ x: '100%' }}
                     animate={{ x: 0 }}
                     exit={{ x: '100%' }}
-                    transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+                    transition={{ type: 'tween', ease: [0.22, 1, 0.36, 1], duration: 0.35 }}
                 >
                     {/* Header */}
                     <div className="cart-header">
