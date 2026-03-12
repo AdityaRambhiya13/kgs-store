@@ -110,132 +110,87 @@ def init_db():
     _invalidate_products_cache()
 
 def _seed_products(cursor):
-    """Seed grain products with base_name for variant grouping."""
-    RICE_IMG   = "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=300&fit=crop"
-    WHEAT_IMG  = "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400&h=300&fit=crop"
-    JOWARI_IMG = "https://images.unsplash.com/photo-1596547609652-9fc5d8d428ce?w=400&h=300&fit=crop"
-    BAJRI_IMG  = "https://images.unsplash.com/photo-1615485925763-86db9d2d22f0?w=400&h=300&fit=crop"
-    PULSES_IMG = "https://images.unsplash.com/photo-1585996611354-972a9e34c901?w=400&h=300&fit=crop"
+    """Seed products from the CSV file."""
+    import csv
+    import os
 
-    products = [
-        # ── Rice variants ─────────────────────────────────
-        ("Vadakolam Rice",      68,  "₹68/kg — Premium quality",   RICE_IMG,   "Rice",   "Vadakolam Rice"),
-        ("Vadakolam Rice",      72,  "₹72/kg — Premium quality",   RICE_IMG,   "Rice",   "Vadakolam Rice"),
-        ("Vadakolam Rice",      76,  "₹76/kg — Premium quality",   RICE_IMG,   "Rice",   "Vadakolam Rice"),
-        ("Vadakolam Rice",      80,  "₹80/kg — Premium quality",   RICE_IMG,   "Rice",   "Vadakolam Rice"),
-        ("MassorieKolam Rice",  44,  "₹44/kg — Premium quality",   RICE_IMG,   "Rice",   "MassorieKolam Rice"),
-        ("Parimal Rice",        42,  "₹42/kg — Premium quality",   RICE_IMG,   "Rice",   "Parimal Rice"),
-        ("Boiled Rice",         58,  "₹58/kg — Premium quality",   RICE_IMG,   "Rice",   "Boiled Rice"),
-        ("Boiled Kolam Rice",   60,  "₹60/kg — Premium quality",   RICE_IMG,   "Rice",   "Boiled Kolam Rice"),
-        ("Basmati Rice",        99,  "₹99/kg — Premium quality",   RICE_IMG,   "Rice",   "Basmati Rice"),
-        ("Basmati Rice",       120,  "₹120/kg — Premium quality",  RICE_IMG,   "Rice",   "Basmati Rice"),
-        ("Basmati Rice",       180,  "₹180/kg — Premium quality",  RICE_IMG,   "Rice",   "Basmati Rice"),
-        ("Basmati Rice",       220,  "₹220/kg — Premium quality",  RICE_IMG,   "Rice",   "Basmati Rice"),
-        ("Broken Basmati",      60,  "₹60/kg — Premium quality",   RICE_IMG,   "Rice",   "Broken Basmati"),
-        ("Broken Basmati",      67,  "₹67/kg — Premium quality",   RICE_IMG,   "Rice",   "Broken Basmati"),
-        ("Broken Basmati",      77,  "₹77/kg — Premium quality",   RICE_IMG,   "Rice",   "Broken Basmati"),
-        ("Ambemore Rice",      220,  "₹220/kg — Premium quality",  RICE_IMG,   "Rice",   "Ambemore Rice"),
-        ("Indrani Rice",        66,  "₹66/kg — Premium quality",   RICE_IMG,   "Rice",   "Indrani Rice"),
-        ("Indrani Rice",        74,  "₹74/kg — Premium quality",   RICE_IMG,   "Rice",   "Indrani Rice"),
-        ("Italy Rice",          52,  "₹52/kg — Premium quality",   RICE_IMG,   "Rice",   "Italy Rice"),
-        ("Red Rice",            66,  "₹66/kg — Premium quality",   RICE_IMG,   "Rice",   "Red Rice"),
-        ("Brown Rice",         126,  "₹126/kg — Premium quality",  RICE_IMG,   "Rice",   "Brown Rice"),
+    # Root directory of the project (one level above 'app' folder)
+    csv_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "products-1773310034.csv")
+    
+    if not os.path.exists(csv_file_path):
+        print(f"⚠️ CSV file not found at {csv_file_path}. Skipping product seeding.")
+        return
 
-        # ── Daals & Pulses (New) ──────────────────────────
-        ("Toordal",             109, "₹109/kg — Essential Lentil", PULSES_IMG, "Daals & Pulses", "Toordal"),
-        ("Toordal",             196, "₹196/kg — Priority Grade",   PULSES_IMG, "Daals & Pulses", "Toordal"),
-        ("Toordal",             220, "₹220/kg — Premium Grade",    PULSES_IMG, "Daals & Pulses", "Toordal"),
-        ("Toordal",             280, "₹280/kg — Export Quality",   PULSES_IMG, "Daals & Pulses", "Toordal"),
+    # Generic images based on category keywords
+    category_images = {
+        "Rice": "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=300&fit=crop",
+        "Wheat": "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400&h=300&fit=crop",
+        "Jowar": "https://images.unsplash.com/photo-1596547609652-9fc5d8d428ce?w=400&h=300&fit=crop",
+        "Bajri": "https://images.unsplash.com/photo-1615485925763-86db9d2d22f0?w=400&h=300&fit=crop",
+        "Dals": "https://images.unsplash.com/photo-1585996611354-972a9e34c901?w=400&h=300&fit=crop",
+        "Pulses": "https://images.unsplash.com/photo-1585996611354-972a9e34c901?w=400&h=300&fit=crop",
+        "Sweets": "https://images.unsplash.com/photo-1589119908995-c6837fa14848?w=400&h=300&fit=crop",
+        "Bakery": "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&h=300&fit=crop",
+        "Cleaning": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=400&h=300&fit=crop",
+        "Snacks": "https://images.unsplash.com/photo-15994906592a3-e3f9642dd427?w=400&h=300&fit=crop",
+        "Misc": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=400&h=300&fit=crop",
+        "Default": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=400&h=300&fit=crop"
+    }
 
-        ("Moongdal",            109, "₹109/kg — Fresh",            PULSES_IMG, "Daals & Pulses", "Moongdal"),
-        ("Moongdal",            180, "₹180/kg — Premium",          PULSES_IMG, "Daals & Pulses", "Moongdal"),
-        
-        ("Chana dal",            88, "₹88/kg — Standard",          PULSES_IMG, "Daals & Pulses", "Chana dal"),
-        ("Chana dal",           108, "₹108/kg — Premium",          PULSES_IMG, "Daals & Pulses", "Chana dal"),
-        
-        ("Udid dal",            120, "₹120/kg — Quality Sort",     PULSES_IMG, "Daals & Pulses", "Udid dal"),
-        ("Udid dal",            196, "₹196/kg — Premium",          PULSES_IMG, "Daals & Pulses", "Udid dal"),
-        
-        ("Masoor dal",          120, "₹120/kg — Farm Fresh",       PULSES_IMG, "Daals & Pulses", "Masoor dal"),
-        ("Chilti Moongdal",     160, "₹160/kg — Quality Select",   PULSES_IMG, "Daals & Pulses", "Chilti Moongdal"),
-        
-        ("Moong",               200, "₹200/kg — 1kg bag",          PULSES_IMG, "Daals & Pulses", "Moong (Whole)"),
-        ("Moong - 500g",        100, "₹100/500g — Half kg bag",    PULSES_IMG, "Daals & Pulses", "Moong (Whole)"),
-        
-        ("Mataki - 500g",        70, "₹70/500g",                   PULSES_IMG, "Daals & Pulses", "Mataki"),
-        ("Mataki - 250g",        35, "₹35/250g",                   PULSES_IMG, "Daals & Pulses", "Mataki"),
-        
-        ("Masur - 500g",         60, "₹60/500g",                   PULSES_IMG, "Daals & Pulses", "Masur"),
-        ("Masur - 250g",         30, "₹30/250g",                   PULSES_IMG, "Daals & Pulses", "Masur"),
-        
-        ("Chana - 500g",         60, "₹60/500g",                   PULSES_IMG, "Daals & Pulses", "Chana"),
-        ("Chana - 250g",         30, "₹30/250g",                   PULSES_IMG, "Daals & Pulses", "Chana"),
-        
-        ("Kabuli Chana - 500g", 110, "₹110/500g",                  PULSES_IMG, "Daals & Pulses", "Kabuli Chana"),
-        ("Kabuli Chana - 250g",  55, "₹55/250g",                   PULSES_IMG, "Daals & Pulses", "Kabuli Chana"),
-        
-        ("Chawali - 500g",       90, "₹90/500g",                   PULSES_IMG, "Daals & Pulses", "Chawali"),
-        ("Chawali - 250g",       45, "₹45/250g",                   PULSES_IMG, "Daals & Pulses", "Chawali"),
-        
-        ("White Vatana - 500g",  80, "₹80/500g",                   PULSES_IMG, "Daals & Pulses", "White Vatana"),
-        ("White Vatana - 250g",  40, "₹40/250g",                   PULSES_IMG, "Daals & Pulses", "White Vatana"),
-        
-        ("Green Vatana - 500g",  80, "₹80/500g",                   PULSES_IMG, "Daals & Pulses", "Green Vatana"),
-        ("Green Vatana - 250g",  40, "₹40/250g",                   PULSES_IMG, "Daals & Pulses", "Green Vatana"),
-        
-        ("Black Vatana - 500g",  80, "₹80/500g",                   PULSES_IMG, "Daals & Pulses", "Black Vatana"),
-        ("Black Vatana - 250g",  40, "₹40/250g",                   PULSES_IMG, "Daals & Pulses", "Black Vatana"),
-
-        # ── 250g Specific Variants ────────────────────────
-        ("Matki Dal - 250g",     45, "₹45/250g",                   PULSES_IMG, "Daals & Pulses", "Matki Dal"),
-        ("Waal Dal - 250g",      80, "₹80/250g",                   PULSES_IMG, "Daals & Pulses", "Waal Dal"),
-        ("Chavli Dal - 250g",    60, "₹60/250g",                   PULSES_IMG, "Daals & Pulses", "Chavli Dal"),
-        ("Mix Dal - 250g",       49, "₹49/250g",                   PULSES_IMG, "Daals & Pulses", "Mix Dal"),
-        ("Black Udid - 250g",    38, "₹38/250g",                   PULSES_IMG, "Daals & Pulses", "Black Udid"),
-        ("Green Chana - 250g",   50, "₹50/250g",                   PULSES_IMG, "Daals & Pulses", "Green Chana"),
-        ("Mosambi Chana - 250g", 45, "₹45/250g",                   PULSES_IMG, "Daals & Pulses", "Mosambi Chana"),
-        ("Rajma Black - 250g",   50, "₹50/250g",                   PULSES_IMG, "Daals & Pulses", "Rajma Black"),
-        ("Red Chawali - 250g",   50, "₹50/250g",                   PULSES_IMG, "Daals & Pulses", "Red Chawali"),
-        ("Kadve Waal - 250g",    65, "₹65/250g",                   PULSES_IMG, "Daals & Pulses", "Kadve Waal"),
-        ("Wal - 250g",           50, "₹50/250g",                   PULSES_IMG, "Daals & Pulses", "Wal"),
-        ("Rajma White - 250g",   50, "₹50/250g",                   PULSES_IMG, "Daals & Pulses", "Rajma White"),
-        ("Barik Chawali - 250g", 65, "₹65/250g",                   PULSES_IMG, "Daals & Pulses", "Barik Chawali"),
-        ("Black Urad - 250g",    40, "₹40/250g",                   PULSES_IMG, "Daals & Pulses", "Black Urad (Whole)"),
-        ("Soyabean - 250g",      40, "₹40/250g",                   PULSES_IMG, "Daals & Pulses", "Soyabean"),
-        ("Kulid - 250g",         35, "₹35/250g",                   PULSES_IMG, "Daals & Pulses", "Kulid"),
-        # ── Wheat variants ────────────────────────────────
-        ("Lokvan Wheat",        45,  "₹45/kg — Premium quality",   WHEAT_IMG,  "Wheat",  "Lokvan Wheat"),
-        ("Lokvan Wheat",        52,  "₹52/kg — Premium quality",   WHEAT_IMG,  "Wheat",  "Lokvan Wheat"),
-        ("Lokvan Wheat",        56,  "₹56/kg — Premium quality",   WHEAT_IMG,  "Wheat",  "Lokvan Wheat"),
-        ("MPSIOR Wheat — Basic",  48,  "₹48/kg — Basic grade",      WHEAT_IMG,  "Wheat",  "MPSIOR Wheat"),
-        ("MPSIOR Wheat — Regular", 52,  "₹52/kg — Regular grade",    WHEAT_IMG,  "Wheat",  "MPSIOR Wheat"),
-        ("MPSIOR Wheat — Gold",    72,  "₹72/kg — Gold grade",       WHEAT_IMG,  "Wheat",  "MPSIOR Wheat"),
-        ("MPSIOR Wheat — Premium", 76,  "₹76/kg — Premium grade",    WHEAT_IMG,  "Wheat",  "MPSIOR Wheat"),
-        ("MPSIOR Wheat — Select",  80,  "₹80/kg — Select grade",     WHEAT_IMG,  "Wheat",  "MPSIOR Wheat"),
-        ("Khapli Wheat",          120,  "₹120/kg — Nutri wheat",     WHEAT_IMG,  "Wheat",  "Khapli Wheat"),
-        # ── Jowari variants ───────────────────────────────────────────────
-        ("Jowari — White",        54,  "₹54/kg — White variety",    JOWARI_IMG, "Jowari", "Jowari"),
-        ("Jowari — Yellow",       60,  "₹60/kg — Yellow variety",   JOWARI_IMG, "Jowari", "Jowari"),
-        ("Jowari — Red",          90,  "₹90/kg — Red variety",      JOWARI_IMG, "Jowari", "Jowari"),
-        # ── Bajri ─────────────────────────────────────────
-        ("Bajri",               56,  "₹56/kg — Premium quality",   BAJRI_IMG,  "Bajri",  "Bajri"),
-    ]
-
-    # Derive unit from name explicitly
     final_products = []
-    for p in products:
-        name = p[0]
-        unit_val = "kg"
-        if "250g" in name or "250g" in p[2]:
-            unit_val = "250g"
-        elif "500g" in name or "500g" in p[2]:
-            unit_val = "500g"
-        final_products.append((*p, unit_val))
+    try:
+        with open(csv_file_path, mode='r', encoding='utf-8-sig') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                name = row['name'].strip()
+                category = (row['category_name'] or "Miscellaneous").strip()
+                try:
+                    price = float(row['mrp'])
+                except:
+                    price = 0.0
+                
+                packaging = row['packaging'].strip()
+                
+                # Derive unit
+                unit = "kg"
+                lower_name = name.lower()
+                lower_pkg = packaging.lower()
+                
+                if "250g" in lower_name or "250gm" in lower_name or "250g" in lower_pkg:
+                    unit = "250g"
+                elif "500g" in lower_name or "500gm" in lower_name or "500g" in lower_pkg:
+                    unit = "500g"
+                elif "100g" in lower_name or "100gm" in lower_name or "100g" in lower_pkg:
+                    unit = "100g"
+                elif "50g" in lower_name or "50gm" in lower_name:
+                    unit = "50g"
+                elif "1kg" in lower_name or "1kg" in lower_pkg:
+                    unit = "1kg"
+                elif "ltr" in lower_name or "ltr" in lower_pkg or " l " in f" {lower_pkg} ":
+                    unit = "ltr"
+                elif "ml" in lower_name or "ml" in lower_pkg:
+                    unit = "ml"
 
-    cursor.executemany(
-        "INSERT INTO products (name, price, description, image_url, category, base_name, unit) VALUES (%s,%s,%s,%s,%s,%s,%s)",
-        final_products,
-    )
+                # Derive Image URL
+                img_url = category_images["Default"]
+                for key in category_images:
+                    if key.lower() in category.lower() or key.lower() in name.lower():
+                        img_url = category_images[key]
+                        break
+                
+                description = f"₹{int(price)}/{unit} — {packaging}"
+                base_name = name
+
+                final_products.append((name, price, description, img_url, category, base_name, unit))
+
+        if final_products:
+            cursor.executemany(
+                "INSERT INTO products (name, price, description, image_url, category, base_name, unit) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                final_products,
+            )
+            print(f"✅ Successfully seeded {len(final_products)} products from CSV.")
+    except Exception as e:
+        print(f"❌ Error during CSV seeding: {e}")
 
 def get_all_products():
     """Fetch all products (5-min in-memory cache)."""
