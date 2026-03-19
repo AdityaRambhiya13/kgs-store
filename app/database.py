@@ -1,9 +1,10 @@
-import psycopg2
-from psycopg2 import extras, pool
+import psycopg2  # type: ignore
+from psycopg2 import extras, pool  # type: ignore
 import os
 import json
 import time
 from datetime import datetime
+from typing import Optional
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -29,6 +30,7 @@ def get_connection():
     """Get a PostgreSQL connection from the ThreadedConnectionPool."""
     if _db_pool is None:
         init_pool()
+    assert _db_pool is not None
     return _db_pool.getconn()
 
 def release_connection(conn):
@@ -115,7 +117,7 @@ def _seed_products(cursor):
     import os
 
     # Root directory of the project (one level above 'app' folder)
-    csv_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "products-1773310034.csv")
+    csv_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "products_cleaned_v2.csv")
     
     if not os.path.exists(csv_file_path):
         print(f"⚠️ CSV file not found at {csv_file_path}. Skipping product seeding.")
@@ -142,14 +144,18 @@ def _seed_products(cursor):
         with open(csv_file_path, mode='r', encoding='utf-8-sig') as f:
             reader = csv.DictReader(f)
             for row in reader:
-                name = row['name'].strip()
-                category = (row['category_name'] or "Miscellaneous").strip()
+                packaging = row.get('packaging', 'standard').strip()
+                base_name = row.get('base_name', '').strip()
+                if packaging.lower() != 'standard' and packaging.lower() != '':
+                    name = f"{base_name} {packaging}".strip()
+                else:
+                    name = base_name.strip()
+                
+                category = (row.get('ecommerce_category', 'Miscellaneous') or "Miscellaneous").strip()
                 try:
-                    price = float(row['mrp'])
+                    price = float(row.get('mrp', 0))
                 except:
                     price = 0.0
-                
-                packaging = row['packaging'].strip()
                 
                 # Derive unit
                 unit = "kg"
@@ -174,12 +180,11 @@ def _seed_products(cursor):
                 # Derive Image URL
                 img_url = category_images["Default"]
                 for key in category_images:
-                    if key.lower() in category.lower() or key.lower() in name.lower():
-                        img_url = category_images[key]
+                    if str(key).lower() in category.lower() or str(key).lower() in name.lower():  # type: ignore
+                        img_url = category_images.get(key, img_url)  # type: ignore
                         break
                 
                 description = f"₹{int(price)}/{unit} — {packaging}"
-                base_name = name
 
                 final_products.append((name, price, description, img_url, category, base_name, unit))
 
@@ -233,7 +238,7 @@ def get_customer_by_email(email: str):
     finally:
         release_connection(conn)
 
-def create_or_update_customer(phone: str, name: str = None, email: str = None, address: str = None, pin_hash: str = None):
+def create_or_update_customer(phone: str, name: "Optional[str]" = None, email: "Optional[str]" = None, address: "Optional[str]" = None, pin_hash: "Optional[str]" = None):
     """Insert or update customer details."""
     conn = get_connection()
     existing = get_customer(phone)
@@ -295,7 +300,7 @@ def get_all_customers():
 
 # ── Orders ────────────────────────────────────────────────
 
-def create_order(phone: str, items: list, total: float, delivery_type: str = "pickup", delivery_time: str = "same_day", address: str = None) -> str:
+def create_order(phone: str, items: list, total: float, delivery_type: str = "pickup", delivery_time: str = "same_day", address: "Optional[str]" = None) -> str:
     """Create a new order and return the generated token."""
     conn = get_connection()
     try:
@@ -327,6 +332,7 @@ def create_order(phone: str, items: list, total: float, delivery_type: str = "pi
         return token
     finally:
         release_connection(conn)
+    return ""
 
 def get_all_orders():
     """Fetch all orders (newest first) with customer names."""
@@ -386,6 +392,7 @@ def update_order_status(token: str, status: str) -> bool:
         return updated
     finally:
         release_connection(conn)
+    return False
 
 def mark_delivered(token: str) -> bool:
     """Mark an order as Delivered with timestamp."""
@@ -402,3 +409,4 @@ def mark_delivered(token: str) -> bool:
         return updated
     finally:
         release_connection(conn)
+    return False
