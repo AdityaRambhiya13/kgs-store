@@ -115,14 +115,12 @@ def _seed_products(cursor):
     """Seed products from the CSV file."""
     import csv
     import os
+    import sqlite3
 
     # Root directory of the project (one level above 'app' folder)
     csv_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "products_cleaned_v2.csv")
+    sqlite_db_path = os.path.join(os.path.dirname(__file__), "store.db")
     
-    if not os.path.exists(csv_file_path):
-        print(f"⚠️ CSV file not found at {csv_file_path}. Skipping product seeding.")
-        return
-
     # Generic images based on category keywords
     category_images = {
         "Rice": "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=300&fit=crop",
@@ -140,62 +138,91 @@ def _seed_products(cursor):
     }
 
     final_products = []
-    try:
-        with open(csv_file_path, mode='r', encoding='utf-8-sig') as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                packaging = row.get('packaging', 'standard').strip()
-                base_name = row.get('base_name', '').strip()
-                if packaging.lower() != 'standard' and packaging.lower() != '':
-                    name = f"{base_name} {packaging}".strip()
-                else:
-                    name = base_name.strip()
-                
-                category = (row.get('ecommerce_category', 'Miscellaneous') or "Miscellaneous").strip()
-                try:
-                    price = float(row.get('mrp', 0))
-                except:
-                    price = 0.0
-                
-                # Derive unit
-                unit = "kg"
-                lower_name = name.lower()
-                lower_pkg = packaging.lower()
-                
-                if "250g" in lower_name or "250gm" in lower_name or "250g" in lower_pkg:
-                    unit = "250g"
-                elif "500g" in lower_name or "500gm" in lower_name or "500g" in lower_pkg:
-                    unit = "500g"
-                elif "100g" in lower_name or "100gm" in lower_name or "100g" in lower_pkg:
-                    unit = "100g"
-                elif "50g" in lower_name or "50gm" in lower_name:
-                    unit = "50g"
-                elif "1kg" in lower_name or "1kg" in lower_pkg:
-                    unit = "1kg"
-                elif "ltr" in lower_name or "ltr" in lower_pkg or " l " in f" {lower_pkg} ":
-                    unit = "ltr"
-                elif "ml" in lower_name or "ml" in lower_pkg:
-                    unit = "ml"
 
-                # Derive Image URL
-                img_url = category_images["Default"]
-                for key in category_images:
-                    if str(key).lower() in category.lower() or str(key).lower() in name.lower():  # type: ignore
-                        img_url = category_images.get(key, img_url)  # type: ignore
-                        break
-                
-                description = f"₹{int(price)}/{unit} — {packaging}"
+    # 1. Load from CSV
+    if os.path.exists(csv_file_path):
+        try:
+            with open(csv_file_path, mode='r', encoding='utf-8-sig') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    packaging = row.get('packaging', 'standard').strip()
+                    base_name = row.get('base_name', '').strip()
+                    if packaging.lower() != 'standard' and packaging.lower() != '':
+                        name = f"{base_name} {packaging}".strip()
+                    else:
+                        name = base_name.strip()
+                    
+                    category = (row.get('ecommerce_category', 'Miscellaneous') or "Miscellaneous").strip()
+                    try:
+                        price = float(row.get('mrp', 0))
+                    except:
+                        price = 0.0
+                    
+                    # Derive unit
+                    unit = "kg"
+                    lower_name = name.lower()
+                    lower_pkg = packaging.lower()
+                    
+                    if "250g" in lower_name or "250gm" in lower_name or "250g" in lower_pkg:
+                        unit = "250g"
+                    elif "500g" in lower_name or "500gm" in lower_name or "500g" in lower_pkg:
+                        unit = "500g"
+                    elif "100g" in lower_name or "100gm" in lower_name or "100g" in lower_pkg:
+                        unit = "100g"
+                    elif "50g" in lower_name or "50gm" in lower_name:
+                        unit = "50g"
+                    elif "1kg" in lower_name or "1kg" in lower_pkg:
+                        unit = "1kg"
+                    elif "ltr" in lower_name or "ltr" in lower_pkg or " l " in f" {lower_pkg} ":
+                        unit = "ltr"
+                    elif "ml" in lower_name or "ml" in lower_pkg:
+                        unit = "ml"
 
-                final_products.append((name, price, description, img_url, category, base_name, unit))
+                    # Derive Image URL
+                    img_url = category_images["Default"]
+                    for key in category_images:
+                        if str(key).lower() in category.lower() or str(key).lower() in name.lower():  # type: ignore
+                            img_url = category_images.get(key, img_url)  # type: ignore
+                            break
+                    
+                    description = f"₹{int(price)}/{unit} — {packaging}"
+                    final_products.append((name, price, description, img_url, category, base_name, unit))
+            print(f"📦 Loaded {len(final_products)} products from CSV.")
+        except Exception as e:
+            print(f"❌ Error during CSV parsing: {e}")
+    else:
+        print(f"⚠️ CSV file not found at {csv_file_path}.")
 
-        if final_products:
+    # 2. Load from store.db (SQLite)
+    if os.path.exists(sqlite_db_path):
+        try:
+            sqlite_conn = sqlite3.connect(sqlite_db_path)
+            sqlite_cursor = sqlite_conn.cursor()
+            sqlite_cursor.execute("SELECT name, price, description, image_url, category, base_name, unit FROM products")
+            sqlite_rows = sqlite_cursor.fetchall()
+            initial_count = len(final_products)
+            for row in sqlite_rows:
+                # Append to the final list
+                final_products.append(row)
+            sqlite_conn.close()
+            print(f"📦 Loaded {len(sqlite_rows)} products from SQLite (store.db).")
+        except Exception as e:
+            print(f"❌ Error during SQLite parsing: {e}")
+    else:
+        print(f"⚠️ SQLite database not found at {sqlite_db_path}.")
+
+    # 3. Insert into PostgreSQL
+    if final_products:
+        try:
             cursor.executemany(
                 "INSERT INTO products (name, price, description, image_url, category, base_name, unit) VALUES (%s,%s,%s,%s,%s,%s,%s)",
                 final_products,
             )
-            print(f"✅ Successfully seeded {len(final_products)} products from CSV.")
-    except Exception as e:
-        print(f"❌ Error during CSV seeding: {e}")
+            print(f"✅ Successfully seeded TOTAL {len(final_products)} products into database.")
+        except Exception as e:
+            print(f"❌ Error during PostgreSQL insertion: {e}")
+    else:
+        print("⚠️ No products found to seed.")
 
 def get_all_products():
     """Fetch all products (5-min in-memory cache)."""
