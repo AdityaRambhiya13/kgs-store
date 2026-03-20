@@ -34,14 +34,14 @@ function CheckmarkSVG() {
         >
             <motion.circle
                 cx="40" cy="40" r="38"
-                stroke="#10B981" strokeWidth="4" fill="rgba(16,185,129,0.1)"
+                stroke="#2563EB" strokeWidth="4" fill="rgba(37,99,235,0.1)"
                 initial={{ pathLength: 0 }}
                 animate={{ pathLength: 1 }}
                 transition={{ duration: 0.6, ease: 'easeOut', delay: 0.15 }}
             />
             <motion.path
                 d="M22 40L35 53L58 28"
-                stroke="#10B981" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"
+                stroke="#2563EB" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"
                 fill="none"
                 initial={{ pathLength: 0 }}
                 animate={{ pathLength: 1 }}
@@ -360,7 +360,7 @@ export default function ConfirmPage() {
                                     className="order-token-copy"
                                     onClick={handleCopyToken}
                                     whileTap={{ scale: 0.88 }}
-                                    animate={copied ? { backgroundColor: '#10B981', color: '#fff', borderColor: '#10B981' } : {}}
+                                    animate={copied ? { backgroundColor: '#2563EB', color: '#fff', borderColor: '#2563EB' } : {}}
                                 >
                                     {copied ? '✓ Copied!' : '📋 Copy'}
                                 </motion.button>

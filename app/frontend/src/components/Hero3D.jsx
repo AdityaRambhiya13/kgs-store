@@ -34,7 +34,7 @@ export default function Hero3D() {
             {/* Floating abstract gems */}
             <FloatingShape position={[-3.5, 0.5, -2]} color="#F59E0B" scale={1.2} /> {/* Gold */}
             <FloatingShape position={[3.5, -1, -3]} color="#3B82F6" scale={1.4} /> {/* Blue */}
-            <FloatingShape position={[0, -2.5, -5]} color="#10B981" scale={1.0} /> {/* Green */}
+            <FloatingShape position={[0, -2.5, -5]} color="#2563EB" scale={1.0} /> {/* Blue */}
             <FloatingShape position={[0, 2.5, -6]} color="#EC4899" scale={0.8} /> {/* Pink */}
         </Canvas>
     )

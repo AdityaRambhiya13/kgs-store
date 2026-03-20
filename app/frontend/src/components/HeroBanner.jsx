@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 const SLIDES = [
   {
     id: 1,
-    gradient: 'linear-gradient(135deg, #0C8A4E 0%, #12B865 50%, #05C46B 100%)',
+    gradient: 'linear-gradient(135deg, #2563EB 0%, #3B82F6 50%, #60A5FA 100%)',
     badge: '⚡ 10-Min Delivery',
     heading: 'Fresh Groceries,\nIn Minutes',
     sub: 'Order before 10 PM — delivered to your door blazing fast',

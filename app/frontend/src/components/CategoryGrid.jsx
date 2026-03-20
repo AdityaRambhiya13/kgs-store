@@ -5,7 +5,7 @@ const CATEGORIES = [
   { label: 'Rice', emoji: '🍚', color: '#FF8C00', bg: 'rgba(255,140,0,0.12)' },
   { label: 'Wheat', emoji: '🌾', color: '#D4A017', bg: 'rgba(212,160,23,0.12)' },
   { label: 'Jowari', emoji: '🌽', color: '#E63946', bg: 'rgba(230,57,70,0.12)' },
-  { label: 'Bajri', emoji: '🫘', color: '#2D6A4F', bg: 'rgba(45,106,79,0.12)' },
+  { label: 'Bajri', emoji: '🫘', color: '#1E40AF', bg: 'rgba(30,64,175,0.12)' },
   { label: 'Daals & Pulses', emoji: '🫛', color: '#E76F51', bg: 'rgba(231,111,81,0.12)' },
   { label: 'Dairy', emoji: '🥛', color: '#48CAE4', bg: 'rgba(72,202,228,0.12)' },
   { label: 'Snacks', emoji: '🍿', color: '#F72585', bg: 'rgba(247,37,133,0.12)' },

@@ -1,6 +1,6 @@
 /* ================================================================
    KGS Quick-Commerce — Design System (Zepto / Blinkit Style)
-   Font: Poppins | Colors: Green + Orange
+   Font: Poppins | Colors: Blue + Orange
    ================================================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap');
@@ -27,11 +27,11 @@ body {
 /* ── Design Tokens ───────────────────────────────────────────── */
 :root {
   /* Brand */
-  --primary:        #0C8A4E;
-  --primary-light:  #12B865;
-  --primary-glow:   rgba(12, 138, 78, 0.15);
-  --secondary:      #0C8A4E;
-  --secondary-glow: rgba(12, 138, 78, 0.2);
+  --primary:        #2563EB;   /* Royal Blue */
+  --primary-light:  #3B82F6;   /* Sky Blue */
+  --primary-glow:   rgba(37, 99, 235, 0.15);
+  --secondary:      #2563EB;
+  --secondary-glow: rgba(37, 99, 235, 0.2);
   --accent:         #FF6B35;
   --accent-glow:    rgba(255, 107, 53, 0.18);
   --danger:         #EF4444;
@@ -857,13 +857,13 @@ p { line-height: 1.6; }
   position: absolute;
   top: 8px;
   right: 8px;
-  background: rgba(12,138,78,0.1);
+  background: rgba(37, 99, 235, 0.1);
   color: var(--primary);
   font-size: 10px;
   font-weight: 800;
   padding: 3px 8px;
   border-radius: var(--r-sm);
-  border: 1px solid rgba(12,138,78,0.25);
+  border: 1px solid rgba(37, 99, 235, 0.25);
   backdrop-filter: blur(4px);
 }
 
@@ -1139,8 +1139,8 @@ p { line-height: 1.6; }
 }
 
 .upsell-bar.upsell-success {
-  background: #F0FDF4;
-  border-bottom-color: #BBF7D0;
+  background: #EFF6FF;
+  border-bottom-color: #DBEAFE;
   color: var(--primary);
   font-size: 13px;
   font-weight: 600;
@@ -1313,13 +1313,13 @@ p { line-height: 1.6; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #F0FDF4;
-  border: 1px solid #BBF7D0;
+  background: #EFF6FF;
+  border: 1px solid #DBEAFE;
   border-radius: var(--r);
   padding: 8px 14px;
   font-size: 13px;
   font-weight: 600;
-  color: #166534;
+  color: #1E40AF;
 }
 .cart-savings-amount { font-size: 14px; font-weight: 800; color: var(--primary); }
 
@@ -1361,7 +1361,7 @@ p { line-height: 1.6; }
   gap: 24px;
   min-width: 280px;
   max-width: calc(100vw - 32px);
-  box-shadow: 0 8px 32px rgba(12,138,78,0.45);
+  box-shadow: 0 8px 32px rgba(37, 99, 235, 0.35);
   cursor: pointer;
   user-select: none;
 }
@@ -1645,8 +1645,8 @@ p { line-height: 1.6; }
 }
 
 .status-pending    { background: rgba(245,158,11,0.12); color: #92400E; }
-.status-confirmed  { background: rgba(12,138,78,0.12); color: var(--primary); }
-.status-delivered  { background: rgba(16,185,129,0.12); color: #065F46; }
+.status-confirmed  { background: rgba(37, 99, 235, 0.12); color: var(--primary); }
+.status-delivered  { background: rgba(29, 78, 216, 0.12); color: #1E40AF; }
 .status-cancelled  { background: rgba(239,68,68,0.12); color: var(--danger); }
 
 /* ================================================================
