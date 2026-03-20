@@ -103,9 +103,23 @@ def init_db():
         "INSERT INTO counters (name, value) VALUES ('order_token', 100) ON CONFLICT DO NOTHING"
     )
 
-    # ── Always reseed products ────────────────────────────
-    cursor.execute("TRUNCATE TABLE products RESTART IDENTITY")
-    _seed_products(cursor)
+    # ── Conditional reseed products ───────────────────────
+    cursor.execute("SELECT COUNT(*) as count FROM products")
+    row = cursor.fetchone()
+    count = row['count'] if row else 0
+    
+    force_reseed = os.getenv("RESEED_DB", "false").lower() == "true"
+    
+    if count == 0 or force_reseed:
+        if force_reseed:
+            print("🔄 RESEED_DB=true detected. Forcing reseed...")
+        else:
+            print("🌱 Database empty. Initializing products...")
+            
+        cursor.execute("TRUNCATE TABLE products RESTART IDENTITY")
+        _seed_products(cursor)
+    else:
+        print(f"✅ Products already exist ({count} items). Skipping seeding to save time.")
 
     conn.commit()
     release_connection(conn)

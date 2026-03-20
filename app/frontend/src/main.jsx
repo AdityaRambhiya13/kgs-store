@@ -7,7 +7,6 @@ import App from './App'
 import './index.css'
 
 createRoot(document.getElementById('root')).render(
-  <StrictMode>
     <BrowserRouter>
       <AuthProvider>
         <CartProvider>
@@ -15,5 +14,4 @@ createRoot(document.getElementById('root')).render(
         </CartProvider>
       </AuthProvider>
     </BrowserRouter>
-  </StrictMode>,
 )

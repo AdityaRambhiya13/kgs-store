@@ -146,11 +146,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(status_code=422, content={"detail": exc.errors()})
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    import traceback
-    print(f"CRITICAL ERROR: {exc}\n{traceback.format_exc()}")
     return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+
+from fastapi.exceptions import HTTPException
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+@app.exception_handler(StarletteHTTPException)
+async def starlette_http_exception_handler(request, exc):
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
 @app.get("/api/products", response_model=List[ProductOut])
 def list_products(request: Request, customer: dict = Depends(get_current_customer)):
@@ -159,7 +175,7 @@ def list_products(request: Request, customer: dict = Depends(get_current_custome
 
 @app.post("/api/orders")
 def place_order(order: OrderCreate, request: Request, customer_token: dict = Depends(get_current_customer)):
-    check_rate_limit(request, limit=3, window=600, scope="orders")
+    # check_rate_limit(request, limit=3, window=600, scope="orders")
     
     phone = customer_token.get("phone")
     db_cust = get_customer(phone)
@@ -198,6 +214,9 @@ def place_order(order: OrderCreate, request: Request, customer_token: dict = Dep
             "quantity": item.quantity,
             "subtotal": subtotal,
         })
+
+    if order.delivery_type == "delivery" and calculated_total < 250.0:
+        calculated_total += 250.0
 
     if abs(calculated_total - order.total) > 1.0:
         raise HTTPException(status_code=400, detail="Total mismatch")
@@ -338,7 +357,7 @@ def update_profile(body: ProfileUpdateRequest, request: Request, customer: dict 
 def check_phone(phone: str, request: Request):
     check_rate_limit(request, limit=60, window=60, scope="auth-check-phone")
     # Optional endpoint to check if phone exists
-    cleaned = re.sub(r"[\s\-\+]", "", phone)
+    cleaned = phone.replace(" ", "").replace("-", "").replace("+", "")
     if cleaned.startswith("91") and len(cleaned) == 12:
         cleaned = cleaned[2:]
     

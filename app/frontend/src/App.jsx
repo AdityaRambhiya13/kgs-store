@@ -12,6 +12,7 @@ import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import ForgotPinPage from './pages/ForgotPinPage'
 import ResetPinPage from './pages/ResetPinPage'
+import TestPage from './pages/TestPage'
 import CartPanel from './components/CartPanel'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
@@ -53,6 +54,7 @@ export default function App() {
 
         {/* Admin Route */}
         <Route path="/manage-store-99" element={<AdminPage />} />
+        <Route path="/test" element={<TestPage />} />
       </Routes>
 
       {!isAuthPage && <CartPanel />}

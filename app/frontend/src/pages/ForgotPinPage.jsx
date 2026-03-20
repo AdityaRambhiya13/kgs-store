@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { forgotPin, resetPin } from '../api'
 import { motion } from 'framer-motion'
-import { FiPhone, FiLock } from 'react-router-dom' // We'll just use basic CSS, skip icons here if not imported
+
 
 export default function ForgotPinPage() {
     const navigate = useNavigate()

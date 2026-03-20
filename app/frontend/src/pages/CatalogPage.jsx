@@ -7,6 +7,7 @@ import HeroBanner from '../components/HeroBanner'
 import CategoryGrid from '../components/CategoryGrid'
 import SmartSections from '../components/SmartSections'
 import { useCart } from '../CartContext'
+import { useAuth } from '../AuthContext'
 import { getProducts } from '../api'
 
 const CATEGORY_MAP = {
