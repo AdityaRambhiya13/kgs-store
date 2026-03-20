@@ -20,7 +20,7 @@ function maskPhone(phone = '') {
     return '\u2022\u2022\u2022\u2022\u2022\u2022'
 }
 
-const statusColor = s => s === 'Delivered' ? '#10B981' : s === 'Ready for Pickup' ? '#F59E0B' : s === 'Cancelled' ? '#EF4444' : 'var(--primary)'
+const statusColor = s => s === 'Delivered' ? '#2563EB' : s === 'Ready for Pickup' ? '#F59E0B' : s === 'Cancelled' ? '#EF4444' : 'var(--primary)'
 const statusEmoji = s => s === 'Delivered' ? '✅' : s === 'Ready for Pickup' ? '🟡' : s === 'Cancelled' ? '❌' : '⏳'
 
 export default function ProfilePage() {

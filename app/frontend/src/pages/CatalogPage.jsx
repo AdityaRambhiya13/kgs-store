@@ -9,10 +9,57 @@ import SmartSections from '../components/SmartSections'
 import { useCart } from '../CartContext'
 import { getProducts } from '../api'
 
-const CATEGORY_EMOJI = {
-  Rice: '🍚', Wheat: '🌾', Jowari: '🌽', Bajri: '🫘', 'Daals & Pulses': '🫛',
-  All: '✨', Dairy: '🥛', Snacks: '🍿', Beverages: '🥤',
+const CATEGORY_MAP = {
+  // Grains & Staples
+  'Rice': 'Grains & Staples',
+  'Wheat': 'Grains & Staples',
+  'Jowari': 'Grains & Staples',
+  'Bajri': 'Grains & Staples',
+  'Daals & Pulses': 'Grains & Staples',
+  'Atta, Rice & Dal': 'Grains & Staples',
+  // Dairy & Eggs
+  'Dairy': 'Dairy & Eggs',
+  'Dairy & Bread': 'Dairy & Eggs',
+  'Eggs': 'Dairy & Eggs',
+  // Snacks & Sweets
+  'Snacks': 'Snacks & Sweets',
+  'Munchies': 'Snacks & Sweets',
+  'Sweets & Biscuits': 'Snacks & Sweets',
+  'Bakery': 'Snacks & Sweets',
+  // Beverages
+  'Beverages': 'Beverages',
+  'Soft Drinks': 'Beverages',
+  'Tea, Coffee & More': 'Beverages',
+  // Essentials & Spices
+  'Spices': 'Essentials & Spices',
+  'Salt, Sugar & Oil': 'Essentials & Spices',
+  'Masalas & Spices': 'Essentials & Spices',
+  'Cooking Essentials': 'Essentials & Spices',
+  // Home & Hygiene
+  'Cleaning Essentials': 'Home & Hygiene',
+  'Personal Care': 'Home & Hygiene',
+  'Bath & Body': 'Home & Hygiene',
+  'Laundry': 'Home & Hygiene',
+  // Instant Foods
+  'Instant Food': 'Instant Foods',
+  'Ready to Eat': 'Instant Foods',
+  'Noodles & Pasta': 'Instant Foods',
 }
+
+const CATEGORY_EMOJI = {
+  'Grains & Staples': '🌾',
+  'Dairy & Eggs': '🥛',
+  'Snacks & Sweets': '🍿',
+  'Beverages': '🥤',
+  'Essentials & Spices': '🌶️',
+  'Home & Hygiene': '🧼',
+  'Instant Foods': '🍜',
+  'Fruits & Vegetables': '🥦',
+  'Meat & Seafood': '🥩',
+  'All': '✨'
+}
+
+const BLOCKED_CATEGORIES = ['Pet Supplies', 'Books & Media', 'Packaging & Carry Bags', 'Stationery']
 
 export default function CatalogPage({ searchQuery = '' }) {
   const [products, setProducts] = useState([])
@@ -22,6 +69,7 @@ export default function CatalogPage({ searchQuery = '' }) {
   const [selectedGroup, setSelectedGroup] = useState(null)
   const [fabWiggle, setFabWiggle] = useState(false)
   const { cartCount, cartTotal, cartOpen, setCartOpen } = useCart()
+  const { user } = useAuth()
   const abortRef = useRef(null)
   const prevCartCount = useRef(cartCount)
   const location = useLocation()
@@ -71,15 +119,21 @@ export default function CatalogPage({ searchQuery = '' }) {
   }, [])
 
   const categories = useMemo(() => {
-    const cats = [...new Set(products.map(p => p.category).filter(Boolean))]
-    return ['All', ...cats]
+    const rawCats = [...new Set(products.map(p => {
+        const mapped = CATEGORY_MAP[p.category] || p.category
+        return mapped
+    }).filter(cat => cat && !BLOCKED_CATEGORIES.includes(cat)))]
+    return ['All', ...rawCats.sort()]
   }, [products])
 
   const grouped = useMemo(() => {
     const groups = {}
     products.forEach(p => {
+      const cat = CATEGORY_MAP[p.category] || p.category
+      if (BLOCKED_CATEGORIES.includes(cat)) return
+
       const key = p.base_name || p.name
-      if (!groups[key]) groups[key] = { ...p, variants: [] }
+      if (!groups[key]) groups[key] = { ...p, category: cat, variants: [] }
       groups[key].variants.push(p)
       groups[key].variants.sort((a, b) => a.price - b.price)
     })
@@ -174,6 +228,7 @@ export default function CatalogPage({ searchQuery = '' }) {
         <SmartSections
           products={grouped}
           onCardClick={setSelectedGroup}
+          isLoggedIn={!!user}
         />
       )}
 

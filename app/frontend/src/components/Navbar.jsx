@@ -28,7 +28,7 @@ export default function Navbar({ searchQuery, onSearchChange }) {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
               <span className="nav-location-text">
                 <span className="nav-location-label">Deliver to</span>
-                <span className="nav-location-name">Surat, GJ ▾</span>
+                <span className="nav-location-name">Kalyan (W) ▾</span>
               </span>
             </button>
           </div>
@@ -46,12 +46,11 @@ export default function Navbar({ searchQuery, onSearchChange }) {
               </motion.button>
             ) : (
               <motion.button
-                className="btn btn-primary"
+                className="btn btn-primary nav-login-btn"
                 whileTap={{ scale: 0.88 }}
                 onClick={() => navigate('/login')}
-                style={{ padding: '8px 16px', borderRadius: '10px', fontSize: '14px' }}
               >
-                Login
+                👤 Login
               </motion.button>
             )}
 

@@ -31,10 +31,13 @@ const SECTIONS = [
   },
 ]
 
-export default function SmartSections({ products, onCardClick }) {
+export default function SmartSections({ products, onCardClick, isLoggedIn }) {
   const sectionsWithData = useMemo(() =>
-    SECTIONS.map(s => ({ ...s, items: s.filter(products) })).filter(s => s.items.length > 0),
-    [products]
+    SECTIONS
+      .filter(s => isLoggedIn || s.id !== 'buyagain')
+      .map(s => ({ ...s, items: s.filter(products) }))
+      .filter(s => s.items.length > 0),
+    [products, isLoggedIn]
   )
 
   if (!products.length) return null
