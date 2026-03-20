@@ -451,3 +451,67 @@ def mark_delivered(token: str) -> bool:
     finally:
         release_connection(conn)
     return False
+
+# ── Admin Product Management ─────────────────────────────
+
+def add_product(name: str, price: float, description: str, image_url: str, category: str, base_name: str = "", unit: str = "kg") -> Optional[int]:
+    """Add a new product to the database."""
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO products (name, price, description, image_url, category, base_name, unit) VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            (name, price, description, image_url, category, base_name, unit)
+        )
+        product_id = cursor.fetchone()['id']
+        conn.commit()
+        _invalidate_products_cache()
+        return product_id
+    except Exception as e:
+        print(f"Error adding product: {e}")
+        return None
+    finally:
+        release_connection(conn)
+
+def update_product(product_id: int, updates: dict) -> bool:
+    """Update an existing product."""
+    if not updates:
+        return False
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        query = "UPDATE products SET "
+        params = []
+        for key, value in updates.items():
+            query += f"{key} = %s, "
+            params.append(value)
+        query = query.rstrip(', ')
+        query += " WHERE id = %s"
+        params.append(product_id)
+        
+        cursor.execute(query, tuple(params))
+        updated = cursor.rowcount > 0
+        conn.commit()
+        _invalidate_products_cache()
+    except Exception as e:
+        print(f"Error updating product {product_id}: {e}")
+        updated = False
+    finally:
+        release_connection(conn)
+    return updated
+
+def delete_product(product_id: int) -> bool:
+    """Delete a product by ID."""
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM products WHERE id = %s", (product_id,))
+        deleted = cursor.rowcount > 0
+        conn.commit()
+        _invalidate_products_cache()
+    except Exception as e:
+        print(f"Error deleting product {product_id}: {e}")
+        deleted = False
+    finally:
+        release_connection(conn)
+    return deleted

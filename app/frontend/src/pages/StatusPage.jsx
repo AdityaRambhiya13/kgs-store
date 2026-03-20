@@ -58,11 +58,39 @@ export default function StatusPage() {
 
     useEffect(() => {
         const controller = new AbortController()
+        
+        // Initial fetch
         fetchOrder(controller.signal)
-        intervalRef.current = setInterval(() => fetchOrder(controller.signal), 5000)
+
+        // WebSocket for live updates
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+        const host = window.location.hostname === 'localhost' ? 'localhost:8000' : window.location.host
+        const ws = new WebSocket(`${protocol}//${host}/ws/customer`)
+
+        ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data)
+                // Filter updates for this specific order
+                if (data.type === 'status_update' && data.token === token) {
+                    setOrder(prev => ({ ...prev, status: data.status }))
+                    if (data.status === 'Ready for Pickup' || data.status === 'Delivered') {
+                        if (!celebratedRef.current) {
+                            celebratedRef.current = true
+                            fireConfetti()
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("WS parse error:", err)
+            }
+        }
+
+        ws.onclose = () => console.log("WS connection closed")
+        ws.onerror = (err) => console.error("WS error:", err)
+
         return () => {
-            clearInterval(intervalRef.current)
             controller.abort()
+            ws.close()
         }
     }, [token])
 

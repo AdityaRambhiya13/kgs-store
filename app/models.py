@@ -73,6 +73,34 @@ class ProductOut(BaseModel):
     base_name: str = ""
     unit: str = "kg"
 
+class ProductCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    price: float = Field(..., gt=0)
+    description: str = Field(..., max_length=500)
+    image_url: str = Field(..., max_length=500)
+    category: str = Field(..., min_length=1, max_length=50)
+    base_name: Optional[str] = Field("", max_length=100)
+    unit: str = Field("kg", max_length=20)
+
+    @field_validator("name", "description", "category", "base_name", "unit")
+    @classmethod
+    def sanitize_inputs(cls, v):
+        return sanitize_text(v) if v else v
+
+class ProductUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    price: Optional[float] = Field(None, gt=0)
+    description: Optional[str] = Field(None, max_length=500)
+    image_url: Optional[str] = Field(None, max_length=500)
+    category: Optional[str] = Field(None, min_length=1, max_length=50)
+    base_name: Optional[str] = Field(None, max_length=100)
+    unit: Optional[str] = Field(None, max_length=20)
+
+    @field_validator("name", "description", "category", "base_name", "unit")
+    @classmethod
+    def sanitize_inputs(cls, v):
+        return sanitize_text(v) if v else v
+
 class OTPRequest(BaseModel):
     phone: str = Field(..., description="10-digit Indian phone number")
 
@@ -81,7 +109,7 @@ class OTPRequest(BaseModel):
     def validate_phone(cls, v):
         cleaned = re.sub(r"[\s\-\+]", "", v)
         if cleaned.startswith("91") and len(cleaned) == 12:
-            cleaned = cleaned[2:]
+            cleaned = cleaned.removeprefix("91")
         if not re.match(r"^[6-9]\d{9}$", cleaned):
             raise ValueError("Invalid Indian phone number")
         return cleaned
@@ -98,7 +126,7 @@ class OTPVerifyRequest(BaseModel):
     def validate_phone(cls, v):
         cleaned = re.sub(r"[\s\-\+]", "", v)
         if cleaned.startswith("91") and len(cleaned) == 12:
-            cleaned = cleaned[2:]
+            cleaned = cleaned.removeprefix("91")
         if not re.match(r"^[6-9]\d{9}$", cleaned):
             raise ValueError("Invalid Indian phone number")
         return cleaned
@@ -125,7 +153,7 @@ class SignupRequest(BaseModel):
     def validate_phone(cls, v):
         cleaned = re.sub(r"[\s\-\+]", "", v)
         if cleaned.startswith("91") and len(cleaned) == 12:
-            cleaned = cleaned[2:]
+            cleaned = cleaned.removeprefix("91")
         if not re.match(r"^[6-9]\d{9}$", cleaned):
             raise ValueError("Invalid Indian phone number")
         return cleaned
@@ -144,7 +172,7 @@ class LoginRequest(BaseModel):
     def validate_identifier(cls, v):
         cleaned = re.sub(r"[\s\-\+]", "", v)
         if cleaned.startswith("91") and len(cleaned) == 12:
-            cleaned = cleaned[2:]
+            cleaned = cleaned.removeprefix("91")
             return cleaned
         return v.strip().lower()
 
@@ -156,7 +184,7 @@ class ForgotPinRequest(BaseModel):
     def validate_phone(cls, v):
         cleaned = re.sub(r"[\s\-\+]", "", v)
         if cleaned.startswith("91") and len(cleaned) == 12:
-            cleaned = cleaned[2:]
+            cleaned = cleaned.removeprefix("91")
         if not re.match(r"^[6-9]\d{9}$", cleaned):
             raise ValueError("Invalid Indian phone number")
         return cleaned

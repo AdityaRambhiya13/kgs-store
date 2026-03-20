@@ -7,3 +7,5 @@ PyJWT>=2.8.0
 firebase-admin>=6.2.0
 websockets>=11.0.0
 psycopg2-binary>=2.9.0
+flet>=0.10.0
+requests>=2.31.0

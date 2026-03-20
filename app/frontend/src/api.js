@@ -46,6 +46,16 @@ export const listCustomers = (token, signal) =>
 export const updateStatus = (token, status, adminToken, otp = null) =>
     request('PATCH', `/api/orders/${token}/status`, { status, ...(otp && { otp }) }, null, adminToken)
 
+// ── Admin Product Management ───────────────────────────────────
+export const addProduct = (data, adminToken) =>
+    request('POST', '/api/admin/products', data, null, adminToken)
+
+export const updateProduct = (id, data, adminToken) =>
+    request('PATCH', `/api/admin/products/${id}`, data, null, adminToken)
+
+export const deleteProduct = (id, adminToken) =>
+    request('DELETE', `/api/admin/products/${id}`, null, null, adminToken)
+
 // ── Auth ───────────────────────────────────────────────────────
 // ── Auth ───────────────────────────────────────────────────────
 export const signup = (phone, pin, name) =>

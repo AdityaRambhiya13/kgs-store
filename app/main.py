@@ -35,9 +35,13 @@ from database import (
     init_db, get_all_products, create_order,
     get_all_orders, get_order_by_token, update_order_status, mark_delivered,
     get_orders_by_phone, get_customer, create_or_update_customer, get_all_customers,
-    get_customer_by_email, update_customer_cancels
+    get_customer_by_email, update_customer_cancels,
+    add_product, update_product, delete_product
 )
-from models import OrderCreate, OrderOut, OrderStatusUpdate, ProductOut, OTPRequest, OTPVerifyRequest, CustomerOut, SignupRequest, LoginRequest, ForgotPinRequest, ResetPinRequest
+from models import (
+    OrderCreate, OrderOut, OrderStatusUpdate, ProductOut, ProductCreate, ProductUpdate,
+    OTPRequest, OTPVerifyRequest, CustomerOut, SignupRequest, LoginRequest, ForgotPinRequest, ResetPinRequest
+)
 from websocket import manager
 
 # Initialize Firebase Admin
@@ -321,6 +325,42 @@ def admin_login(body: AdminLoginInfo, request: Request):
     token = create_access_token({"role": "admin"}, timedelta(hours=12))
     return {"access_token": token, "role": "admin"}
 
+# ── Admin Product Management ─────────────────────────────
+
+@app.post("/api/admin/products", status_code=201)
+def admin_add_product(body: ProductCreate, admin: dict = Depends(get_current_admin)):
+    product_id = add_product(
+        name=body.name,
+        price=body.price,
+        description=body.description,
+        image_url=body.image_url,
+        category=body.category,
+        base_name=body.base_name,
+        unit=body.unit
+    )
+    if product_id is None:
+        raise HTTPException(status_code=500, detail="Failed to add product")
+    return {"id": product_id, "message": "Product added successfully"}
+
+@app.patch("/api/admin/products/{product_id}")
+def admin_update_product(product_id: int, body: ProductUpdate, admin: dict = Depends(get_current_admin)):
+    updates = body.model_dump(exclude_unset=True)
+    if not updates:
+        throw_msg = "No update data provided"
+        raise HTTPException(status_code=400, detail=throw_msg)
+    
+    success = update_product(product_id, updates)
+    if not success:
+        raise HTTPException(status_code=404, detail="Product not found or update failed")
+    return {"message": "Product updated successfully"}
+
+@app.delete("/api/admin/products/{product_id}")
+def admin_delete_product(product_id: int, admin: dict = Depends(get_current_admin)):
+    success = delete_product(product_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Product not found or deletion failed")
+    return {"message": "Product deleted successfully"}
+
 @app.get("/api/auth/me")
 def get_me(request: Request, customer: dict = Depends(get_current_customer)):
     check_rate_limit(request, limit=60, window=60, scope="auth-me")
@@ -359,7 +399,7 @@ def check_phone(phone: str, request: Request):
     # Optional endpoint to check if phone exists
     cleaned = phone.replace(" ", "").replace("-", "").replace("+", "")
     if cleaned.startswith("91") and len(cleaned) == 12:
-        cleaned = cleaned[2:]
+        cleaned = cleaned.removeprefix("91")
     
     customer = get_customer(cleaned)
     return {"exists": bool(customer)}

@@ -1,4 +1,4 @@
-﻿# ============================================================
+# ============================================================
 # customer.py â€” Flet Customer Frontend (page.add pattern)
 # Catalog â†’ Cart â†’ Confirm â†’ Status Tracking
 # ============================================================
@@ -166,7 +166,7 @@ def build_customer_ui(page: ft.Page):
                 current = cart.get(pid, {}).get("quantity", 0)
                 new_val = max(0, min(10, current + delta))
                 if new_val == 0 and pid in cart:
-                    del cart[pid]
+                    cart.pop(pid, None)
                 elif new_val > 0:
                     cart[pid] = {"name": product["name"], "price": product["price"],
                                  "quantity": new_val, "product_id": pid}

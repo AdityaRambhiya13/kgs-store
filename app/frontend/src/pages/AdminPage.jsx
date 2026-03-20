@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { listOrders, updateStatus, listCustomers, adminLogin } from '../api'
+import { listOrders, updateStatus, listCustomers, adminLogin, getProducts, addProduct, updateProduct, deleteProduct } from '../api'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function AdminPage() {
@@ -12,17 +12,19 @@ export default function AdminPage() {
     const [password, setPassword] = useState('')
     const [adminToken, setAdminToken] = useState(null)
     const [authed, setAuthed] = useState(false)
-    const [activeTab, setActiveTab] = useState('orders') // 'orders' | 'customers'
+    const [activeTab, setActiveTab] = useState('orders') // 'orders' | 'customers' | 'products'
     const [orders, setOrders] = useState([])
     const [customers, setCustomers] = useState([])
+    const [products, setProducts] = useState([])
     const [loading, setLoading] = useState(false)
     const [loginError, setLoginError] = useState('')
     const [expanded, setExpanded] = useState({})
     const [togglingToken, setTogglingToken] = useState(null)
     const [cardError, setCardError] = useState({})   // per-token inline errors
+    const [productForm, setProductForm] = useState(null) // null or { id?, name, price, ... }
     const intervalRef = useRef(null)
 
-    // Poll orders every 8s when authed
+    // Poll data every 8s when authed
     useEffect(() => {
         if (!authed || !adminToken) return
         const fetchData = async () => {
@@ -33,6 +35,9 @@ export default function AdminPage() {
                 } else if (activeTab === 'customers') {
                     const data = await listCustomers(adminToken)
                     setCustomers(Array.isArray(data) ? data : [])
+                } else if (activeTab === 'products') {
+                    const data = await getProducts()
+                    setProducts(Array.isArray(data) ? data : [])
                 }
             } catch (err) { }
         }
@@ -48,10 +53,10 @@ export default function AdminPage() {
             const res = await adminLogin(password)
             const token = res.access_token
             setAdminToken(token)
-
+            setAuthed(true)
+            // Load initial view
             const data = await listOrders(token)
             setOrders(Array.isArray(data) ? data : [])
-            setAuthed(true)
         } catch (e) {
             setLoginError(e.message || 'Invalid password')
         } finally {
@@ -74,420 +79,350 @@ export default function AdminPage() {
 
     const toggleExpand = (token) => setExpanded(prev => ({ ...prev, [token]: !prev[token] }))
 
-    const processing = orders.filter(o => o.status === 'Processing')
-    const ready = orders.filter(o => o.status === 'Ready for Pickup')
-    const delivered = orders.filter(o => o.status === 'Delivered')
+    // --- Product Handlers ---
+    const handleSaveProduct = async (e) => {
+        e.preventDefault()
+        setLoading(true)
+        try {
+            if (productForm.id) {
+                await updateProduct(productForm.id, productForm, adminToken)
+            } else {
+                await addProduct(productForm, adminToken)
+            }
+            setProductForm(null)
+            const data = await getProducts()
+            setProducts(data)
+        } catch (err) {
+            alert(err.message)
+        } finally {
+            setLoading(false)
+        }
+    }
 
-    const revenue = orders.reduce((sum, o) => sum + (o.total || 0), 0)
+    const handleDeleteProduct = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this product?')) return
+        try {
+            await deleteProduct(id, adminToken)
+            setProducts(prev => prev.filter(p => p.id !== id))
+        } catch (err) {
+            alert(err.message)
+        }
+    }
 
     if (!authed) {
         return (
-            <motion.div
-                className="admin-page"
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-            >
+            <motion.div className="admin-page" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <div className="admin-login">
-                    <motion.div
-                        className="admin-login-card"
-                        initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4 }}
-                    >
+                    <motion.div className="admin-login-card" initial={{ y: 20 }} animate={{ y: 0 }}>
                         <div className="admin-avatar">🔐</div>
-                        <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 6 }}>Admin Login</h2>
-                        <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 28 }}>KGS Grain Store Dashboard</p>
-
+                        <h2>Admin Portal</h2>
                         <input
                             className="input"
                             type="password"
-                            placeholder="Enter admin password"
+                            placeholder="Password"
                             value={password}
                             onChange={e => setPassword(e.target.value)}
                             onKeyDown={e => e.key === 'Enter' && handleLogin()}
-                            autoComplete="off"
-                            style={{ marginBottom: 12 }}
                         />
-                        {loginError && <p className="error-msg" style={{ marginBottom: 8 }}>⚠️ {loginError}</p>}
-                        <motion.button
-                            className="btn btn-primary"
-                            style={{ width: '100%', justifyContent: 'center', padding: '13px' }}
-                            onClick={handleLogin}
-                            disabled={loading || !password}
-                            whileTap={{ scale: 0.97 }}
-                        >
-                            {loading ? <><span className="spinner spinner-sm" /> Signing in...</> : '🔓 Sign In'}
-                        </motion.button>
+                        {loginError && <p className="error-msg">⚠️ {loginError}</p>}
+                        <button className="btn btn-primary" onClick={handleLogin} disabled={loading} style={{ width: '100%', marginTop: 12 }}>
+                            {loading ? 'Verifying...' : 'Login'}
+                        </button>
                     </motion.div>
                 </div>
             </motion.div>
         )
     }
 
+    const processing = orders.filter(o => o.status === 'Processing')
+    const ready = orders.filter(o => o.status === 'Ready for Pickup')
+    const revenue = orders.reduce((sum, o) => sum + (o.total || 0), 0)
+
     return (
-        <motion.div
-            className="admin-page"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-        >
-            {/* Header */}
+        <motion.div className="admin-page" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            {/* Nav Header */}
             <div className="admin-header">
                 <div>
-                    <div style={{ fontSize: 20, fontWeight: 800 }}>🌾 KGS Admin Dashboard</div>
-                    <div style={{ fontSize: 12, opacity: 0.7, marginTop: 2 }}>Grain Store Management</div>
+                    <h1>🌾 KGS Admin</h1>
+                    <p>Store Management System</p>
                 </div>
-
-                <div style={{ display: 'flex', gap: '8px', alignSelf: 'flex-end' }}>
-                    <button
-                        className={`btn ${activeTab === 'orders' ? 'btn-primary' : 'btn-ghost'}`}
-                        style={activeTab !== 'orders' ? { background: 'rgba(255,255,255,0.1)', color: '#fff' } : {}}
-                        onClick={() => setActiveTab('orders')}
-                    >
-                        📦 Orders
-                    </button>
-                    <button
-                        className={`btn ${activeTab === 'customers' ? 'btn-primary' : 'btn-ghost'}`}
-                        style={activeTab !== 'customers' ? { background: 'rgba(255,255,255,0.1)', color: '#fff' } : {}}
-                        onClick={() => setActiveTab('customers')}
-                    >
-                        👥 Customers
-                    </button>
+                <div className="admin-nav-tabs">
+                    {['orders', 'products', 'customers'].map(tab => (
+                        <button
+                            key={tab}
+                            className={`nav-tab ${activeTab === tab ? 'active' : ''}`}
+                            onClick={() => setActiveTab(tab)}
+                        >
+                            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                        </button>
+                    ))}
                 </div>
-
-                <button
-                    className="btn btn-ghost"
-                    style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', fontSize: 13 }}
-                    onClick={() => { setAuthed(false); setAdminToken(null); setPassword(''); setOrders([]); setCustomers([]); clearInterval(intervalRef.current) }}
-                >
-                    Sign Out
-                </button>
+                <button className="btn btn-ghost" onClick={() => setAuthed(false)} style={{ color: '#fff' }}>Sign Out</button>
             </div>
 
-            {activeTab === 'orders' ? (
-                <>
-                    {/* Stats */}
-                    <div className="admin-stats">
-                        <div className="stat-card">
-                            <div className="stat-icon">📦</div>
-                            <div className="stat-value">{orders.length}</div>
-                            <div className="stat-label">Total Orders</div>
+            <div className="admin-container">
+                {activeTab === 'orders' && (
+                    <>
+                        <div className="admin-stats-grid">
+                            <StatCard icon="📦" label="Total Orders" value={orders.length} color="var(--primary)" />
+                            <StatCard icon="⏳" label="Processing" value={processing.length} color="var(--accent)" />
+                            <StatCard icon="✅" label="Revenue" value={`₹${revenue.toFixed(0)}`} color="var(--secondary)" />
                         </div>
-                        <div className="stat-card">
-                            <div className="stat-icon">⏳</div>
-                            <div className="stat-value">{processing.length}</div>
-                            <div className="stat-label">Processing</div>
-                        </div>
-                        <div className="stat-card">
-                            <div className="stat-icon">🟡</div>
-                            <div className="stat-value">{ready.length}</div>
-                            <div className="stat-label">Ready</div>
-                        </div>
-                        <div className="stat-card">
-                            <div className="stat-icon">✅</div>
-                            <div className="stat-value">{delivered.length}</div>
-                            <div className="stat-label">Delivered</div>
-                        </div>
-                        <div className="stat-card">
-                            <div className="stat-icon">💰</div>
-                            <div className="stat-value">₹{revenue.toFixed(0)}</div>
-                            <div className="stat-label">Revenue</div>
-                        </div>
-                    </div>
 
-                    {/* Orders — 3 lanes */}
-                    <div className="orders-list">
-                        {/* Lane 1: Processing */}
-                        <OrderLane
-                            title="⏳ Processing"
-                            count={processing.length}
-                            orders={processing}
-                            expanded={expanded}
-                            togglingToken={togglingToken}
-                            cardError={cardError}
-                            onExpand={toggleExpand}
-                            onAction={handleStatusAction}
-                            password={password}
-                        />
+                        <div className="admin-lanes">
+                            <OrderLane title="⏳ Processing" orders={processing} onAction={handleStatusAction} onExpand={toggleExpand} expanded={expanded} togglingToken={togglingToken} cardError={cardError} />
+                            <OrderLane title="🟡 Ready for Pickup" orders={ready} onAction={handleStatusAction} onExpand={toggleExpand} expanded={expanded} togglingToken={togglingToken} cardError={cardError} />
+                            <OrderLane title="✅ Delivered" orders={orders.filter(o => o.status === 'Delivered')} onAction={handleStatusAction} onExpand={toggleExpand} expanded={expanded} togglingToken={togglingToken} cardError={cardError} />
+                        </div>
+                    </>
+                )}
 
-                        {/* Lane 2: Ready for Pickup */}
-                        <OrderLane
-                            title="🟡 Ready for Pickup"
-                            count={ready.length}
-                            orders={ready}
-                            expanded={expanded}
-                            togglingToken={togglingToken}
-                            cardError={cardError}
-                            onExpand={toggleExpand}
-                            onAction={handleStatusAction}
-                            password={password}
-                        />
-
-                        {/* Lane 3: Delivered */}
-                        <OrderLane
-                            title="✅ Delivered"
-                            count={delivered.length}
-                            orders={delivered}
-                            expanded={expanded}
-                            togglingToken={togglingToken}
-                            cardError={cardError}
-                            onExpand={toggleExpand}
-                            onAction={handleStatusAction}
-                            password={password}
-                        />
-                    </div>
-                </>
-            ) : (
-                <div className="customers-list" style={{ marginTop: '20px' }}>
-                    <h3 style={{ fontSize: 17, fontWeight: 700, marginBottom: 16 }}>
-                        Registered Customers ({customers.length})
-                    </h3>
-                    <div style={{ display: 'grid', gap: '12px' }}>
-                        {customers.length === 0 && (
-                            <p style={{ color: 'var(--text-muted)' }}>No customers found.</p>
-                        )}
-                        {customers.map((c, i) => (
-                            <motion.div
-                                key={i}
-                                className="order-card"
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                layout
-                                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px' }}
-                            >
-                                <div>
-                                    <div style={{ fontWeight: 700, fontSize: '16px', color: 'var(--text)' }}>📱 {maskPhone(c.phone)}</div>
-                                    {c.name && <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: 2 }}>👤 {c.name}</div>}
+                {activeTab === 'customers' && (
+                    <div className="customers-view">
+                        <div className="section-header">
+                            <h3>Registered Customers ({customers.length})</h3>
+                        </div>
+                        <div className="customers-grid">
+                            {customers.map(c => (
+                                <div key={c.phone} className="customer-row card">
+                                    <div className="customer-info">
+                                        <span className="cust-phone">📱 {maskPhone(c.phone)}</span>
+                                        <span className="cust-name">{c.name || 'Anonymous User'}</span>
+                                    </div>
+                                    <div className="cust-meta">Joined: {c.created_at}</div>
                                 </div>
-                                <div style={{ textAlign: 'right', color: 'var(--text-muted)', fontSize: '12px' }}>
-                                    <div style={{ marginBottom: 2 }}>Joined</div>
-                                    <div style={{ fontWeight: 600, color: 'var(--secondary)' }}>{c.created_at}</div>
-                                </div>
-                            </motion.div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
+
+                {activeTab === 'products' && (
+                    <div className="products-view">
+                        <div className="section-header">
+                            <h3>Catalog Management ({products.length})</h3>
+                            <button className="btn btn-primary" onClick={() => setProductForm({ name: '', price: 0, description: '', category: '', image_url: '', unit: 'kg' })}>
+                                + Add New Product
+                            </button>
+                        </div>
+
+                        <div className="products-grid">
+                            {products.map(p => (
+                                <div key={p.id} className="product-admin-card card">
+                                    <img src={p.image_url} alt="" className="p-img" />
+                                    <div className="p-info">
+                                        <div className="p-cat">{p.category}</div>
+                                        <div className="p-name">{p.name}</div>
+                                        <div className="p-price">₹{p.price} / {p.unit}</div>
+                                    </div>
+                                    <div className="p-actions">
+                                        <button className="btn-icon" onClick={() => setProductForm(p)}>✏️</button>
+                                        <button className="btn-icon" onClick={() => handleDeleteProduct(p.id)} style={{ color: 'var(--danger)' }}>🗑️</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Product Modal */}
+            <AnimatePresence>
+                {productForm && (
+                    <div className="modal-overlay">
+                        <motion.div className="modal-content" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}>
+                            <h3>{productForm.id ? 'Edit Product' : 'Add New Product'}</h3>
+                            <form onSubmit={handleSaveProduct} className="admin-form">
+                                <label>Name</label>
+                                <input required value={productForm.name} onChange={e => setProductForm({ ...productForm, name: e.target.value })} />
+                                
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                    <div>
+                                        <label>Price (₹)</label>
+                                        <input type="number" step="0.01" required value={productForm.price} onChange={e => setProductForm({ ...productForm, price: parseFloat(e.target.value) })} />
+                                    </div>
+                                    <div>
+                                        <label>Unit</label>
+                                        <input required value={productForm.unit} onChange={e => setProductForm({ ...productForm, unit: e.target.value })} />
+                                    </div>
+                                </div>
+
+                                <label>Category</label>
+                                <input required value={productForm.category} onChange={e => setProductForm({ ...productForm, category: e.target.value })} />
+
+                                <label>Description</label>
+                                <textarea value={productForm.description} onChange={e => setProductForm({ ...productForm, description: e.target.value })} />
+
+                                <label>Image URL</label>
+                                <input value={productForm.image_url} onChange={e => setProductForm({ ...productForm, image_url: e.target.value })} />
+
+                                <div className="modal-btns">
+                                    <button type="button" className="btn btn-ghost" onClick={() => setProductForm(null)}>Cancel</button>
+                                    <button type="submit" className="btn btn-primary" disabled={loading}>
+                                        {loading ? 'Saving...' : 'Save Changes'}
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            <style>{`
+                .admin-page { min-height: 100vh; background: #f8fafc; font-family: 'Inter', sans-serif; }
+                .admin-header { background: #1e3a8a; color: white; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; }
+                .admin-header h1 { font-size: 24px; font-weight: 800; }
+                .admin-header p { font-size: 13px; opacity: 0.8; }
+                
+                .admin-nav-tabs { display: flex; gap: 10px; }
+                .nav-tab { background: rgba(255,255,255,0.1); border: none; color: #fff; padding: 10px 24px; border-radius: 99px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s; }
+                .nav-tab.active { background: #fff; color: #1e3a8a; }
+                
+                .admin-container { padding: 30px 40px; }
+                .admin-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; margin-bottom: 30px; }
+                .stat-card-inner { background: white; padding: 24px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 16px; }
+                .stat-icon-bg { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; }
+                
+                .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+                .section-header h3 { font-size: 20px; font-weight: 800; color: #1e293b; }
+                
+                .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+                .product-admin-card { background: white; border-radius: 14px; padding: 16px; display: flex; gap: 16px; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+                .p-img { width: 70px; height: 70px; object-fit: cover; border-radius: 10px; background: #f1f5f9; }
+                .p-info { flex: 1; }
+                .p-cat { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; }
+                .p-name { font-size: 15px; font-weight: 700; color: #1e293b; margin: 2px 0; }
+                .p-price { font-size: 13px; color: #10b981; font-weight: 600; }
+                .p-actions { display: flex; flex-direction: column; gap: 8px; }
+                .btn-icon { background: none; border: none; font-size: 18px; cursor: pointer; padding: 4px; border-radius: 6px; transition: background 0.2s; }
+                .btn-icon:hover { background: #f1f5f9; }
+                
+                .admin-lanes { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+                .order-lane-col h3 { font-size: 16px; margin-bottom: 16px; color: #475569; display: flex; align-items: center; gap: 8px; }
+                
+                .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+                .modal-content { background: white; width: 100%; max-width: 500px; border-radius: 20px; padding: 32px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+                .modal-content h3 { font-size: 22px; font-weight: 800; margin-bottom: 24px; color: #1e293b; }
+                
+                .admin-form label { display: block; font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 6px; margin-top: 16px; }
+                .admin-form input, .admin-form textarea { width: 100%; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 14px; background: #f8fafc; }
+                .admin-form input:focus { outline: none; border-color: #3b82f6; background: white; }
+                .admin-form textarea { min-height: 80px; resize: vertical; }
+                .modal-btns { display: flex; gap: 12px; margin-top: 28px; }
+                .modal-btns .btn { flex: 1; padding: 12px; }
+
+                .customer-row { display: flex; justify-content: space-between; padding: 16px 20px; margin-bottom: 12px; }
+                .cust-phone { font-weight: 700; display: block; }
+                .cust-name { font-size: 14px; color: #64748b; }
+                .cust-meta { font-size: 12px; opacity: 0.6; }
+
+                .admin-login { display: flex; align-items: center; justify-content: center; height: 100vh; }
+                .admin-login-card { background: white; padding: 40px; border-radius: 24px; width: 340px; text-align: center; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+                .admin-avatar { font-size: 48px; margin-bottom: 16px; }
+            `}</style>
         </motion.div>
     )
 }
 
-function OrderLane({ title, count, orders, expanded, togglingToken, cardError, onExpand, onAction }) {
+function StatCard({ icon, label, value, color }) {
     return (
-        <div style={{ marginBottom: 32 }}>
-            <h3 style={{ fontSize: 17, fontWeight: 700, marginBottom: 10 }}>
-                {title} ({count})
-            </h3>
-            {count === 0 && (
-                <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 8 }}>No orders in this lane</p>
-            )}
-            <AnimatePresence>
-                {orders.map(order => (
-                    <OrderCard
-                        key={order.token}
-                        order={order}
-                        onAction={onAction}
-                        toggling={togglingToken === order.token}
-                        expanded={expanded[order.token]}
-                        onExpand={onExpand}
-                        inlineError={cardError[order.token]}
-                    />
-                ))}
-            </AnimatePresence>
+        <div className="stat-card-inner">
+            <div className="stat-icon-bg" style={{ background: color }}>{icon}</div>
+            <div>
+                <div style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>{label}</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: '#1e293b' }}>{value}</div>
+            </div>
         </div>
     )
 }
 
-function OrderCard({ order, onAction, toggling, expanded, onExpand, inlineError }) {
-    const status = order.status
-    const isProcessing = status === 'Processing'
-    const isReady = status === 'Ready for Pickup'
-    const isDelivered = status === 'Delivered'
-    const deliveryType = order.delivery_type || 'pickup'
-    const deliveryTime = order.delivery_time || 'same_day'
+function OrderLane({ title, orders, onAction, onExpand, expanded, togglingToken, cardError }) {
+    return (
+        <div className="order-lane-col">
+            <h3>{title} ({orders.length})</h3>
+            <div style={{ display: 'grid', gap: 16 }}>
+                {orders.map(o => (
+                    <AdminOrderCard 
+                        key={o.token} 
+                        order={o} 
+                        onAction={onAction} 
+                        onExpand={onExpand} 
+                        expanded={expanded[o.token]} 
+                        toggling={togglingToken === o.token}
+                        error={cardError[o.token]}
+                    />
+                ))}
+            </div>
+        </div>
+    )
+}
 
+function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error }) {
+    const isProcessing = order.status === 'Processing'
+    const isReady = order.status === 'Ready for Pickup'
+    const isDelivered = order.status === 'Delivered'
+    const deliveryType = order.delivery_type || 'pickup'
+    
     let items = []
     try { items = JSON.parse(order.items_json) } catch { }
-
-    let addressObj = null
-    if (order.address) {
-        try {
-            addressObj = JSON.parse(order.address)
-        } catch {
-            addressObj = { raw: order.address }
-        }
-    }
 
     const [otpInput, setOtpInput] = useState('')
     const [showOtpInput, setShowOtpInput] = useState(false)
 
-    const handleActionClick = () => {
-        // If it's a delivery order moving to 'Delivered', and we aren't showing the input, show it.
+    const handleAction = () => {
         if (!isProcessing && deliveryType === 'delivery' && !showOtpInput) {
             setShowOtpInput(true)
             return
         }
-
-        // If we're already showing it, pass the OTP
-        if (showOtpInput) {
-            if (!otpInput) {
-                // If they don't enter anything, we fall through to let the backend reject, or we could handle it here.
-                // It's cleaner to just pass it.
-            }
-            onAction(order.token, 'Delivered', otpInput)
-        } else {
-            // Normal branch
-            onAction(order.token, isProcessing ? (deliveryType === 'delivery' ? 'Ready for Pickup' : 'Ready for Pickup') : 'Delivered')
-        }
+        onAction(order.token, isProcessing ? 'Ready for Pickup' : 'Delivered', showOtpInput ? otpInput : null)
     }
 
     return (
-        <motion.div
-            className={`order-card ${isReady ? 'ready' : isDelivered ? 'delivered' : 'processing'}`}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, height: 0 }}
-            layout
-        >
-            <div className="order-card-header" onClick={() => onExpand(order.token)}>
-                <div>
-                    <div className="order-token">{order.token}</div>
-                    <div className="order-meta">
-                        📱 {(order.phone || '').replace(/\D/g, '').length >= 4
-                            ? '+91 ****' + (order.phone || '').replace(/\D/g, '').slice(-4)
-                            : '****'}
-                        {order.customer_name ? ` • 👤 ${order.customer_name}` : ''}
+        <motion.div className="card admin-order-card" style={{ padding: 0, overflow: 'hidden', borderLeft: `5px solid ${isProcessing ? '#f59e0b' : isReady ? '#3b82f6' : '#10b981'}` }}>
+            <div style={{ padding: 16, cursor: 'pointer' }} onClick={() => onExpand(order.token)}>
+                <div style={{ display: 'flex', justify: 'space-between', alignItems: 'center' }}>
+                    <div>
+                        <div style={{ fontWeight: 800, color: '#1e3a8a', fontSize: 16 }}>#{order.token}</div>
+                        <div style={{ fontSize: 13, color: '#64748b' }}>📱 +91 ****{order.phone.slice(-4)}</div>
                     </div>
-                    {/* Delivery badge */}
-                    <span className={`admin-delivery-badge ${deliveryType}`}>
-                        {deliveryType === 'delivery' ? '🚚 Home Delivery' : '🏪 Store Pickup'} ({deliveryTime === 'next_day' ? 'Next Day' : 'Same Day'})
-                    </span>
-                    {deliveryType === 'delivery' && addressObj && (
-                        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8, maxWidth: '280px', lineHeight: 1.4 }}>
-                            📍 {addressObj.raw ? addressObj.raw : `${addressObj.flat_no}, ${addressObj.building_name}, ${addressObj.area_name}`}
-                        </div>
-                    )}
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                    <div className="order-amount">₹{order.total?.toFixed(0)}</div>
-                    <span className={`status-pill ${isReady ? 'ready' : isDelivered ? 'delivered' : 'processing'}`}>
-                        {isDelivered ? '✅ Delivered' : isReady ? (deliveryType === 'delivery' ? '🚚 Out for Delivery' : '🟡 Ready') : '⏳ Processing'}
-                    </span>
+                    <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontWeight: 800, color: '#10b981' }}>₹{order.total}</div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>{deliveryType.toUpperCase()}</div>
+                    </div>
                 </div>
             </div>
-
+            
             <AnimatePresence>
                 {expanded && (
-                    <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.25 }}
-                        style={{ overflow: 'hidden' }}
-                    >
-                        <div className="order-items-detail">
-                            {items.map((item, i) => (
-                                <div key={i} className="order-item-row">
-                                    <span>{item?.name} × {item?.quantity || 1}</span>
-                                    <span>₹{Number(item?.subtotal || (item?.price || 0) * (item?.quantity || 1)).toFixed(0)}</span>
+                    <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} style={{ overflow: 'hidden', background: '#f8fafc', padding: '0 16px' }}>
+                        <div style={{ padding: '12px 0', borderTop: '1px solid #e2e8f0' }}>
+                            {items.map((it, i) => (
+                                <div key={i} style={{ display: 'flex', justify: 'space-between', fontSize: 13, marginBottom: 4 }}>
+                                    <span>{it.name} x {it.quantity}</span>
+                                    <span>₹{it.subtotal || it.price * it.quantity}</span>
                                 </div>
                             ))}
-                            {addressObj && (
-                                <div style={{ fontSize: 13, background: 'rgba(56, 189, 248, 0.1)', color: 'var(--primary)', padding: '8px 12px', borderRadius: '6px', marginTop: 12, border: '1px solid rgba(56, 189, 248, 0.2)' }}>
-                                    <strong>📍 Delivery Address:</strong>
-                                    {addressObj.raw ? (
-                                        <div style={{ marginTop: 4, whiteSpace: 'pre-wrap' }}>{addressObj.raw}</div>
-                                    ) : (
-                                        <div style={{ marginTop: 4, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
-                                            {addressObj.flat_no}, {addressObj.building_name}<br />
-                                            {addressObj.road_name}, {addressObj.area_name}<br />
-                                            {addressObj.landmark && <span>Landmark: {addressObj.landmark}<br /></span>}
-                                            Pincode: {addressObj.pincode}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                            {order.delivered_at && (
-                                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>
-                                    Delivered at: {order.delivered_at}
-                                </div>
-                            )}
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            {/* Inline error */}
-            {inlineError && (
-                <motion.div
-                    className="admin-card-error"
-                    initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                >
-                    ⚠️ {inlineError}
-                </motion.div>
-            )}
-
             {!isDelivered && (
-                <div className="order-actions">
-                    <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                        {items.length} item{items.length !== 1 ? 's' : ''}
-                    </span>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                        {isReady && (
-                            <motion.button
-                                className="btn btn-ghost"
-                                style={{ padding: '7px 14px', fontSize: 12 }}
-                                onClick={() => onAction(order.token, 'Processing')}
-                                disabled={toggling}
-                                whileTap={{ scale: 0.95 }}
-                            >
-                                {toggling ? <span className="spinner spinner-sm" /> : '↩ Processing'}
-                            </motion.button>
-                        )}
-
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                            <AnimatePresence>
-                                {showOtpInput && (
-                                    <motion.input
-                                        initial={{ opacity: 0, width: 0 }}
-                                        animate={{ opacity: 1, width: 80 }}
-                                        exit={{ opacity: 0, width: 0 }}
-                                        className="input"
-                                        style={{ padding: '6px 10px', fontSize: 13, height: '32px' }}
-                                        placeholder="OTP"
-                                        value={otpInput}
-                                        onChange={(e) => setOtpInput(e.target.value)}
-                                        maxLength={4}
-                                        autoComplete="off"
-                                    />
-                                )}
-                            </AnimatePresence>
-
-                            <motion.button
-                                className={`btn ${isProcessing ? 'btn-secondary' : 'btn-primary'}`}
-                                style={{ padding: '7px 16px', fontSize: 13, height: '32px' }}
-                                onClick={handleActionClick}
-                                disabled={toggling}
-                                whileTap={{ scale: 0.95 }}
-                            >
-                                {toggling
-                                    ? <span className="spinner spinner-sm" />
-                                    : showOtpInput
-                                        ? '✅ Confirm'
-                                        : isProcessing
-                                            ? (deliveryType === 'delivery' ? '🚚 Out for Delivery' : '✅ Mark Ready')
-                                            : '📦 Mark Delivered'}
-                            </motion.button>
-                        </div>
-                    </div>
+                <div style={{ padding: 12, borderTop: '1px solid #e2e8f0', display: 'flex', gap: 8, alignItems: 'center' }}>
+                    {showOtpInput && (
+                        <input className="input" placeholder="OTP" style={{ width: 60, padding: '4px 8px', fontSize: 12 }} maxLength={4} value={otpInput} onChange={e => setOtpInput(e.target.value)} />
+                    )}
+                    <button 
+                        className={`btn ${isProcessing ? 'btn-secondary' : 'btn-primary'}`} 
+                        style={{ flex: 1, padding: '6px', fontSize: 12 }} 
+                        onClick={handleAction}
+                        disabled={toggling}
+                    >
+                        {toggling ? '...' : isProcessing ? 'Mark Ready' : 'Mark Delivered'}
+                    </button>
+                    {isReady && <button className="btn-icon" onClick={() => onAction(order.token, 'Processing')}>↩️</button>}
                 </div>
             )}
-
-            {isDelivered && (
-                <div className="order-actions" style={{ justifyContent: 'flex-end' }}>
-                    <span style={{ fontSize: 12, color: 'var(--secondary)', fontWeight: 700 }}>
-                        ✅ Order Completed
-                    </span>
-                </div>
-            )}
+            {error && <div style={{ padding: '4px 16px', color: 'var(--danger)', fontSize: 11 }}>⚠️ {error}</div>}
         </motion.div>
     )
 }
