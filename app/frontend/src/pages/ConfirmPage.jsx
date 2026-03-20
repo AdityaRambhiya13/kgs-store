@@ -63,6 +63,13 @@ export default function ConfirmPage() {
     const [deliveryType, setDeliveryType] = useState('pickup')
     const [deliveryTime, setDeliveryTime] = useState('same_day')
 
+    const FREE_DELIVERY_THRESHOLD = 250
+    const DELIVERY_FEE = 250
+
+    const isFreeDelivery = cartTotal >= FREE_DELIVERY_THRESHOLD
+    const activeDeliveryFee = (deliveryType === 'delivery' && !isFreeDelivery) ? DELIVERY_FEE : 0
+    const finalTotal = cartTotal + activeDeliveryFee
+
     const [step, setStep] = useState('form')
     const [token, setToken] = useState('')
     const [deliveryOtp, setDeliveryOtp] = useState('')
@@ -105,7 +112,13 @@ export default function ConfirmPage() {
                 product_id: item.id, name: item.name, price: item.price,
                 quantity: item.quantity, unit: item.unit || 'kg'
             }))
-            const payload = { items, total: cartTotal, delivery_type: deliveryType, delivery_time: deliveryTime }
+            const payload = { 
+                items, 
+                total: finalTotal, 
+                delivery_type: deliveryType, 
+                delivery_time: deliveryTime,
+                delivery_fee: activeDeliveryFee 
+            }
 
             if (deliveryType === 'delivery') {
                 if (!addressForm.flat_no || !addressForm.building_name || !addressForm.road_name || !addressForm.area_name || !addressForm.pincode) {
@@ -152,10 +165,10 @@ export default function ConfirmPage() {
     }
 
     const etaText = deliveryTime === 'next_day'
-        ? '📅 Order delivered tomorrow by 10 AM'
+        ? '📅 Delivered tomorrow by 10 AM'
         : deliveryType === 'pickup'
-            ? '⚡ Ready for pickup in ~60–90 mins'
-            : '🚚 Delivery in ~60–90 mins'
+            ? '⚡ Ready for pickup in 60 mins'
+            : '🚚 Delivered in 60–90 mins'
 
     const whatsappMsg = encodeURIComponent(
         `Hi KGS! My order token is *${token}*. Please confirm my ${deliveryType === 'delivery' ? 'home delivery' : 'store pickup'} order.`
@@ -175,7 +188,10 @@ export default function ConfirmPage() {
                             exit={{ opacity: 0, y: -20 }}
                             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
                         >
-                            <div className="back-link" onClick={() => navigate('/')}>← Back to Shop</div>
+                            <div className="back-link" onClick={() => navigate('/')}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px' }}><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                                Back to Shop
+                            </div>
                             <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>📋 Confirm Your Order</h2>
                             <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24 }}>Review your items and place your order</p>
 
@@ -185,14 +201,24 @@ export default function ConfirmPage() {
                                 {cartItems.map(item => (
                                     <div key={item.id} className="confirm-item-row">
                                         <span>{item.name} × {item.quantity}</span>
-                                        <span style={{ fontWeight: 600, color: 'var(--secondary)' }}>
+                                        <span style={{ fontWeight: 600, color: 'var(--text)' }}>
                                             ₹{(item.price * item.quantity).toFixed(0)}
                                         </span>
                                     </div>
                                 ))}
+                                
+                                {deliveryType === 'delivery' && (
+                                    <div className="confirm-item-row delivery-fee-row" style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed var(--border)' }}>
+                                        <span style={{ color: 'var(--text-muted)' }}>Delivery Fee</span>
+                                        <span style={{ fontWeight: 600, color: activeDeliveryFee > 0 ? 'var(--text)' : 'var(--primary)' }}>
+                                            {activeDeliveryFee > 0 ? `₹${activeDeliveryFee}` : 'FREE'}
+                                        </span>
+                                    </div>
+                                )}
+
                                 <div className="confirm-total">
-                                    <span>Total</span>
-                                    <span style={{ color: 'var(--primary)' }}>₹{cartTotal.toFixed(0)}</span>
+                                    <span>To Pay</span>
+                                    <span style={{ color: 'var(--primary)', fontSize: '24px' }}>₹{finalTotal.toFixed(0)}</span>
                                 </div>
                             </div>
 
@@ -380,18 +406,18 @@ export default function ConfirmPage() {
                                     Share on WhatsApp
                                 </motion.a>
 
-                                <div style={{ display: 'flex', gap: '10px' }}>
-                                    <motion.button className="btn btn-ghost" style={{ flex: 1, justifyContent: 'center', padding: '13px' }} onClick={() => navigate('/')} whileTap={{ scale: 0.97 }}>
+                                <div style={{ display: 'flex', gap: '12px' }}>
+                                    <motion.button className="btn btn-ghost" style={{ flex: 1, justifyContent: 'center', padding: '14px' }} onClick={() => navigate('/')} whileTap={{ scale: 0.97 }}>
                                         🛒 Shop More
                                     </motion.button>
-                                    <motion.button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', padding: '13px' }} onClick={() => navigate(`/status/${token}`)} whileTap={{ scale: 0.97 }}>
+                                    <motion.button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', padding: '14px' }} onClick={() => navigate(`/status/${token}`)} whileTap={{ scale: 0.97 }}>
                                         🎯 Track Order
                                     </motion.button>
                                 </div>
 
                                 <motion.button
                                     className="btn btn-danger"
-                                    style={{ width: '100%', justifyContent: 'center', padding: '12px' }}
+                                    style={{ width: '100%', justifyContent: 'center', padding: '14px', marginTop: '4px' }}
                                     onClick={handleCancel}
                                     disabled={cancelLoading || !!cancelMsg}
                                     whileTap={{ scale: 0.97 }}

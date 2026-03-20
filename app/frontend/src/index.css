@@ -1814,3 +1814,172 @@ p { line-height: 1.6; }
 }
 .admin-table tr:last-child td { border-bottom: none; }
 .admin-table tr:hover td { background: var(--bg-surface); }
+
+/* ================================================================
+   REFINEMENTS — Checkout & Buttons
+   ================================================================ */
+
+/* Delivery Toggle / Segmented Control */
+.delivery-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.delivery-toggle label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-light);
+  margin-left: 2px;
+}
+.delivery-options {
+  display: flex;
+  background: #EEEFF2;
+  padding: 5px;
+  border-radius: 16px;
+  gap: 6px;
+}
+.delivery-option {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  background: transparent;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--t);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.delivery-option.active {
+  background: var(--bg-card);
+  color: var(--primary);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.delivery-option:not(.active):hover { background: rgba(255,255,255,0.5); }
+
+/* Order Summary Box */
+.confirm-order-summary {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 24px;
+  margin-bottom: 28px;
+  box-shadow: var(--shadow-sm);
+}
+.confirm-order-summary h3 {
+  font-size: 15px;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.confirm-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.confirm-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 2px dashed var(--border);
+  font-weight: 900;
+  font-size: 20px;
+  color: var(--text);
+}
+
+/* Navigation */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 24px;
+  padding: 8px 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-full);
+  transition: all var(--t);
+  width: fit-content;
+}
+.back-link:hover { border-color: var(--primary); color: var(--primary); transform: translateX(-4px); }
+
+/* Buttons */
+.btn-ghost {
+  background: #fff;
+  border: 1px solid var(--border);
+  color: var(--text);
+  box-shadow: var(--shadow-xs);
+}
+.btn-ghost:hover {
+  background: var(--bg-surface);
+  border-color: var(--text-muted);
+}
+
+.btn-danger {
+  background: #FFF5F5 !important;
+  color: var(--danger) !important;
+  border: 1px solid #FED7D7 !important;
+  font-weight: 700 !important;
+}
+.btn-danger:hover {
+  background: var(--danger) !important;
+  color: #fff !important;
+  border-color: var(--danger) !important;
+}
+
+/* Order Success enhancements */
+.order-success-card {
+  text-align: center;
+  padding: 40px 32px !important;
+}
+.order-success-title { font-size: 28px; font-weight: 900; margin-bottom: 8px; }
+
+.order-token-box {
+  background: var(--bg-surface);
+  border: 2px dashed var(--primary);
+  border-radius: var(--r-lg);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+.order-token-label { font-size: 12px; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+.order-token-value { font-size: 40px; font-weight: 900; color: var(--primary); letter-spacing: 2px; line-height: 1; margin: 8px 0 16px; }
+
+.order-eta-chip {
+  background: #FFF7ED;
+  color: #C2410C;
+  padding: 12px 20px;
+  border-radius: var(--r);
+  font-weight: 800;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #FFEDD5;
+}
+
+.order-whatsapp-btn {
+  background: #25D366;
+  color: #fff;
+  font-weight: 800;
+  font-size: 16px;
+  border-radius: var(--r);
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(37, 211, 102, 0.3);
+}
+.order-whatsapp-btn:hover { background: #128C7E; transform: translateY(-1px); }
