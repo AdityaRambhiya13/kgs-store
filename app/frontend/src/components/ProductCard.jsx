@@ -17,13 +17,13 @@ function getDiscount(price, mrp) {
   return Math.round(((mrp - price) / mrp) * 100)
 }
 
-export default function ProductCard({ product, onClick }) {
+export default function ProductCard({ product, onDetailClick, onVariantClick }) {
   const { cartItems, addToCart, removeFromCart } = useCart()
   const variants = product.variants ?? [product]
   const minPrice = Math.min(...variants.map(v => v.price))
   const variantCount = variants.length
 
-  const cartItem = variantCount === 1 ? cartItems.find(item => item.product_id === variants[0].id) : null
+  const cartItem = variantCount === 1 ? cartItems.find(item => item.id === variants[0].id) : null
   const qtyInCart = cartItem ? cartItem.quantity : 0
 
   const rating = getRating(product.id || 1)
@@ -35,25 +35,29 @@ export default function ProductCard({ product, onClick }) {
     if (variantCount === 1) {
       addToCart(variants[0])
     } else {
-      onClick()
+      onVariantClick(product)
     }
   }
 
   const handleMinusClick = (e) => {
     e.stopPropagation()
     if (variantCount === 1 && qtyInCart > 0) {
-      removeFromCart(variants[0].id)
+      addToCart(variants[0], -1)
     }
+  }
+
+  const handleCardClick = () => {
+    onDetailClick(product, mrp)
   }
 
   return (
     <motion.div
       className="product-card"
-      onClick={onClick}
       style={{ cursor: 'pointer' }}
-      whileTap={{ scale: 0.97 }}
+      whileTap={{ scale: 0.98 }}
       whileHover={{ y: -2 }}
       transition={{ duration: 0.15 }}
+      onClick={handleCardClick}
     >
       {/* Discount Badge */}
       {discount > 0 && (

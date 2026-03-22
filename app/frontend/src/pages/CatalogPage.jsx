@@ -9,6 +9,7 @@ import SmartSections from '../components/SmartSections'
 import { useCart } from '../CartContext'
 import { useAuth } from '../AuthContext'
 import { getProducts } from '../api'
+import ProductDetailsModal from '../components/ProductDetailsModal'
 
 const CATEGORY_MAP = {
   // Grains & Staples
@@ -68,6 +69,7 @@ export default function CatalogPage({ searchQuery = '' }) {
   const [error, setError] = useState('')
   const [activeCategory, setActiveCategory] = useState('All')
   const [selectedGroup, setSelectedGroup] = useState(null)
+  const [selectedProductDetails, setSelectedProductDetails] = useState(null)
   const [fabWiggle, setFabWiggle] = useState(false)
   const { cartCount, cartTotal, cartOpen, setCartOpen } = useCart()
   const { user } = useAuth()
@@ -228,7 +230,8 @@ export default function CatalogPage({ searchQuery = '' }) {
       {!isSearchMode && activeCategory === 'All' && !loading && products.length > 0 && (
         <SmartSections
           products={grouped}
-          onCardClick={setSelectedGroup}
+          onDetailClick={(prod, mrp) => setSelectedProductDetails({ product: prod, mrp })}
+          onVariantClick={(group) => setSelectedGroup(group)}
           isLoggedIn={!!user}
         />
       )}
@@ -298,7 +301,8 @@ export default function CatalogPage({ searchQuery = '' }) {
                       <div key={groupObj.base_name || groupObj.name}>
                         <ProductCard
                           product={groupObj}
-                          onClick={() => setSelectedGroup({ ...groupObj, variants: groupObj.variants?.length ? groupObj.variants : [groupObj] })}
+                          onDetailClick={(prod, mrp) => setSelectedProductDetails({ product: prod, mrp })}
+                          onVariantClick={(group) => setSelectedGroup(group)}
                         />
                       </div>
                     ))}
@@ -332,7 +336,8 @@ export default function CatalogPage({ searchQuery = '' }) {
                           <div key={item.base_name || item.name}>
                             <ProductCard
                               product={item}
-                              onClick={() => setSelectedGroup({ ...item, variants: item.variants?.length ? item.variants : [item] })}
+                              onDetailClick={(prod, mrp) => setSelectedProductDetails({ product: prod, mrp })}
+                              onVariantClick={(group) => setSelectedGroup(group)}
                             />
                           </div>
                         ))}
@@ -364,28 +369,16 @@ export default function CatalogPage({ searchQuery = '' }) {
         onClose={() => setSelectedGroup(null)}
       />
 
-      {/* Sticky Cart Bar */}
-      {cartCount > 0 && !cartOpen && (
-        <motion.div
-          className="sticky-cart-bar"
-          onClick={() => setCartOpen(true)}
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 100, opacity: 0 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 400 }}
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <div style={{ fontSize: '13px', fontWeight: '800', opacity: 0.9 }}>
-              {cartCount} item{cartCount > 1 ? 's' : ''}
-            </div>
-            <div style={{ fontWeight: '900', fontSize: '18px' }}>₹{cartTotal.toFixed(0)}</div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '800', fontSize: '16px' }}>
-            View Cart
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
-        </motion.div>
-      )}
+      {/* Product Details Modal */}
+      <AnimatePresence>
+        {selectedProductDetails && (
+          <ProductDetailsModal
+            product={selectedProductDetails.product}
+            mrp={selectedProductDetails.mrp}
+            onClose={() => setSelectedProductDetails(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

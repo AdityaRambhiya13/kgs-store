@@ -16,6 +16,7 @@ import TestPage from './pages/TestPage'
 import CartPanel from './components/CartPanel'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
+import MobileCartBar from './components/MobileCartBar'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -58,6 +59,7 @@ export default function App() {
       </Routes>
 
       {!isAuthPage && <CartPanel />}
+      {!isAuthPage && <MobileCartBar />}
       {!isAuthPage && <Footer />}
     </>
   )

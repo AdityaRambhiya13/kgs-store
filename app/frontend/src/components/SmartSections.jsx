@@ -31,7 +31,7 @@ const SECTIONS = [
   },
 ]
 
-export default function SmartSections({ products, onCardClick, isLoggedIn }) {
+export default function SmartSections({ products, onDetailClick, onVariantClick, isLoggedIn }) {
   const sectionsWithData = useMemo(() =>
     SECTIONS
       .filter(s => isLoggedIn || s.id !== 'buyagain')
@@ -60,7 +60,8 @@ export default function SmartSections({ products, onCardClick, isLoggedIn }) {
               >
                 <ProductCard
                   product={product}
-                  onClick={() => onCardClick?.({ ...product, variants: product.variants?.length ? product.variants : [product] })}
+                  onDetailClick={onDetailClick}
+                  onVariantClick={onVariantClick}
                 />
               </motion.div>
             ))}

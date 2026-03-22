@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { useCart } from '../CartContext'
 import { useAuth } from '../AuthContext'
 import { motion } from 'framer-motion'
@@ -7,6 +8,27 @@ export default function Navbar({ searchQuery, onSearchChange }) {
   const { cartCount, setCartOpen } = useCart()
   const { user } = useAuth()
   const navigate = useNavigate()
+  const [locationName, setLocationName] = useState('Kalyan (W)')
+
+  useEffect(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`);
+          const data = await res.json();
+          if (data.address) {
+            const city = data.address.city || data.address.town || data.address.village || data.address.suburb || 'My Location';
+            setLocationName(city);
+          }
+        } catch (err) {
+          console.error("Location fetch failed:", err);
+        }
+      }, (err) => {
+        console.warn("Geolocation permission denied or failed:", err);
+      });
+    }
+  }, [])
 
   return (
     <nav className="navbar">
@@ -28,7 +50,7 @@ export default function Navbar({ searchQuery, onSearchChange }) {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
               <span className="nav-location-text">
                 <span className="nav-location-label">Deliver to</span>
-                <span className="nav-location-name">Kalyan (W) ▾</span>
+                <span className="nav-location-name">{locationName} ▾</span>
               </span>
             </button>
           </div>
