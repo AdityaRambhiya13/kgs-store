@@ -35,7 +35,7 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
     if (variantCount === 1) {
       addToCart(variants[0])
     } else {
-      onVariantClick(product)
+      onVariantClick(product, mrp)
     }
   }
 

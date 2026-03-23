@@ -2962,3 +2962,105 @@ p { line-height: 1.6; }
   overflow-x: auto !important;
   display: flex !important;
 }
+
+/* --- Product Details Modal - Variant List --- */
+.pdm-options-section {
+  padding-top: 5px;
+  border-top: 1px solid #f0f0f0;
+}
+.pdm-variant-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+.pdm-variant-row {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  background: #fff;
+  transition: all 0.2s ease;
+}
+.pdm-variant-row:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
+}
+.pdm-vr-img-wrap {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f9f9f9;
+  flex-shrink: 0;
+}
+.pdm-vr-img-wrap img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+.pdm-vr-info {
+  flex: 1;
+}
+.pdm-vr-name {
+  font-weight: 700;
+  font-size: 14px;
+  color: #1f2937;
+}
+.pdm-vr-unit-price {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+.pdm-vr-price-col {
+  text-align: right;
+  margin-right: 8px;
+}
+.pdm-vr-price {
+  font-weight: 800;
+  font-size: 16px;
+  color: #111827;
+}
+.pdm-vr-mrp {
+  font-size: 11px;
+  color: #9ca3af;
+  text-decoration: line-through;
+}
+.pdm-vr-add-btn {
+  background: #fff;
+  color: #2563eb;
+  border: 1px solid #d1d5db;
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 90px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.pdm-vr-add-btn:hover {
+  background: #f8fafc;
+  border-color: #2563eb;
+  transform: translateY(-1px);
+}
+.pc-stepper.small {
+  padding: 2px;
+  min-width: 90px;
+  background: #f8fafc;
+  border: 1px solid #2563eb;
+}
+.pc-stepper.small .pc-step-btn {
+  padding: 4px 10px;
+  font-size: 16px;
+  color: #2563eb;
+}
+.pc-stepper.small .pc-step-count {
+  font-size: 14px;
+  font-weight: 800;
+  color: #111827;
+}
+

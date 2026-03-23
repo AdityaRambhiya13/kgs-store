@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLocation, useNavigate } from 'react-router-dom'
 import ProductCard from '../components/ProductCard'
-import ProductVariantModal from '../components/ProductVariantModal'
+// import ProductVariantModal from '../components/ProductVariantModal'
 import HeroBanner from '../components/HeroBanner'
 import { useCart } from '../CartContext'
 import { useAuth } from '../AuthContext'
@@ -319,7 +319,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
                   <ProductCard
                     product={g}
                     onDetailClick={(prod, mrp) => setSelectedProductDetails({ product: prod, mrp })}
-                    onVariantClick={(group) => setSelectedGroup(group)}
+                    onVariantClick={(prod, mrp) => setSelectedProductDetails({ product: prod, mrp })}
                   />
                 </div>
               ))}
@@ -354,7 +354,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
                         <ProductCard
                           product={item}
                           onDetailClick={(prod, mrp) => setSelectedProductDetails({ product: prod, mrp })}
-                          onVariantClick={(group) => setSelectedGroup(group)}
+                          onVariantClick={(prod, mrp) => setSelectedProductDetails({ product: prod, mrp })}
                         />
                       </div>
                     ))}
@@ -392,7 +392,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
                   <ProductCard
                     product={g}
                     onDetailClick={(prod, mrp) => setSelectedProductDetails({ product: prod, mrp })}
-                    onVariantClick={(group) => setSelectedGroup(group)}
+                    onVariantClick={(prod, mrp) => setSelectedProductDetails({ product: prod, mrp })}
                   />
                 </div>
               ))}
@@ -401,11 +401,11 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
         )}
       </div>
 
-      {/* Variant modal */}
-      <ProductVariantModal
+      {/* Variant modal - Removed in favor of unified ProductDetailsModal */}
+      {/* <ProductVariantModal
         group={selectedGroup}
         onClose={() => setSelectedGroup(null)}
-      />
+      /> */}
 
       {/* Product Details Modal */}
       <AnimatePresence>
