@@ -30,14 +30,27 @@ function ProtectedRoute({ children }) {
 export default function App() {
   const location = useLocation()
   const [searchQuery, setSearchQuery] = useState('')
+  const [navCategory, setNavCategory] = useState(null)
 
   // Hide Navbar/Cart on Auth and Admin pages
   const isAuthPage = ['/login', '/signup', '/forgot-pin', '/reset-pin'].includes(location.pathname) || location.pathname.startsWith('/manage-store')
   const showSearch = location.pathname === '/'
 
+  const handleCategorySelect = (catName) => {
+    setNavCategory(catName)
+    // Reset after passing down (CatalogPage will read it)
+    setTimeout(() => setNavCategory(null), 100)
+  }
+
   return (
     <>
-      {!isAuthPage && <Navbar searchQuery={showSearch ? searchQuery : undefined} onSearchChange={setSearchQuery} />}
+      {!isAuthPage && (
+        <Navbar
+          searchQuery={showSearch ? searchQuery : undefined}
+          onSearchChange={setSearchQuery}
+          onCategorySelect={handleCategorySelect}
+        />
+      )}
 
       <Routes location={location} key={location.pathname}>
         {/* Auth Routes */}
@@ -47,7 +60,7 @@ export default function App() {
         <Route path="/reset-pin" element={<ResetPinPage />} />
 
         {/* Protected Routes */}
-        <Route path="/" element={<ProtectedRoute><CatalogPage searchQuery={searchQuery} /></ProtectedRoute>} />
+        <Route path="/" element={<ProtectedRoute><CatalogPage searchQuery={searchQuery} navCategory={navCategory} /></ProtectedRoute>} />
         <Route path="/confirm" element={<ProtectedRoute><ConfirmPage /></ProtectedRoute>} />
         <Route path="/status/:token" element={<ProtectedRoute><StatusPage /></ProtectedRoute>} />
         <Route path="/orders" element={<ProtectedRoute><OrderHistoryPage /></ProtectedRoute>} />

@@ -54,9 +54,22 @@ def init_db():
             description TEXT NOT NULL,
             image_url TEXT NOT NULL,
             category TEXT NOT NULL,
+            sub_category TEXT NOT NULL DEFAULT '',
             base_name TEXT NOT NULL DEFAULT '',
             unit TEXT NOT NULL DEFAULT 'kg'
         )
+    """)
+
+    # ── Migration: Add sub_category if missing ────────────
+    cursor.execute("""
+        DO $$ BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name='products' AND column_name='sub_category'
+            ) THEN
+                ALTER TABLE products ADD COLUMN sub_category TEXT NOT NULL DEFAULT '';
+            END IF;
+        END $$;
     """)
 
     # ── Orders table ──────────────────────────────────────
@@ -126,113 +139,137 @@ def init_db():
     _invalidate_products_cache()
 
 def _seed_products(cursor):
-    """Seed products from the CSV file."""
+    """Seed products from the ultimate Zepto CSV and store.db SQLite."""
     import csv
     import os
     import sqlite3
 
     # Root directory of the project (one level above 'app' folder)
-    csv_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "products_cleaned_v2.csv")
+    root_dir = os.path.dirname(os.path.dirname(__file__))
+    csv_file_path = os.path.join(root_dir, "ULTIMATE_ZEPTO_CATALOG.csv")
     sqlite_db_path = os.path.join(os.path.dirname(__file__), "store.db")
-    
-    # Generic images based on category keywords
-    category_images = {
-        "Rice": "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=300&fit=crop",
-        "Wheat": "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400&h=300&fit=crop",
-        "Jowar": "https://images.unsplash.com/photo-1596547609652-9fc5d8d428ce?w=400&h=300&fit=crop",
-        "Bajri": "https://images.unsplash.com/photo-1615485925763-86db9d2d22f0?w=400&h=300&fit=crop",
-        "Dals": "https://images.unsplash.com/photo-1585996611354-972a9e34c901?w=400&h=300&fit=crop",
-        "Pulses": "https://images.unsplash.com/photo-1585996611354-972a9e34c901?w=400&h=300&fit=crop",
-        "Sweets": "https://images.unsplash.com/photo-1589119908995-c6837fa14848?w=400&h=300&fit=crop",
-        "Bakery": "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&h=300&fit=crop",
-        "Cleaning": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=400&h=300&fit=crop",
-        "Snacks": "https://images.unsplash.com/photo-15994906592a3-e3f9642dd427?w=400&h=300&fit=crop",
-        "Misc": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=400&h=300&fit=crop",
-        "Default": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=400&h=300&fit=crop"
+
+    # Category-based Unsplash image mapping
+    CATEGORY_IMAGES = {
+        "Atta, Rice & Dal":         "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=300&fit=crop",
+        "Masala & Dry Fruits":      "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&h=300&fit=crop",
+        "Snacks & Munchies":        "https://images.unsplash.com/photo-1599490659213-e2b9527bd087?w=400&h=300&fit=crop",
+        "Sweet Tooth":              "https://images.unsplash.com/photo-1589119908995-c6837fa14848?w=400&h=300&fit=crop",
+        "Cleaning Essentials":      "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=400&h=300&fit=crop",
+        "Instant & Frozen Food":    "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=400&h=300&fit=crop",
+        "Dairy, Bread & Eggs":      "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=400&h=300&fit=crop",
+        "Personal Care":            "https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=400&h=300&fit=crop",
+        "Cold Drinks & Juices":     "https://images.unsplash.com/photo-1534353473418-4cfa0a62e3d8?w=400&h=300&fit=crop",
+        "Pharma & Wellness":        "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&h=300&fit=crop",
+        "Tea, Coffee & Health Drinks": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=400&h=300&fit=crop",
+        "Paan Corner":              "https://images.unsplash.com/photo-1596547609652-9fc5d8d428ce?w=400&h=300&fit=crop",
+        "Pantry Staples":           "https://images.unsplash.com/photo-1615485925763-86db9d2d22f0?w=400&h=300&fit=crop",
+        "Baby Care":                "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400&h=300&fit=crop",
+        "Home & Lifestyle":         "https://images.unsplash.com/photo-1565183928294-7063f23ce0f8?w=400&h=300&fit=crop",
+        "Pooja Needs":              "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&h=300&fit=crop",
+        "Rice":                     "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=300&fit=crop",
+        "Wheat":                    "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400&h=300&fit=crop",
+        "Jowari":                   "https://images.unsplash.com/photo-1596547609652-9fc5d8d428ce?w=400&h=300&fit=crop",
+        "Bajri":                    "https://images.unsplash.com/photo-1615485925763-86db9d2d22f0?w=400&h=300&fit=crop",
+        "Default":                  "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=400&h=300&fit=crop"
     }
 
-    final_products = []
+    def get_image(category):
+        return CATEGORY_IMAGES.get(category, CATEGORY_IMAGES["Default"])
 
-    # 1. Load from CSV
+    # Blocked categories — exclude irrelevant
+    BLOCKED_CATEGORIES = {'Pet Supplies', 'Books & Media', 'Stationery', 'Packaging & Carry Bags'}
+
+    final_products = []  # (name, price, description, image_url, category, sub_category, base_name, unit)
+
+    # 1. Load from ULTIMATE_ZEPTO_CATALOG.csv
     if os.path.exists(csv_file_path):
         try:
             with open(csv_file_path, mode='r', encoding='utf-8-sig') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    packaging = row.get('packaging', 'standard').strip()
-                    base_name = row.get('base_name', '').strip()
-                    if packaging.lower() != 'standard' and packaging.lower() != '':
-                        name = f"{base_name} {packaging}".strip()
-                    else:
-                        name = base_name.strip()
-                    
-                    category = (row.get('ecommerce_category', 'Miscellaneous') or "Miscellaneous").strip()
-                    try:
-                        price = float(row.get('mrp', 0))
-                    except:
-                        price = 0.0
-                    
-                    # Derive unit
-                    unit = "kg"
-                    lower_name = name.lower()
-                    lower_pkg = packaging.lower()
-                    
-                    if "250g" in lower_name or "250gm" in lower_name or "250g" in lower_pkg:
-                        unit = "250g"
-                    elif "500g" in lower_name or "500gm" in lower_name or "500g" in lower_pkg:
-                        unit = "500g"
-                    elif "100g" in lower_name or "100gm" in lower_name or "100g" in lower_pkg:
-                        unit = "100g"
-                    elif "50g" in lower_name or "50gm" in lower_name:
-                        unit = "50g"
-                    elif "1kg" in lower_name or "1kg" in lower_pkg:
-                        unit = "1kg"
-                    elif "ltr" in lower_name or "ltr" in lower_pkg or " l " in f" {lower_pkg} ":
-                        unit = "ltr"
-                    elif "ml" in lower_name or "ml" in lower_pkg:
-                        unit = "ml"
+                    category = (row.get('Category') or 'Pantry Staples').strip()
+                    if category in BLOCKED_CATEGORIES:
+                        continue
 
-                    # Derive Image URL
-                    img_url = category_images["Default"]
-                    for key in category_images:
-                        if str(key).lower() in category.lower() or str(key).lower() in name.lower():  # type: ignore
-                            img_url = category_images.get(key, img_url)  # type: ignore
-                            break
-                    
-                    description = f"₹{int(price)}/{unit} — {packaging}"
-                    final_products.append((name, price, description, img_url, category, base_name, unit))
-            print(f"📦 Loaded {len(final_products)} products from CSV.")
+                    sub_category = (row.get('Sub_Category') or '').strip()
+                    name = (row.get('name') or '').strip()
+                    standardized = (row.get('Standardized_Name') or name).strip()
+                    base_name = standardized if standardized else name
+                    size_weight = (row.get('Size_Weight') or '').strip()
+
+                    try:
+                        price = float(row.get('mrp') or 0)
+                    except (ValueError, TypeError):
+                        price = 0.0
+
+                    if price <= 0 or not name:
+                        continue
+
+                    # Derive unit from Size_Weight
+                    sw_lower = size_weight.lower()
+                    if any(x in sw_lower for x in ['kg', 'kgs']):
+                        unit = size_weight
+                    elif any(x in sw_lower for x in ['500g', '500gm']):
+                        unit = '500g'
+                    elif any(x in sw_lower for x in ['250g', '250gm']):
+                        unit = '250g'
+                    elif any(x in sw_lower for x in ['100g', '100gm']):
+                        unit = '100g'
+                    elif any(x in sw_lower for x in ['50g', '50gm']):
+                        unit = '50g'
+                    elif 'ltr' in sw_lower or 'litre' in sw_lower:
+                        unit = 'ltr'
+                    elif 'ml' in sw_lower:
+                        unit = 'ml'
+                    elif 'pc' in sw_lower or 'pcs' in sw_lower or 'piece' in sw_lower:
+                        unit = 'pcs'
+                    elif size_weight and size_weight.lower() not in ('nan', ''):
+                        unit = size_weight
+                    else:
+                        unit = 'pcs'
+
+                    description = f"₹{int(price)}/{unit} — {sub_category}" if sub_category else f"₹{int(price)}/{unit}"
+                    img_url = get_image(category)
+
+                    final_products.append((name, price, description, img_url, category, sub_category, base_name, unit))
+
+            print(f"📦 Loaded {len(final_products)} products from ULTIMATE_ZEPTO_CATALOG.csv.")
         except Exception as e:
             print(f"❌ Error during CSV parsing: {e}")
     else:
-        print(f"⚠️ CSV file not found at {csv_file_path}.")
+        print(f"⚠️ CSV not found at {csv_file_path}.")
 
-    # 2. Load from store.db (SQLite)
+    # 2. Load from store.db (SQLite) — local grains/staples
     if os.path.exists(sqlite_db_path):
         try:
             sqlite_conn = sqlite3.connect(sqlite_db_path)
             sqlite_cursor = sqlite_conn.cursor()
-            sqlite_cursor.execute("SELECT name, price, description, image_url, category, base_name, unit FROM products")
+            sqlite_cursor.execute("SELECT name, price, description, image_url, category, base_name FROM products")
             sqlite_rows = sqlite_cursor.fetchall()
-            initial_count = len(final_products)
-            for row in sqlite_rows:
-                # Append to the final list
-                final_products.append(row)
             sqlite_conn.close()
-            print(f"📦 Loaded {len(sqlite_rows)} products from SQLite (store.db).")
+            for row in sqlite_rows:
+                name, price, description, image_url, category, base_name = row
+                # Map old simple categories into the new Zepto style
+                mapped_category = "Atta, Rice & Dal"
+                sub_category = category  # e.g. "Rice", "Wheat"
+                img_url = get_image(category) or image_url
+                unit = "kg"
+                final_products.append((name, price, description, img_url, mapped_category, sub_category, base_name or name, unit))
+            print(f"📦 Loaded {len(sqlite_rows)} products from store.db.")
         except Exception as e:
             print(f"❌ Error during SQLite parsing: {e}")
     else:
-        print(f"⚠️ SQLite database not found at {sqlite_db_path}.")
+        print(f"⚠️ store.db not found at {sqlite_db_path}.")
 
-    # 3. Insert into PostgreSQL
+    # 3. Insert all into PostgreSQL
     if final_products:
         try:
             cursor.executemany(
-                "INSERT INTO products (name, price, description, image_url, category, base_name, unit) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                "INSERT INTO products (name, price, description, image_url, category, sub_category, base_name, unit) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
                 final_products,
             )
-            print(f"✅ Successfully seeded TOTAL {len(final_products)} products into database.")
+            print(f"✅ Successfully seeded {len(final_products)} products into database.")
         except Exception as e:
             print(f"❌ Error during PostgreSQL insertion: {e}")
     else:
@@ -454,14 +491,14 @@ def mark_delivered(token: str) -> bool:
 
 # ── Admin Product Management ─────────────────────────────
 
-def add_product(name: str, price: float, description: str, image_url: str, category: str, base_name: str = "", unit: str = "kg") -> Optional[int]:
+def add_product(name: str, price: float, description: str, image_url: str, category: str, sub_category: str = "", base_name: str = "", unit: str = "kg") -> Optional[int]:
     """Add a new product to the database."""
     conn = get_connection()
     try:
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO products (name, price, description, image_url, category, base_name, unit) VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id",
-            (name, price, description, image_url, category, base_name, unit)
+            "INSERT INTO products (name, price, description, image_url, category, sub_category, base_name, unit) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            (name, price, description, image_url, category, sub_category, base_name, unit)
         )
         product_id = cursor.fetchone()['id']
         conn.commit()

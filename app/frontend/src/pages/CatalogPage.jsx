@@ -4,80 +4,62 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import ProductCard from '../components/ProductCard'
 import ProductVariantModal from '../components/ProductVariantModal'
 import HeroBanner from '../components/HeroBanner'
-import CategoryGrid from '../components/CategoryGrid'
-import SmartSections from '../components/SmartSections'
 import { useCart } from '../CartContext'
 import { useAuth } from '../AuthContext'
 import { getProducts } from '../api'
 import ProductDetailsModal from '../components/ProductDetailsModal'
 
-const CATEGORY_MAP = {
-  // Grains & Staples
-  'Rice': 'Grains & Staples',
-  'Wheat': 'Grains & Staples',
-  'Jowari': 'Grains & Staples',
-  'Bajri': 'Grains & Staples',
-  'Daals & Pulses': 'Grains & Staples',
-  'Atta, Rice & Dal': 'Grains & Staples',
-  // Dairy & Eggs
-  'Dairy': 'Dairy & Eggs',
-  'Dairy & Bread': 'Dairy & Eggs',
-  'Eggs': 'Dairy & Eggs',
-  // Snacks & Sweets
-  'Snacks': 'Snacks & Sweets',
-  'Munchies': 'Snacks & Sweets',
-  'Sweets & Biscuits': 'Snacks & Sweets',
-  'Bakery': 'Snacks & Sweets',
-  // Beverages
-  'Beverages': 'Beverages',
-  'Soft Drinks': 'Beverages',
-  'Tea, Coffee & More': 'Beverages',
-  // Essentials & Spices
-  'Spices': 'Essentials & Spices',
-  'Salt, Sugar & Oil': 'Essentials & Spices',
-  'Masalas & Spices': 'Essentials & Spices',
-  'Cooking Essentials': 'Essentials & Spices',
-  // Home & Hygiene
-  'Cleaning Essentials': 'Home & Hygiene',
-  'Personal Care': 'Home & Hygiene',
-  'Bath & Body': 'Home & Hygiene',
-  'Laundry': 'Home & Hygiene',
-  // Instant Foods
-  'Instant Food': 'Instant Foods',
-  'Ready to Eat': 'Instant Foods',
-  'Noodles & Pasta': 'Instant Foods',
-}
+// ── Zepto category definitions ──────────────────────────────────
+const CATEGORY_CONFIG = [
+  { name: 'Atta, Rice & Dal',           emoji: '🌾', color: '#f59e0b' },
+  { name: 'Masala & Dry Fruits',        emoji: '🌶️', color: '#ef4444' },
+  { name: 'Snacks & Munchies',          emoji: '🍿', color: '#8b5cf6' },
+  { name: 'Sweet Tooth',                emoji: '🍭', color: '#ec4899' },
+  { name: 'Cleaning Essentials',        emoji: '🧼', color: '#06b6d4' },
+  { name: 'Instant & Frozen Food',      emoji: '🍜', color: '#f97316' },
+  { name: 'Dairy, Bread & Eggs',        emoji: '🥛', color: '#3b82f6' },
+  { name: 'Personal Care',              emoji: '💄', color: '#d946ef' },
+  { name: 'Cold Drinks & Juices',       emoji: '🥤', color: '#22c55e' },
+  { name: 'Pharma & Wellness',          emoji: '💊', color: '#14b8a6' },
+  { name: 'Tea, Coffee & Health Drinks',emoji: '☕', color: '#92400e' },
+  { name: 'Paan Corner',                emoji: '🌿', color: '#16a34a' },
+  { name: 'Pantry Staples',             emoji: '🏪', color: '#6366f1' },
+  { name: 'Baby Care',                  emoji: '👶', color: '#fb7185' },
+  { name: 'Home & Lifestyle',           emoji: '🏠', color: '#0ea5e9' },
+  { name: 'Pooja Needs',                emoji: '🪔', color: '#eab308' },
+]
 
-const CATEGORY_EMOJI = {
-  'Grains & Staples': '🌾',
-  'Dairy & Eggs': '🥛',
-  'Snacks & Sweets': '🍿',
-  'Beverages': '🥤',
-  'Essentials & Spices': '🌶️',
-  'Home & Hygiene': '🧼',
-  'Instant Foods': '🍜',
-  'Fruits & Vegetables': '🥦',
-  'Meat & Seafood': '🥩',
-  'All': '✨'
-}
+const CATEGORY_MAP = Object.fromEntries(CATEGORY_CONFIG.map(c => [c.name, c]))
 
-const BLOCKED_CATEGORIES = ['Pet Supplies', 'Books & Media', 'Packaging & Carry Bags', 'Stationery']
+// ── Blocked categories ───────────────────────────────────────────
+const BLOCKED_CATEGORIES = new Set([
+  'Pet Supplies', 'Books & Media', 'Stationery', 'Packaging & Carry Bags'
+])
 
-export default function CatalogPage({ searchQuery = '' }) {
+export default function CatalogPage({ searchQuery = '', onSearchFocus, navCategory }) {
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [activeCategory, setActiveCategory] = useState('All')
+  const [activeSubCategory, setActiveSubCategory] = useState('All')
   const [selectedGroup, setSelectedGroup] = useState(null)
   const [selectedProductDetails, setSelectedProductDetails] = useState(null)
-  const [fabWiggle, setFabWiggle] = useState(false)
-  const { cartCount, cartTotal, cartOpen, setCartOpen } = useCart()
+  const { cartCount } = useCart()
   const { user } = useAuth()
   const abortRef = useRef(null)
   const prevCartCount = useRef(cartCount)
   const location = useLocation()
   const navigate = useNavigate()
   const [toastMessage, setToastMessage] = useState('')
+  const categoryBarRef = useRef(null)
+
+  // React to navCategory from Navbar dropdown
+  useEffect(() => {
+    if (navCategory) {
+      setActiveCategory(navCategory)
+      setActiveSubCategory('All')
+    }
+  }, [navCategory])
 
   useEffect(() => {
     if (location.state?.cancelMessage) {
@@ -92,14 +74,6 @@ export default function CatalogPage({ searchQuery = '' }) {
       return () => clearTimeout(timer)
     }
   }, [toastMessage])
-
-  useEffect(() => {
-    if (cartCount > prevCartCount.current) {
-      setFabWiggle(true)
-      setTimeout(() => setFabWiggle(false), 600)
-    }
-    prevCartCount.current = cartCount
-  }, [cartCount])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -121,72 +95,87 @@ export default function CatalogPage({ searchQuery = '' }) {
     return () => controller.abort()
   }, [])
 
-  const categories = useMemo(() => {
-    const rawCats = [...new Set(products.map(p => {
-        const mapped = CATEGORY_MAP[p.category] || p.category
-        return mapped
-    }).filter(cat => cat && !BLOCKED_CATEGORIES.includes(cat)))]
-    return ['All', ...rawCats.sort()]
+  // All unique top-level categories that have products
+  const availableCategories = useMemo(() => {
+    const set = new Set()
+    products.forEach(p => {
+      if (p.category && !BLOCKED_CATEGORIES.has(p.category)) set.add(p.category)
+    })
+    return CATEGORY_CONFIG.filter(c => set.has(c.name))
   }, [products])
 
+  // Sub-categories for the active category
+  const subCategories = useMemo(() => {
+    if (activeCategory === 'All') return []
+    const subs = new Set()
+    products.forEach(p => {
+      if (p.category === activeCategory && p.sub_category) subs.add(p.sub_category)
+    })
+    return ['All', ...Array.from(subs).sort()]
+  }, [products, activeCategory])
+
+  // Grouped products (base_name collapsing)
   const grouped = useMemo(() => {
     const groups = {}
     products.forEach(p => {
-      const cat = CATEGORY_MAP[p.category] || p.category
-      if (BLOCKED_CATEGORIES.includes(cat)) return
-
-      const key = p.base_name || p.name
-      if (!groups[key]) groups[key] = { ...p, category: cat, variants: [] }
+      if (BLOCKED_CATEGORIES.has(p.category)) return
+      const key = (p.base_name || p.name) + '|' + p.category
+      if (!groups[key]) groups[key] = { ...p, variants: [] }
       groups[key].variants.push(p)
       groups[key].variants.sort((a, b) => a.price - b.price)
     })
     return Object.values(groups)
   }, [products])
 
+  // Filtered products by search / category / sub-category
   const filtered = useMemo(() => {
     let result = grouped
 
+    // Search mode: flat list
     if (searchQuery && searchQuery.trim()) {
-      const lowerQuery = searchQuery.toLowerCase()
+      const lq = searchQuery.toLowerCase()
       return result.filter(g =>
-        (g.name && g.name.toLowerCase().includes(lowerQuery)) ||
-        (g.base_name && g.base_name.toLowerCase().includes(lowerQuery)) ||
-        (g.description && g.description.toLowerCase().includes(lowerQuery))
+        (g.name && g.name.toLowerCase().includes(lq)) ||
+        (g.base_name && g.base_name.toLowerCase().includes(lq)) ||
+        (g.category && g.category.toLowerCase().includes(lq)) ||
+        (g.sub_category && g.sub_category.toLowerCase().includes(lq))
       )
     }
 
+    // Category filter
     if (activeCategory !== 'All') {
       result = result.filter(g => g.category === activeCategory)
-      return [{ category: activeCategory, items: result }]
+      // Sub-category filter
+      if (activeSubCategory !== 'All') {
+        result = result.filter(g => g.sub_category === activeSubCategory)
+      }
+      return result
     }
 
-    const categoriesMap = {}
-    result.forEach(g => {
+    return result
+  }, [grouped, activeCategory, activeSubCategory, searchQuery])
+
+  // When "All" selected, group for section display
+  const sectionedData = useMemo(() => {
+    if (activeCategory !== 'All' || (searchQuery && searchQuery.trim())) return null
+    const catMap = {}
+    filtered.forEach(g => {
       const cat = g.category || 'Other'
-      if (!categoriesMap[cat]) categoriesMap[cat] = []
-      categoriesMap[cat].push(g)
+      if (!catMap[cat]) catMap[cat] = []
+      catMap[cat].push(g)
     })
+    return availableCategories
+      .filter(c => catMap[c.name] && catMap[c.name].length > 0)
+      .map(c => ({ ...c, items: catMap[c.name] }))
+  }, [filtered, activeCategory, searchQuery, availableCategories])
 
-    const clampedGroups = []
-    for (const cat of categories) {
-      if (cat === 'All' || !categoriesMap[cat]) continue
-      clampedGroups.push({
-        category: cat,
-        items: categoriesMap[cat],
-        clamped: categoriesMap[cat].slice(0, 4)
-      })
-    }
+  const isSearchMode = !!(searchQuery && searchQuery.trim())
 
-    return clampedGroups
-  }, [grouped, activeCategory, searchQuery, categories])
-
-  const isSearchMode = searchQuery && searchQuery.trim()
-
-  const handleCategorySelect = (cat) => {
-    setActiveCategory(cat)
-    // Scroll to product section
+  const handleCategorySelect = (catName) => {
+    setActiveCategory(catName)
+    setActiveSubCategory('All')
     setTimeout(() => {
-      document.querySelector('.catalog-wrapper')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      document.querySelector('.catalog-main-content')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }, 50)
   }
 
@@ -204,7 +193,7 @@ export default function CatalogPage({ searchQuery = '' }) {
             style={{
               position: 'fixed', top: '80px', left: '50%',
               transform: 'translateX(-50%)', zIndex: 1000,
-              background: toastMessage.includes('blocked') ? 'rgba(239, 68, 68, 0.95)' : 'rgba(245, 158, 11, 0.95)',
+              background: toastMessage.includes('blocked') ? 'rgba(239,68,68,0.95)' : 'rgba(245,158,11,0.95)',
               color: 'white', padding: '12px 24px', borderRadius: '8px',
               boxShadow: '0 4px 12px rgba(0,0,0,0.2)', fontSize: '14px',
               fontWeight: 600, textAlign: 'center', minWidth: '280px', maxWidth: '90%'
@@ -218,149 +207,198 @@ export default function CatalogPage({ searchQuery = '' }) {
       {/* Hero Banner — only when not searching */}
       {!isSearchMode && <HeroBanner />}
 
-      {/* Category Grid — only when not searching */}
+      {/* ── Zepto Category Icon Grid ─────────────────────── */}
       {!isSearchMode && (
-        <CategoryGrid
-          activeCategory={activeCategory}
-          onSelect={handleCategorySelect}
-        />
-      )}
-
-      {/* Smart Sections — only on "All" category, no search */}
-      {!isSearchMode && activeCategory === 'All' && !loading && products.length > 0 && (
-        <SmartSections
-          products={grouped}
-          onDetailClick={(prod, mrp) => setSelectedProductDetails({ product: prod, mrp })}
-          onVariantClick={(group) => setSelectedGroup(group)}
-          isLoggedIn={!!user}
-        />
-      )}
-
-      {/* Catalog Layout */}
-      <div className="catalog-wrapper">
-        {/* Fixed Left Sidebar */}
-        <aside className="category-sidebar">
-          <div className="sidebar-list">
-            {categories.map(cat => (
+        <section className="zepto-cat-grid-section">
+          <div className="zepto-cat-grid">
+            <div
+              className={`zepto-cat-tile ${activeCategory === 'All' ? 'active' : ''}`}
+              onClick={() => handleCategorySelect('All')}
+            >
+              <div className="zepto-cat-icon" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>✨</div>
+              <span>All</span>
+            </div>
+            {availableCategories.map(cat => (
               <div
-                key={cat}
-                className={`sidebar-item ${activeCategory === cat ? 'active' : ''}`}
-                onClick={() => setActiveCategory(cat)}
+                key={cat.name}
+                className={`zepto-cat-tile ${activeCategory === cat.name ? 'active' : ''}`}
+                onClick={() => handleCategorySelect(cat.name)}
               >
-                <div className="sidebar-emoji">{CATEGORY_EMOJI[cat] || '📦'}</div>
-                {cat}
+                <div
+                  className="zepto-cat-icon"
+                  style={{ background: `linear-gradient(135deg, ${cat.color}cc, ${cat.color})` }}
+                >
+                  {cat.emoji}
+                </div>
+                <span>{cat.name}</span>
               </div>
             ))}
           </div>
-        </aside>
+        </section>
+      )}
 
-        {/* Main Content Area */}
-        <main className="main-content">
+      {/* ── Horizontal Category Pill Bar (sticky, shows when category selected) ── */}
+      {!isSearchMode && activeCategory !== 'All' && (
+        <div className="zepto-sticky-cat-bar" ref={categoryBarRef}>
+          <div className="zepto-cat-pills-wrap">
+            {availableCategories.map(cat => (
+              <button
+                key={cat.name}
+                className={`zepto-cat-pill ${activeCategory === cat.name ? 'active' : ''}`}
+                onClick={() => handleCategorySelect(cat.name)}
+                style={activeCategory === cat.name ? { borderColor: cat.color, color: cat.color } : {}}
+              >
+                <span>{cat.emoji}</span> {cat.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
-          {/* Loading Skeletons */}
-          {loading && (
-            <div className="product-grid product-grid-multi" style={{ marginTop: 16 }}>
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="skeleton-card">
-                  <div className="skeleton skeleton-img" />
-                  <div className="skeleton-body">
-                    <div className="skeleton skeleton-line medium" />
-                    <div className="skeleton skeleton-line short" />
-                    <div className="skeleton skeleton-line medium" style={{ marginTop: 12 }} />
-                  </div>
+      {/* ── Sub-category filter bar ──────────────────────── */}
+      {!isSearchMode && activeCategory !== 'All' && subCategories.length > 1 && (
+        <div className="zepto-subcat-bar">
+          <div className="zepto-subcat-pills">
+            {subCategories.map(sub => (
+              <button
+                key={sub}
+                className={`zepto-subcat-pill ${activeSubCategory === sub ? 'active' : ''}`}
+                onClick={() => setActiveSubCategory(sub)}
+              >
+                {sub}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Main Content ─────────────────────────────────── */}
+      <div className="catalog-main-content">
+
+        {/* Loading Skeletons */}
+        {loading && (
+          <div className="product-grid product-grid-multi" style={{ marginTop: 16, padding: '0 16px' }}>
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="skeleton-card">
+                <div className="skeleton skeleton-img" />
+                <div className="skeleton-body">
+                  <div className="skeleton skeleton-line medium" />
+                  <div className="skeleton skeleton-line short" />
+                  <div className="skeleton skeleton-line medium" style={{ marginTop: 12 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {error && !loading && (
+          <div className="empty-state">
+            <div className="emoji">⚠️</div>
+            <h3>Couldn't load products</h3>
+            <p>{error}</p>
+          </div>
+        )}
+
+        {!loading && !error && filtered.length === 0 && (
+          <div className="empty-state">
+            <div className="emoji">🌾</div>
+            <h3>No products found</h3>
+            <p>{searchQuery ? 'Try a different search term.' : 'Try a different category.'}</p>
+          </div>
+        )}
+
+        {/* Search Mode: flat grid */}
+        {!loading && !error && isSearchMode && filtered.length > 0 && (
+          <div style={{ padding: '0 16px', marginTop: '8px' }}>
+            <p className="search-results-label">
+              {filtered.length} result{filtered.length !== 1 ? 's' : ''} for &quot;{searchQuery}&quot;
+            </p>
+            <div className="product-grid product-grid-multi">
+              {filtered.map(g => (
+                <div key={(g.base_name || g.name) + g.category}>
+                  <ProductCard
+                    product={g}
+                    onDetailClick={(prod, mrp) => setSelectedProductDetails({ product: prod, mrp })}
+                    onVariantClick={(group) => setSelectedGroup(group)}
+                  />
                 </div>
               ))}
             </div>
-          )}
+          </div>
+        )}
 
-          {error && !loading && (
-            <div className="empty-state">
-              <div className="emoji">⚠️</div>
-              <h3>Couldn't load products</h3>
-              <p>{error}</p>
-            </div>
-          )}
-
-          {!loading && !error && filtered.length === 0 && (
-            <div className="empty-state">
-              <div className="emoji">🌾</div>
-              <h3>No products found</h3>
-              <p>{searchQuery ? 'Try a different search term.' : 'Try a different category.'}</p>
-            </div>
-          )}
-
-          {/* Product Sections */}
-          {!loading && !error && filtered.length > 0 && (
-            <div className="product-sections">
-              {isSearchMode ? (
-                /* Search results flat grid */
-                <div style={{ marginTop: '16px' }}>
-                  <p className="search-results-label">{filtered.length} result{filtered.length !== 1 ? 's' : ''} for "{searchQuery}"</p>
-                  <div className="product-grid product-grid-multi">
-                    {filtered.map(groupObj => (
-                      <div key={groupObj.base_name || groupObj.name}>
+        {/* All-categories section view (not searching, showing All) */}
+        {!loading && !error && !isSearchMode && activeCategory === 'All' && sectionedData && (
+          <div className="product-sections" style={{ padding: '0 16px' }}>
+            {sectionedData.map(section => {
+              const preview = section.items.slice(0, 6)
+              const hasMore = section.items.length > 6
+              return (
+                <div key={section.name} className="category-section" style={{ marginBottom: '40px' }}>
+                  <div className="section-header">
+                    <h2 className="section-title" style={{ color: section.color }}>
+                      {section.emoji} {section.name}
+                    </h2>
+                    {hasMore && (
+                      <button
+                        onClick={() => handleCategorySelect(section.name)}
+                        className="see-all-btn"
+                      >
+                        See All {section.items.length} →
+                      </button>
+                    )}
+                  </div>
+                  <div className="product-grid zepto-product-scroll">
+                    {preview.map(item => (
+                      <div key={(item.base_name || item.name) + item.category}>
                         <ProductCard
-                          product={groupObj}
+                          product={item}
                           onDetailClick={(prod, mrp) => setSelectedProductDetails({ product: prod, mrp })}
                           onVariantClick={(group) => setSelectedGroup(group)}
                         />
                       </div>
                     ))}
                   </div>
-                </div>
-              ) : (
-                filtered.map((groupObj) => {
-                  const hasMore = groupObj.items && groupObj.items.length > 4
-                  const displayItems = activeCategory === 'All' ? groupObj.clamped : groupObj.items
-
-                  return (
-                    <div key={groupObj.category} className="category-section" style={{ marginBottom: '40px' }}>
-                      {activeCategory === 'All' && (
-                        <div className="section-header">
-                          <h2 className="section-title">
-                            {CATEGORY_EMOJI[groupObj.category] || '📦'} {groupObj.category}
-                          </h2>
-                          {hasMore && (
-                            <button
-                              onClick={() => setActiveCategory(groupObj.category)}
-                              className="see-all-btn"
-                            >
-                              See All →
-                            </button>
-                          )}
-                        </div>
-                      )}
-
-                      <div className={activeCategory !== 'All' ? 'product-grid product-grid-multi' : 'product-grid'}>
-                        {displayItems.map(item => (
-                          <div key={item.base_name || item.name}>
-                            <ProductCard
-                              product={item}
-                              onDetailClick={(prod, mrp) => setSelectedProductDetails({ product: prod, mrp })}
-                              onVariantClick={(group) => setSelectedGroup(group)}
-                            />
-                          </div>
-                        ))}
-                      </div>
-
-                      {activeCategory === 'All' && hasMore && (
-                        <div style={{ textAlign: 'center', marginTop: '16px' }}>
-                          <button
-                            className="btn btn-outline"
-                            onClick={() => setActiveCategory(groupObj.category)}
-                            style={{ width: '100%', maxWidth: '300px', padding: '12px' }}
-                          >
-                            View all {groupObj.items.length} options
-                          </button>
-                        </div>
-                      )}
+                  {hasMore && (
+                    <div style={{ textAlign: 'center', marginTop: '12px' }}>
+                      <button
+                        className="btn btn-outline"
+                        onClick={() => handleCategorySelect(section.name)}
+                        style={{ maxWidth: '300px', padding: '10px 24px', width: '100%' }}
+                      >
+                        View all {section.items.length} items in {section.name}
+                      </button>
                     </div>
-                  )
-                })
-              )}
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Single category selected — full grid */}
+        {!loading && !error && !isSearchMode && activeCategory !== 'All' && filtered.length > 0 && (
+          <div style={{ padding: '0 16px', marginTop: '8px' }}>
+            <div className="section-header" style={{ marginBottom: '16px' }}>
+              <h2 className="section-title" style={{ color: CATEGORY_MAP[activeCategory]?.color }}>
+                {CATEGORY_MAP[activeCategory]?.emoji} {activeCategory}
+                {activeSubCategory !== 'All' && <span style={{ fontSize: '0.8em', marginLeft: '8px', opacity: 0.7 }}>› {activeSubCategory}</span>}
+              </h2>
+              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{filtered.length} items</span>
             </div>
-          )}
-        </main>
+            <div className="product-grid product-grid-multi">
+              {filtered.map(g => (
+                <div key={(g.base_name || g.name) + g.category}>
+                  <ProductCard
+                    product={g}
+                    onDetailClick={(prod, mrp) => setSelectedProductDetails({ product: prod, mrp })}
+                    onVariantClick={(group) => setSelectedGroup(group)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Variant modal */}

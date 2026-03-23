@@ -70,6 +70,7 @@ class ProductOut(BaseModel):
     description: str
     image_url: str
     category: str
+    sub_category: str = ""
     base_name: str = ""
     unit: str = "kg"
 
@@ -79,10 +80,11 @@ class ProductCreate(BaseModel):
     description: str = Field(..., max_length=500)
     image_url: str = Field(..., max_length=500)
     category: str = Field(..., min_length=1, max_length=50)
+    sub_category: Optional[str] = Field("", max_length=100)
     base_name: Optional[str] = Field("", max_length=100)
     unit: str = Field("kg", max_length=20)
 
-    @field_validator("name", "description", "category", "base_name", "unit")
+    @field_validator("name", "description", "category", "sub_category", "base_name", "unit")
     @classmethod
     def sanitize_inputs(cls, v):
         return sanitize_text(v) if v else v
@@ -93,10 +95,11 @@ class ProductUpdate(BaseModel):
     description: Optional[str] = Field(None, max_length=500)
     image_url: Optional[str] = Field(None, max_length=500)
     category: Optional[str] = Field(None, min_length=1, max_length=50)
+    sub_category: Optional[str] = Field(None, max_length=100)
     base_name: Optional[str] = Field(None, max_length=100)
     unit: Optional[str] = Field(None, max_length=20)
 
-    @field_validator("name", "description", "category", "base_name", "unit")
+    @field_validator("name", "description", "category", "sub_category", "base_name", "unit")
     @classmethod
     def sanitize_inputs(cls, v):
         return sanitize_text(v) if v else v

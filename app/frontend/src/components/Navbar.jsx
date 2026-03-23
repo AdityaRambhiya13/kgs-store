@@ -1,14 +1,35 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useCart } from '../CartContext'
 import { useAuth } from '../AuthContext'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 
-export default function Navbar({ searchQuery, onSearchChange }) {
+const SEARCH_CATEGORIES = [
+  { name: 'Atta, Rice & Dal',           emoji: '🌾' },
+  { name: 'Masala & Dry Fruits',        emoji: '🌶️' },
+  { name: 'Snacks & Munchies',          emoji: '🍿' },
+  { name: 'Sweet Tooth',                emoji: '🍭' },
+  { name: 'Cleaning Essentials',        emoji: '🧼' },
+  { name: 'Instant & Frozen Food',      emoji: '🍜' },
+  { name: 'Dairy, Bread & Eggs',        emoji: '🥛' },
+  { name: 'Personal Care',              emoji: '💄' },
+  { name: 'Cold Drinks & Juices',       emoji: '🥤' },
+  { name: 'Pharma & Wellness',          emoji: '💊' },
+  { name: 'Tea, Coffee & Health Drinks',emoji: '☕' },
+  { name: 'Paan Corner',                emoji: '🌿' },
+  { name: 'Pantry Staples',             emoji: '🏪' },
+  { name: 'Baby Care',                  emoji: '👶' },
+  { name: 'Home & Lifestyle',           emoji: '🏠' },
+  { name: 'Pooja Needs',                emoji: '🪔' },
+]
+
+export default function Navbar({ searchQuery, onSearchChange, onCategorySelect }) {
   const { cartCount, setCartOpen } = useCart()
   const { user } = useAuth()
   const navigate = useNavigate()
   const [locationName, setLocationName] = useState('Kalyan (W)')
+  const [searchFocused, setSearchFocused] = useState(false)
+  const searchWrapRef = useRef(null)
 
   useEffect(() => {
     if ("geolocation" in navigator) {
@@ -29,6 +50,26 @@ export default function Navbar({ searchQuery, onSearchChange }) {
       });
     }
   }, [])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handler = (e) => {
+      if (searchWrapRef.current && !searchWrapRef.current.contains(e.target)) {
+        setSearchFocused(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const handleCategoryClick = (catName) => {
+    if (onCategorySelect) onCategorySelect(catName)
+    if (onSearchChange) onSearchChange('')
+    setSearchFocused(false)
+  }
+
+  // Whether to show category dropdown
+  const showCategoryDropdown = searchFocused && !(searchQuery && searchQuery.trim())
 
   return (
     <nav className="navbar">
@@ -101,21 +142,49 @@ export default function Navbar({ searchQuery, onSearchChange }) {
           </div>
         </div>
 
-        {/* Row 2: Search bar (only on catalog page) */}
+        {/* Row 2: Search bar (only on catalog page) with category dropdown */}
         {searchQuery !== undefined && (
           <div className="nav-search-row">
-            <div className="nav-search-wrap">
+            <div className="nav-search-wrap" ref={searchWrapRef}>
               <svg className="nav-search-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               <input
                 type="text"
                 className="nav-search-input"
-                placeholder="Search milk, bread, rice, wheat..."
+                placeholder="Search groceries, snacks, masala..."
                 value={searchQuery || ''}
                 onChange={e => onSearchChange(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
               />
               {searchQuery && (
-                <button className="nav-search-clear" onClick={() => onSearchChange('')}>✕</button>
+                <button className="nav-search-clear" onClick={() => { onSearchChange(''); setSearchFocused(true) }}>✕</button>
               )}
+
+              {/* Category dropdown on search focus */}
+              <AnimatePresence>
+                {showCategoryDropdown && (
+                  <motion.div
+                    className="search-category-dropdown"
+                    initial={{ opacity: 0, y: -8, scaleY: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scaleY: 1 }}
+                    exit={{ opacity: 0, y: -8, scaleY: 0.95 }}
+                    transition={{ duration: 0.18 }}
+                  >
+                    <p className="search-dropdown-label">Browse Categories</p>
+                    <div className="search-dropdown-grid">
+                      {SEARCH_CATEGORIES.map(cat => (
+                        <button
+                          key={cat.name}
+                          className="search-dropdown-cat-btn"
+                          onMouseDown={(e) => { e.preventDefault(); handleCategoryClick(cat.name) }}
+                        >
+                          <span className="search-dropdown-emoji">{cat.emoji}</span>
+                          <span>{cat.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         )}
