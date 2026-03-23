@@ -2,9 +2,9 @@ import { useCart } from '../CartContext'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function MobileCartBar() {
-  const { cartCount, cartTotal, setCartOpen } = useCart()
+  const { cartCount, cartTotal, setCartOpen, cartOpen } = useCart()
 
-  if (cartCount === 0) return null
+  if (cartCount === 0 || cartOpen) return null
 
   return (
     <AnimatePresence>
