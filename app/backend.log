@@ -1,7 +1,0 @@
-🔧 Initializing Firebase Admin from file: firebase-adminsdk.json
-📦 Serving frontend from: C:\Users\adity\OneDrive\Desktop\KGS\app\frontend\dist
-🔧 Initializing Postgres Connection Pool...
-✅ Products already exist (4981 items). Skipping seeding to save time.
-=======================================================
-🌾 KGS Grain Store — FastAPI Backend v3.0
-=======================================================

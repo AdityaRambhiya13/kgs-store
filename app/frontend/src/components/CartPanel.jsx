@@ -1,6 +1,7 @@
 import { useCart } from '../CartContext'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
+import { getMRP } from '../utils/pricing'
 
 const FREE_DELIVERY_THRESHOLD = 250
 
@@ -15,7 +16,7 @@ export default function CartPanel() {
 
   // Compute savings vs MRP
   const totalSavings = cartItems.reduce((acc, item) => {
-    const mrp = Math.ceil(item.price * 1.2 / 5) * 5
+    const mrp = getMRP(item.price, item.id || 1)
     return acc + (mrp - item.price) * item.quantity
   }, 0)
 

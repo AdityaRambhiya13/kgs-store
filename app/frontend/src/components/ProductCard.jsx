@@ -1,20 +1,11 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCart } from '../CartContext'
+import { getMRP, getDiscount } from '../utils/pricing'
 
 // Seeded pseudo-random rating based on product id
 function getRating(id) {
   const seed = (id * 7 + 13) % 10
   return (3.8 + seed * 0.12).toFixed(1)
-}
-
-// Fake MRP: 10–35% above price
-function getMRP(price, id) {
-  const pct = 10 + ((id * 3 + 7) % 26)
-  return Math.ceil(price * (1 + pct / 100) / 5) * 5
-}
-
-function getDiscount(price, mrp) {
-  return Math.round(((mrp - price) / mrp) * 100)
 }
 
 export default function ProductCard({ product, onDetailClick, onVariantClick }) {

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCart } from '../CartContext'
+import { getMRP } from '../utils/pricing'
 
 // Helper to generate AI-style metadata if missing
 function getAiMetadata(product) {
@@ -120,7 +121,7 @@ export default function ProductDetailsModal({ product, onClose, mrp }) {
                 <div className="pdm-price-row">
                   <div className="pdm-price-block">
                     <span className="pdm-price">₹{product.price}</span>
-                    {mrp && <span className="pdm-mrp">₹{mrp}</span>}
+                    <span className="pdm-mrp">₹{getMRP(product.price, product.id || 1)}</span>
                   </div>
 
                   <div className="pdm-add-action">
@@ -161,7 +162,7 @@ export default function ProductDetailsModal({ product, onClose, mrp }) {
                       </div>
                       <div className="pdm-vr-price-col">
                         <div className="pdm-vr-price">₹{variant.price}</div>
-                        {variant.mrp && <div className="pdm-vr-mrp">₹{variant.mrp}</div>}
+                        <div className="pdm-vr-mrp">₹{variant.mrp || getMRP(variant.price, variant.id)}</div>
                       </div>
                       <div className="pdm-vr-action">
                         {qty > 0 ? (

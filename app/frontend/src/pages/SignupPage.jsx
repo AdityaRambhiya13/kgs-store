@@ -2,12 +2,19 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { signup } from '../api'
 import { motion } from 'framer-motion'
+import { useAuth } from '../AuthContext'
 
 export default function SignupPage() {
+    const { user, loading: authLoading, completeAuth } = useAuth()
     const [formData, setFormData] = useState({ name: '', phone: '', pin: '' })
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
     const navigate = useNavigate()
+
+    // Redirect if already logged in
+    if (!authLoading && user) {
+        navigate('/')
+    }
 
     const handleChange = (e) => {
         const { name, value } = e.target
@@ -22,9 +29,11 @@ export default function SignupPage() {
 
         setLoading(true)
         try {
-            await signup(formData.phone, formData.pin, formData.name)
-            // Redirect to login
-            navigate('/login')
+            const res = await signup(formData.phone, formData.pin, formData.name)
+            // Auto-login
+            completeAuth(res)
+            // Redirect to home
+            navigate('/')
         } catch (err) {
             setError(err.message || 'Signup failed')
         } finally {

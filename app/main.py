@@ -412,9 +412,14 @@ def signup(body: SignupRequest, request: Request):
         raise HTTPException(status_code=400, detail="Phone number is already registered")
         
     pin_hash = hash_pin(body.pin)
-    create_or_update_customer(phone=body.phone, name=body.name, pin_hash=pin_hash)
-    
-    return {"message": "Signup successful. You can now log in."}
+    token = create_access_token({"role": "customer", "phone": body.phone}, timedelta(days=7))
+    return {
+        "verified": True,
+        "phone": body.phone,
+        "name": body.name,
+        "access_token": token,
+        "message": "Signup successful"
+    }
 
 @app.post("/api/auth/login")
 def login(body: LoginRequest, request: Request):

@@ -37,15 +37,19 @@ export const AuthProvider = ({ children }) => {
         return () => window.removeEventListener('auth-error', logout);
     }, []);
 
+    const completeAuth = (res) => {
+        localStorage.setItem('kgsPhone', res.phone);
+        localStorage.setItem('kgsToken', res.access_token);
+        if (res.name) localStorage.setItem('kgsName', res.name);
+        if (res.address) localStorage.setItem('kgsAddress', res.address);
+
+        setUser({ phone: res.phone, token: res.access_token, name: res.name, address: res.address });
+    };
+
     const loginFunc = async (identifier, pin) => {
         try {
             const res = await login(identifier, pin);
-            localStorage.setItem('kgsPhone', res.phone);
-            localStorage.setItem('kgsToken', res.access_token);
-            if (res.name) localStorage.setItem('kgsName', res.name);
-            if (res.address) localStorage.setItem('kgsAddress', res.address);
-
-            setUser({ phone: res.phone, token: res.access_token, name: res.name, address: res.address });
+            completeAuth(res);
             return true;
         } catch (error) {
             throw error;
@@ -53,7 +57,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login: loginFunc, logout, updateName }}>
+        <AuthContext.Provider value={{ user, loading, login: loginFunc, logout, updateName, completeAuth }}>
             {!loading && children}
         </AuthContext.Provider>
     );
