@@ -116,6 +116,16 @@ def init_db():
         "INSERT INTO counters (name, value) VALUES ('order_token', 100) ON CONFLICT DO NOTHING"
     )
 
+    # ── Customer Favorites table ──────────────────────────────────
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS customer_favorites (
+            phone TEXT NOT NULL,
+            product_id INTEGER NOT NULL,
+            added_at TEXT NOT NULL,
+            PRIMARY KEY (phone, product_id)
+        )
+    """)
+
     # ── Conditional reseed products ───────────────────────
     cursor.execute("SELECT COUNT(*) as count FROM products")
     row = cursor.fetchone()
@@ -552,3 +562,167 @@ def delete_product(product_id: int) -> bool:
     finally:
         release_connection(conn)
     return deleted
+
+# ── Favorites ────────────────────────────────────────────
+
+def get_favorites(phone: str) -> list:
+    """Return list of product_ids favorited by the customer."""
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT product_id FROM customer_favorites WHERE phone = %s ORDER BY added_at DESC",
+            (phone,)
+        )
+        rows = cursor.fetchall()
+        return [row['product_id'] for row in rows]
+    finally:
+        release_connection(conn)
+
+def add_favorite(phone: str, product_id: int) -> bool:
+    """Add a product to favorites. Returns True if newly added, False if already existed."""
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO customer_favorites (phone, product_id, added_at) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
+            (phone, product_id, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        )
+        added = cursor.rowcount > 0
+        conn.commit()
+        return added
+    finally:
+        release_connection(conn)
+
+def remove_favorite(phone: str, product_id: int) -> bool:
+    """Remove a product from favorites. Returns True if removed."""
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "DELETE FROM customer_favorites WHERE phone = %s AND product_id = %s",
+            (phone, product_id)
+        )
+        removed = cursor.rowcount > 0
+        conn.commit()
+        return removed
+    finally:
+        release_connection(conn)
+
+def get_category_preferences(phone: str) -> dict:
+    """Compute category weights from order history and favorites.
+    Returns {category_name: weight} sorted by weight descending.
+    """
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        weights = {}
+
+        # Weight from order history (1 pt per item ordered in that category)
+        cursor.execute(
+            "SELECT items_json FROM orders WHERE phone = %s AND status != 'Cancelled' ORDER BY id DESC LIMIT 20",
+            (phone,)
+        )
+        orders = cursor.fetchall()
+        all_products = {p['id']: p for p in get_all_products()}
+        for order in orders:
+            try:
+                items = json.loads(order['items_json'])
+                for item in items:
+                    pid = item.get('product_id')
+                    if pid and pid in all_products:
+                        cat = all_products[pid].get('category', '')
+                        weights[cat] = weights.get(cat, 0) + item.get('quantity', 1)
+            except Exception:
+                pass
+
+        # Weight from favorites (2 pts per favorited product — stronger signal)
+        favorite_ids = get_favorites(phone)
+        for fid in favorite_ids:
+            if fid in all_products:
+                cat = all_products[fid].get('category', '')
+                weights[cat] = weights.get(cat, 0) + 2
+
+        return dict(sorted(weights.items(), key=lambda x: x[1], reverse=True))
+    finally:
+        release_connection(conn)
+
+def get_trending_products(limit: int = 12) -> list:
+    """Return most-ordered products for trending/guest recommendations."""
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        # Get top product_ids by order frequency across all orders
+        cursor.execute("""
+            SELECT items_json FROM orders 
+            WHERE status != 'Cancelled' 
+            ORDER BY id DESC LIMIT 200
+        """)
+        rows = cursor.fetchall()
+        pid_counts = {}
+        for row in rows:
+            try:
+                items = json.loads(row['items_json'])
+                for item in items:
+                    pid = item.get('product_id')
+                    if pid:
+                        pid_counts[pid] = pid_counts.get(pid, 0) + item.get('quantity', 1)
+            except Exception:
+                pass
+
+        all_products = {p['id']: p for p in get_all_products()}
+        # Sort by frequency
+        sorted_pids = sorted(pid_counts.keys(), key=lambda x: pid_counts[x], reverse=True)
+        result = [all_products[pid] for pid in sorted_pids if pid in all_products]
+
+        # If no order history, pick a diverse curated set from different categories
+        if not result:
+            seen_cats = set()
+            for p in get_all_products():
+                cat = p.get('category', '')
+                if cat not in seen_cats:
+                    result.append(p)
+                    seen_cats.add(cat)
+                if len(result) >= limit:
+                    break
+
+        return result[:limit]
+    finally:
+        release_connection(conn)
+
+def get_personalized_recommendations(phone: str, limit: int = 12) -> list:
+    """Return personalized recommendations for a logged-in user."""
+    prefs = get_category_preferences(phone)
+    all_products = get_all_products()
+    favorite_ids = set(get_favorites(phone))
+
+    if not prefs:
+        # No history: fall back to trending
+        return get_trending_products(limit)
+
+    result = []
+    seen_ids = set()
+    top_cats = list(prefs.keys())[:5]  # Top 5 preferred categories
+
+    # Pick products from preferred categories (exclude already favorited ones to show new things)
+    for cat in top_cats:
+        cat_products = [p for p in all_products if p.get('category') == cat and p['id'] not in seen_ids]
+        # Mix: some favorited, mostly new picks
+        picks = cat_products[:3]
+        for p in picks:
+            result.append(p)
+            seen_ids.add(p['id'])
+        if len(result) >= limit:
+            break
+
+    # Fill remaining slots with trending if needed
+    if len(result) < limit:
+        trending = get_trending_products(limit * 2)
+        for p in trending:
+            if p['id'] not in seen_ids:
+                result.append(p)
+                seen_ids.add(p['id'])
+            if len(result) >= limit:
+                break
+
+    return result[:limit]

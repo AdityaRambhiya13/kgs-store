@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import { useAuth } from './AuthContext'
+import { FavoritesProvider } from './FavoritesContext'
 import CatalogPage from './pages/CatalogPage'
 import ConfirmPage from './pages/ConfirmPage'
 import StatusPage from './pages/StatusPage'
 import AdminPage from './pages/AdminPage'
 import OrderHistoryPage from './pages/OrderHistoryPage'
 import ProfilePage from './pages/ProfilePage'
+import FavoritesPage from './pages/FavoritesPage'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import ForgotPinPage from './pages/ForgotPinPage'
@@ -43,37 +45,40 @@ export default function App() {
   }
 
   return (
-    <>
-      {!isAuthPage && (
-        <Navbar
-          searchQuery={showSearch ? searchQuery : undefined}
-          onSearchChange={setSearchQuery}
-          onCategorySelect={handleCategorySelect}
-        />
-      )}
+    <FavoritesProvider>
+      <>
+        {!isAuthPage && (
+          <Navbar
+            searchQuery={showSearch ? searchQuery : undefined}
+            onSearchChange={setSearchQuery}
+            onCategorySelect={handleCategorySelect}
+          />
+        )}
 
-      <Routes location={location} key={location.pathname}>
-        {/* Auth Routes */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
-        <Route path="/forgot-pin" element={<ForgotPinPage />} />
-        <Route path="/reset-pin" element={<ResetPinPage />} />
+        <Routes location={location} key={location.pathname}>
+          {/* Auth Routes */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/forgot-pin" element={<ForgotPinPage />} />
+          <Route path="/reset-pin" element={<ResetPinPage />} />
 
-        {/* Protected Routes */}
-        <Route path="/" element={<ProtectedRoute><CatalogPage searchQuery={searchQuery} navCategory={navCategory} /></ProtectedRoute>} />
-        <Route path="/confirm" element={<ProtectedRoute><ConfirmPage /></ProtectedRoute>} />
-        <Route path="/status/:token" element={<ProtectedRoute><StatusPage /></ProtectedRoute>} />
-        <Route path="/orders" element={<ProtectedRoute><OrderHistoryPage /></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          {/* Protected Routes */}
+          <Route path="/" element={<ProtectedRoute><CatalogPage searchQuery={searchQuery} navCategory={navCategory} /></ProtectedRoute>} />
+          <Route path="/confirm" element={<ProtectedRoute><ConfirmPage /></ProtectedRoute>} />
+          <Route path="/status/:token" element={<ProtectedRoute><StatusPage /></ProtectedRoute>} />
+          <Route path="/orders" element={<ProtectedRoute><OrderHistoryPage /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          <Route path="/favorites" element={<ProtectedRoute><FavoritesPage /></ProtectedRoute>} />
 
-        {/* Admin Route */}
-        <Route path="/manage-store-99" element={<AdminPage />} />
-        <Route path="/test" element={<TestPage />} />
-      </Routes>
+          {/* Admin Route */}
+          <Route path="/manage-store-99" element={<AdminPage />} />
+          <Route path="/test" element={<TestPage />} />
+        </Routes>
 
-      {!isAuthPage && <CartPanel />}
-      {!isAuthPage && <MobileCartBar />}
-      {!isAuthPage && <Footer />}
-    </>
+        {!isAuthPage && <CartPanel />}
+        {!isAuthPage && <MobileCartBar />}
+        {!isAuthPage && <Footer />}
+      </>
+    </FavoritesProvider>
   )
 }

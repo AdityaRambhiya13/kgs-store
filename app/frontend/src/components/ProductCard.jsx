@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCart } from '../CartContext'
+import { useFavorites } from '../FavoritesContext'
 import { getMRP, getDiscount } from '../utils/pricing'
 
 // Seeded pseudo-random rating based on product id
@@ -10,6 +11,7 @@ function getRating(id) {
 
 export default function ProductCard({ product, onDetailClick, onVariantClick }) {
   const { cartItems, addToCart, removeFromCart } = useCart()
+  const { isFavorite, toggleFavorite } = useFavorites()
   const variants = product.variants ?? [product]
   const minPrice = Math.min(...variants.map(v => v.price))
   const variantCount = variants.length
@@ -20,6 +22,7 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
   const rating = getRating(product.id || 1)
   const mrp = getMRP(minPrice, product.id || 1)
   const discount = getDiscount(minPrice, mrp)
+  const fav = isFavorite(product.id)
 
   const handleAddClick = (e) => {
     e.stopPropagation()
@@ -41,10 +44,15 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
     onDetailClick(product, mrp)
   }
 
+  const handleFavClick = (e) => {
+    e.stopPropagation()
+    toggleFavorite(product)
+  }
+
   return (
     <motion.div
       className="product-card"
-      style={{ cursor: 'pointer' }}
+      style={{ cursor: 'pointer', position: 'relative' }}
       whileTap={{ scale: 0.98 }}
       whileHover={{ y: -2 }}
       transition={{ duration: 0.15 }}
@@ -54,6 +62,19 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
       {discount > 0 && (
         <div className="pc-discount-badge">{discount}% OFF</div>
       )}
+
+      {/* Favorite Button */}
+      <motion.button
+        className={`pc-fav-btn ${fav ? 'active' : ''}`}
+        onClick={handleFavClick}
+        whileTap={{ scale: 0.8 }}
+        animate={fav ? { scale: [1, 1.35, 1] } : { scale: 1 }}
+        transition={{ duration: 0.3, type: 'spring', stiffness: 400 }}
+        title={fav ? 'Remove from Favorites' : 'Add to Favorites'}
+        aria-label={fav ? 'Remove from Favorites' : 'Add to Favorites'}
+      >
+        {fav ? '❤️' : '🤍'}
+      </motion.button>
 
       {/* Product Image */}
       <div className="pc-img-wrap">

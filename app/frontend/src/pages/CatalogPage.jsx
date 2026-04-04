@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLocation, useNavigate } from 'react-router-dom'
 import ProductCard from '../components/ProductCard'
-// import ProductVariantModal from '../components/ProductVariantModal'
 import HeroBanner from '../components/HeroBanner'
+import RecommendationsSection from '../components/RecommendationsSection'
 import { useCart } from '../CartContext'
 import { useAuth } from '../AuthContext'
 import { getProducts } from '../api'
@@ -206,6 +206,9 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
 
       {/* Hero Banner — only when not searching */}
       {!isSearchMode && <HeroBanner />}
+
+      {/* ── Recommendations / Trending Section ── */}
+      {!isSearchMode && <RecommendationsSection />}
 
       {/* ── Zepto Category Icon Grid ─────────────────────── */}
       {!isSearchMode && (

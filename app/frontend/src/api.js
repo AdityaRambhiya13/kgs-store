@@ -86,3 +86,19 @@ export const updateProfile = (name) =>
 // ── Order History ──────────────────────────────────────────────
 export const getOrderHistory = (token) =>
     request('GET', '/api/orders/history', null, null, token)
+
+// ── Favorites ─────────────────────────────────────────────
+
+export const getFavorites = () =>
+    request('GET', '/api/favorites')
+
+export const toggleFavorite = (productId) =>
+    request('POST', `/api/favorites/${productId}`)
+
+// ── Recommendations ─────────────────────────────────────────
+
+export const getRecommendations = () =>
+    request('GET', '/api/recommendations')
+
+export const getTrending = () =>
+    request('GET', '/api/trending')

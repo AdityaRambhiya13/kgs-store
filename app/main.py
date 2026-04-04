@@ -36,7 +36,9 @@ from database import (
     get_all_orders, get_order_by_token, update_order_status, mark_delivered,
     get_orders_by_phone, get_customer, create_or_update_customer, get_all_customers,
     get_customer_by_email, update_customer_cancels,
-    add_product, update_product, delete_product
+    add_product, update_product, delete_product,
+    get_favorites, add_favorite, remove_favorite,
+    get_trending_products, get_personalized_recommendations
 )
 from models import (
     OrderCreate, OrderOut, OrderStatusUpdate, ProductOut, ProductCreate, ProductUpdate,
@@ -497,6 +499,46 @@ async def websocket_endpoint(websocket: WebSocket, channel: str):
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+# ── Favorites ────────────────────────────────────────────────
+
+@app.get("/api/favorites")
+def list_favorites(request: Request, customer: dict = Depends(get_current_customer)):
+    check_rate_limit(request, limit=60, window=60, scope="favorites")
+    phone = customer.get("phone")
+    favorite_ids = get_favorites(phone)
+    # Enrich with full product data
+    all_prods = {p['id']: p for p in get_all_products()}
+    result = [all_prods[fid] for fid in favorite_ids if fid in all_prods]
+    return result
+
+@app.post("/api/favorites/{product_id}")
+def toggle_favorite(product_id: int, request: Request, customer: dict = Depends(get_current_customer)):
+    check_rate_limit(request, limit=30, window=60, scope="favorites-toggle")
+    phone = customer.get("phone")
+    # Check if it exists and toggle
+    current_favs = get_favorites(phone)
+    if product_id in current_favs:
+        remove_favorite(phone, product_id)
+        return {"action": "removed", "product_id": product_id}
+    else:
+        add_favorite(phone, product_id)
+        return {"action": "added", "product_id": product_id}
+
+# ── Recommendations ──────────────────────────────────────────
+
+@app.get("/api/recommendations")
+def get_recommendations(request: Request, customer: dict = Depends(get_current_customer)):
+    """Personalized recommendations for logged-in users."""
+    check_rate_limit(request, limit=30, window=60, scope="recommendations")
+    phone = customer.get("phone")
+    return get_personalized_recommendations(phone, limit=12)
+
+@app.get("/api/trending")
+def get_trending(request: Request):
+    """Public trending products for guest/all users."""
+    check_rate_limit(request, limit=30, window=60, scope="trending")
+    return get_trending_products(limit=12)
 
 # ── Serve Frontend ────────────────────────────────────────
 # Check if dist exists and mount it

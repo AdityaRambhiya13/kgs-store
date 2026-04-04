@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCart } from '../CartContext'
+import { useFavorites } from '../FavoritesContext'
 import { getMRP } from '../utils/pricing'
 
 // Helper to generate AI-style metadata if missing
@@ -74,6 +75,7 @@ function getPricePerUnit(price, unit) {
 
 export default function ProductDetailsModal({ product, onClose, mrp }) {
   const { cart, addToCart } = useCart()
+  const { isFavorite, toggleFavorite } = useFavorites()
   
   if (!product) return null
 
@@ -104,6 +106,17 @@ export default function ProductDetailsModal({ product, onClose, mrp }) {
       >
         <div className="pdm-header">
           <button className="pdm-close" onClick={onClose}>✕</button>
+          <motion.button
+            className={`pdm-fav-btn ${isFavorite(product.id) ? 'active' : ''}`}
+            onClick={() => toggleFavorite(product)}
+            whileTap={{ scale: 0.8 }}
+            animate={isFavorite(product.id) ? { scale: [1, 1.3, 1] } : { scale: 1 }}
+            transition={{ duration: 0.3 }}
+            title={isFavorite(product.id) ? 'Remove from Favorites' : 'Save to Favorites'}
+          >
+            <span className="pdm-fav-icon">{isFavorite(product.id) ? '❤️' : '🤍'}</span>
+            <span className="pdm-fav-label">{isFavorite(product.id) ? 'Saved' : 'Save'}</span>
+          </motion.button>
         </div>
 
         <div className="pdm-content">
