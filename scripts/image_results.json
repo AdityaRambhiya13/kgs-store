@@ -1,0 +1,452 @@
+[
+  {
+    "index": 1,
+    "name": "Mudra Rava",
+    "category": "Atta, Rice & Dal",
+    "sub_category": "Atta & Flours",
+    "image_url": "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 2,
+    "name": "Rai 100Gm",
+    "category": "Masala & Dry Fruits",
+    "sub_category": "Seeds & Herbs",
+    "image_url": "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 3,
+    "name": "Rai 250G",
+    "category": "Masala & Dry Fruits",
+    "sub_category": "Dry Fruits",
+    "image_url": "https://images.unsplash.com/photo-1614373532201-34b87c5ed2b0?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 4,
+    "name": "Chanting Hare Krishna",
+    "category": "Pooja Needs",
+    "sub_category": "Spiritual Books & Literature",
+    "image_url": "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 5,
+    "name": "Rai Barik 100G",
+    "category": "Masala & Dry Fruits",
+    "sub_category": "Masalas & Spices",
+    "image_url": "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 6,
+    "name": "Rai Barik 250G",
+    "category": "Masala & Dry Fruits",
+    "sub_category": "Masalas & Spices",
+    "image_url": "https://images.unsplash.com/photo-1614373532201-34b87c5ed2b0?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 7,
+    "name": "Chanting Hare Krishna",
+    "category": "Pooja Needs",
+    "sub_category": "Spiritual Books & Literature",
+    "image_url": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 8,
+    "name": "Chant Be Happy",
+    "category": "Pooja Needs",
+    "sub_category": "Spiritual Books & Literature",
+    "image_url": "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 9,
+    "name": "Sealer 1Ltr",
+    "category": "Home & Lifestyle",
+    "sub_category": "Tools & Hardware",
+    "image_url": "https://images.unsplash.com/photo-1565183928294-7063f23ce0f8?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 10,
+    "name": "Musician",
+    "category": "Snacks & Munchies",
+    "sub_category": "Namkeen & Farsan",
+    "image_url": "https://images.unsplash.com/photo-1599490659213-e2b9527bd087?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 11,
+    "name": "Prabhupada Image",
+    "category": "Pooja Needs",
+    "sub_category": "Idols & Frames",
+    "image_url": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 12,
+    "name": "Chant Be Happy",
+    "category": "Pooja Needs",
+    "sub_category": "Spiritual Books & Literature",
+    "image_url": "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 13,
+    "name": "Bhagavad Gita",
+    "category": "Pooja Needs",
+    "sub_category": "Spiritual Books & Literature",
+    "image_url": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 14,
+    "name": "Raidal",
+    "category": "Atta, Rice & Dal",
+    "sub_category": "Dals & Pulses",
+    "image_url": "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 15,
+    "name": "Bhagavad Gita As It Is",
+    "category": "Pooja Needs",
+    "sub_category": "Spiritual Books & Literature",
+    "image_url": "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 16,
+    "name": "Bhagavad Gita",
+    "category": "Pooja Needs",
+    "sub_category": "Spiritual Books & Literature",
+    "image_url": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 17,
+    "name": "Chamara Seva",
+    "category": "Pooja Needs",
+    "sub_category": "Spiritual Books & Literature",
+    "image_url": "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 18,
+    "name": "Ekadasa Rudrabhisheka Shiva",
+    "category": "Pooja Needs",
+    "sub_category": "Spiritual Books & Literature",
+    "image_url": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 19,
+    "name": "Note Book",
+    "category": "Home & Lifestyle",
+    "sub_category": "Stationery",
+    "image_url": "https://images.unsplash.com/photo-1565183928294-7063f23ce0f8?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 20,
+    "name": "Book",
+    "category": "Pooja Needs",
+    "sub_category": "Pooja Accessories",
+    "image_url": "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 21,
+    "name": "Book1",
+    "category": "Pooja Needs",
+    "sub_category": "Pooja Accessories",
+    "image_url": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 22,
+    "name": "Book2",
+    "category": "Pooja Needs",
+    "sub_category": "Pooja Accessories",
+    "image_url": "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 23,
+    "name": "Note Book",
+    "category": "Home & Lifestyle",
+    "sub_category": "Stationery",
+    "image_url": "https://images.unsplash.com/photo-1565183928294-7063f23ce0f8?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 24,
+    "name": "Note Book",
+    "category": "Home & Lifestyle",
+    "sub_category": "Stationery",
+    "image_url": "https://images.unsplash.com/photo-1565183928294-7063f23ce0f8?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 25,
+    "name": "Siler 500 Gm",
+    "category": "Home & Lifestyle",
+    "sub_category": "Tools & Hardware",
+    "image_url": "https://images.unsplash.com/photo-1565183928294-7063f23ce0f8?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 26,
+    "name": "Raidal",
+    "category": "Atta, Rice & Dal",
+    "sub_category": "Dals & Pulses",
+    "image_url": "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 27,
+    "name": "Raidal 100Gm",
+    "category": "Atta, Rice & Dal",
+    "sub_category": "Dals & Pulses",
+    "image_url": "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 28,
+    "name": "Prasadam",
+    "category": "Snacks & Munchies",
+    "sub_category": "Namkeen & Farsan",
+    "image_url": "https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 29,
+    "name": "Bhagavad Gita As It Is",
+    "category": "Pooja Needs",
+    "sub_category": "Spiritual Books & Literature",
+    "image_url": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 30,
+    "name": "Coming Back (Hindi)",
+    "category": "Pooja Needs",
+    "sub_category": "Spiritual Books & Literature",
+    "image_url": "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 31,
+    "name": "Bhagavad Gita As It Is",
+    "category": "Pooja Needs",
+    "sub_category": "Spiritual Books & Literature",
+    "image_url": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 32,
+    "name": "Ribbon Pakoda-1000Gm",
+    "category": "Snacks & Munchies",
+    "sub_category": "Namkeen & Farsan",
+    "image_url": "https://images.unsplash.com/photo-1599490659213-e2b9527bd087?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 33,
+    "name": "Mixture Regular-145Gm",
+    "category": "Snacks & Munchies",
+    "sub_category": "Namkeen & Farsan",
+    "image_url": "https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 34,
+    "name": "Gaurchana Milk Abhisheka",
+    "category": "Pooja Needs",
+    "sub_category": "Spiritual Books & Literature",
+    "image_url": "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 35,
+    "name": "Mahaprasadam",
+    "category": "Pooja Needs",
+    "sub_category": "Spiritual Books & Literature",
+    "image_url": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 36,
+    "name": "Nithya Anadhana",
+    "category": "Pooja Needs",
+    "sub_category": "Spiritual Books & Literature",
+    "image_url": "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 37,
+    "name": "Rudrabhisheka To Shiva",
+    "category": "Pooja Needs",
+    "sub_category": "Spiritual Books & Literature",
+    "image_url": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 38,
+    "name": "Samosa",
+    "category": "Snacks & Munchies",
+    "sub_category": "Namkeen & Farsan",
+    "image_url": "https://images.unsplash.com/photo-1599490659213-e2b9527bd087?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 39,
+    "name": "Bakery Exempt",
+    "category": "Snacks & Munchies",
+    "sub_category": "Namkeen & Farsan",
+    "image_url": "https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 40,
+    "name": "Bread Pakoda-150Gm",
+    "category": "Snacks & Munchies",
+    "sub_category": "Namkeen & Farsan",
+    "image_url": "https://images.unsplash.com/photo-1599490659213-e2b9527bd087?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 41,
+    "name": "Bread Roll-150Gm",
+    "category": "Snacks & Munchies",
+    "sub_category": "Namkeen & Farsan",
+    "image_url": "https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 42,
+    "name": "Chakkuli-200Gm",
+    "category": "Snacks & Munchies",
+    "sub_category": "Namkeen & Farsan",
+    "image_url": "https://images.unsplash.com/photo-1599490659213-e2b9527bd087?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 43,
+    "name": "Chilly Bhajji-200Gm",
+    "category": "Snacks & Munchies",
+    "sub_category": "Namkeen & Farsan",
+    "image_url": "https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 44,
+    "name": "Dhokla Fry-120Gm",
+    "category": "Snacks & Munchies",
+    "sub_category": "Namkeen & Farsan",
+    "image_url": "https://images.unsplash.com/photo-1599490659213-e2b9527bd087?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 45,
+    "name": "Kodubale-200Gm",
+    "category": "Snacks & Munchies",
+    "sub_category": "Namkeen & Farsan",
+    "image_url": "https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 46,
+    "name": "Masala Groundnut-200Gm",
+    "category": "Snacks & Munchies",
+    "sub_category": "Namkeen & Farsan",
+    "image_url": "https://images.unsplash.com/photo-1599490659213-e2b9527bd087?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 47,
+    "name": "Muruku-200Gm",
+    "category": "Snacks & Munchies",
+    "sub_category": "Namkeen & Farsan",
+    "image_url": "https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 48,
+    "name": "Nippattu-200Gm",
+    "category": "Snacks & Munchies",
+    "sub_category": "Namkeen & Farsan",
+    "image_url": "https://images.unsplash.com/photo-1599490659213-e2b9527bd087?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 49,
+    "name": "Thengal-75Gm",
+    "category": "Snacks & Munchies",
+    "sub_category": "Namkeen & Farsan",
+    "image_url": "https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  },
+  {
+    "index": 50,
+    "name": "Veg Roll-120Gm",
+    "category": "Snacks & Munchies",
+    "sub_category": "Namkeen & Farsan",
+    "image_url": "https://images.unsplash.com/photo-1599490659213-e2b9527bd087?w=400&h=300&fit=crop&auto=format&q=80",
+    "source": "unsplash_curated",
+    "quality": "CATEGORY_PHOTO"
+  }
+]
