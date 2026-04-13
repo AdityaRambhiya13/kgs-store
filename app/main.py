@@ -540,6 +540,12 @@ def get_trending(request: Request):
     check_rate_limit(request, limit=30, window=60, scope="trending")
     return get_trending_products(limit=12)
 
+# ── Serve Static Images ────────────────────────────────────
+STATIC_IMAGES_PATH = os.path.join(os.path.dirname(__file__), "static", "product_images")
+if not os.path.exists(STATIC_IMAGES_PATH):
+    os.makedirs(STATIC_IMAGES_PATH, exist_ok=True)
+app.mount("/api/static/product_images", StaticFiles(directory=STATIC_IMAGES_PATH), name="product_images")
+
 # ── Serve Frontend ────────────────────────────────────────
 # Check if dist exists and mount it
 DIST_PATH = os.path.join(os.path.dirname(__file__), "frontend", "dist")
