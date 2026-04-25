@@ -178,9 +178,12 @@ def build_customer_ui(page: ft.Page):
         return ft.Container(
             content=ft.Column([
                 ft.Container(
-                    content=ft.Image(src=product["image_url"], width=160, height=110,
-                                      fit=ft.BoxFit.COVER,
-                                      border_radius=ft.border_radius.only(top_left=12, top_right=12)),
+                    content=ft.Image(
+                        src=product.get("image_url") or "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNmM2Y0ZjYiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjgwIiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj4/PC90ZXh0Pjwvc3ZnPg==",
+                        width=160, height=110,
+                        fit=ft.BoxFit.COVER,
+                        border_radius=ft.border_radius.only(top_left=12, top_right=12)
+                    ),
                     clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
                     border_radius=ft.border_radius.only(top_left=12, top_right=12),
                 ),

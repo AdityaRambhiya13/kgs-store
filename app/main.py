@@ -434,6 +434,14 @@ def signup(body: SignupRequest, request: Request):
         raise HTTPException(status_code=400, detail="Phone number is already registered")
         
     pin_hash = hash_pin(body.pin)
+    
+    # Save user to database
+    create_or_update_customer(
+        phone=body.phone,
+        name=body.name,
+        pin_hash=pin_hash
+    )
+    
     token = create_access_token({"role": "customer", "phone": body.phone}, timedelta(days=7))
     return {
         "verified": True,

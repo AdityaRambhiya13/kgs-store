@@ -73,18 +73,21 @@ function getPricePerUnit(price, unit) {
   return `₹${pricePer100.toFixed(1)} / ${label}`
 }
 
+const PLACEHOLDER_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNmM2Y0ZjYiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjgwIiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj4/PC90ZXh0Pjwvc3ZnPg==';
+
 export default function ProductDetailsModal({ product, onClose, mrp }) {
   const { cart, addToCart } = useCart()
   const { isFavorite, toggleFavorite } = useFavorites()
   
-  if (!product) return null
-
   // Ensure we have a variants array (handle single product case)
   const variants = product.variants && product.variants.length > 0 ? product.variants : [product]
+  const [activeVariant, setActiveVariant] = useState(variants[0] || product)
   const hasMultipleVariants = variants.length > 1
   
-  // For metadata, use the first variant or the group itself
-  const metadata = getAiMetadata(product)
+  if (!product) return null
+
+  // For metadata, use the active variant
+  const metadata = getAiMetadata(activeVariant)
 
   const getQty = (id) => cart[id]?.quantity || 0
 
@@ -122,30 +125,42 @@ export default function ProductDetailsModal({ product, onClose, mrp }) {
         <div className="pdm-content">
           <div className="pdm-hero">
             <div className="pdm-img-wrap">
-              <img src={product.image_url} alt={product.base_name || product.name} className="pdm-img" />
+              <AnimatePresence mode="wait">
+                <motion.img 
+                  key={activeVariant.image_url || activeVariant.id}
+                  src={activeVariant.image_url || PLACEHOLDER_IMAGE} 
+                  alt={activeVariant.name} 
+                  className="pdm-img" 
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.2 }}
+                  onError={e => { e.target.src = PLACEHOLDER_IMAGE }}
+                />
+              </AnimatePresence>
             </div>
             <div className="pdm-main-info">
               <div className="pdm-eta">⚡ 10 mins</div>
-              <h1 className="pdm-title">{product.base_name || product.name}</h1>
-              <p className="pdm-subtitle">{product.category} · {variants[0]?.unit || product.unit}</p>
+              <h1 className="pdm-title">{activeVariant.name || activeVariant.base_name || product.base_name || product.name}</h1>
+              <p className="pdm-subtitle">{product.category} · {activeVariant.unit}</p>
               
               {/* If single choice, show price prominently. If multiple, it's shown in the list below. */}
               {!hasMultipleVariants && (
                 <div className="pdm-price-row">
                   <div className="pdm-price-block">
-                    <span className="pdm-price">₹{product.price}</span>
-                    <span className="pdm-mrp">₹{getMRP(product.price, product.id || 1)}</span>
+                    <span className="pdm-price">₹{activeVariant.price}</span>
+                    <span className="pdm-mrp">₹{getMRP(activeVariant.price, activeVariant.id || 1)}</span>
                   </div>
 
                   <div className="pdm-add-action">
-                    {getQty(product.id) > 0 ? (
+                    {getQty(activeVariant.id) > 0 ? (
                       <div className="pc-stepper">
-                        <button className="pc-step-btn" onClick={() => addToCart(product, -1)}>−</button>
-                        <span className="pc-step-count">{getQty(product.id)}</span>
-                        <button className="pc-step-btn" onClick={() => addToCart(product, 1)}>+</button>
+                        <button className="pc-step-btn" onClick={() => addToCart(activeVariant, -1)}>−</button>
+                        <span className="pc-step-count">{getQty(activeVariant.id)}</span>
+                        <button className="pc-step-btn" onClick={() => addToCart(activeVariant, 1)}>+</button>
                       </div>
                     ) : (
-                      <button className="btn btn-primary" onClick={() => addToCart(product, 1)} style={{ padding: '8px 32px' }}>
+                      <button className="btn btn-primary" onClick={() => addToCart(activeVariant, 1)} style={{ padding: '8px 32px' }}>
                         ADD
                       </button>
                     )}
@@ -165,9 +180,18 @@ export default function ProductDetailsModal({ product, onClose, mrp }) {
                   const unitPrice = getPricePerUnit(variant.price, variant.unit)
                   
                   return (
-                    <div key={variant.id} className="pdm-variant-row">
+                    <div 
+                      key={variant.id} 
+                      className={`pdm-variant-row ${activeVariant.id === variant.id ? 'active' : ''}`}
+                      onClick={() => setActiveVariant(variant)}
+                      style={{ cursor: 'pointer' }}
+                    >
                       <div className="pdm-vr-img-wrap">
-                        <img src={variant.image_url || product.image_url} alt={variant.name} />
+                        <img 
+                          src={variant.image_url || PLACEHOLDER_IMAGE} 
+                          alt={variant.name} 
+                          onError={e => { e.target.src = PLACEHOLDER_IMAGE }}
+                        />
                       </div>
                       <div className="pdm-vr-info">
                         <div className="pdm-vr-name">{variant.unit || variant.name}</div>
@@ -177,7 +201,7 @@ export default function ProductDetailsModal({ product, onClose, mrp }) {
                         <div className="pdm-vr-price">₹{variant.price}</div>
                         <div className="pdm-vr-mrp">₹{variant.mrp || getMRP(variant.price, variant.id)}</div>
                       </div>
-                      <div className="pdm-vr-action">
+                      <div className="pdm-vr-action" onClick={e => e.stopPropagation()}>
                         {qty > 0 ? (
                           <div className="pc-stepper small">
                             <button className="pc-step-btn" onClick={() => addToCart(variant, -1)}>−</button>
