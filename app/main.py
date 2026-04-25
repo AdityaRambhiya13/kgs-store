@@ -13,6 +13,7 @@ import hashlib
 import bcrypt
 import jwt
 import uvicorn
+import requests
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request, Depends
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -81,6 +82,11 @@ rate_limit_store: dict = {}
 RATE_LIMIT  = int(os.getenv("RATE_LIMIT", "60"))
 RATE_WINDOW = 60
 
+# Supabase Config for Image Storage
+SUPABASE_URL = "https://iezqlltomqrdkgogdgqu.supabase.co"
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+BUCKET_NAME = "products"
+
 def check_rate_limit(request: Request, limit: int, window: int, scope: str):
     client_ip = request.client.host if request.client else "127.0.0.1"
     key = f"rate_limit:{scope}:{client_ip}"
@@ -124,6 +130,17 @@ def get_current_customer(credentials: HTTPAuthorizationCredentials = Depends(sec
         payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
         if payload.get("role") != "customer":
             raise HTTPException(status_code=403, detail="Not a customer")
+        return payload
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("role") not in ("customer", "admin"):
+            raise HTTPException(status_code=403, detail="Unauthorized role")
         return payload
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
@@ -175,7 +192,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
 @app.get("/api/products", response_model=List[ProductOut])
-def list_products(request: Request, customer: dict = Depends(get_current_customer)):
+def list_products(request: Request, user: dict = Depends(get_current_user)):
     check_rate_limit(request, limit=60, window=60, scope="products")
     return get_all_products()
 
@@ -346,14 +363,17 @@ def admin_add_product(body: ProductCreate, admin: dict = Depends(get_current_adm
 
 @app.patch("/api/admin/products/{product_id}")
 def admin_update_product(product_id: int, body: ProductUpdate, admin: dict = Depends(get_current_admin)):
+    print(f"DEBUG: Updating product {product_id} with data: {body.model_dump(exclude_unset=True)}")
     updates = body.model_dump(exclude_unset=True)
     if not updates:
-        throw_msg = "No update data provided"
-        raise HTTPException(status_code=400, detail=throw_msg)
+        raise HTTPException(status_code=400, detail="No update data provided")
     
     success = update_product(product_id, updates)
     if not success:
+        print(f"DEBUG: Update failed for product {product_id}. Either ID doesn't exist or no rows changed.")
         raise HTTPException(status_code=404, detail="Product not found or update failed")
+    
+    print(f"DEBUG: Product {product_id} updated successfully!")
     return {"message": "Product updated successfully"}
 
 @app.delete("/api/admin/products/{product_id}")
@@ -545,6 +565,45 @@ STATIC_IMAGES_PATH = os.path.join(os.path.dirname(__file__), "static", "product_
 if not os.path.exists(STATIC_IMAGES_PATH):
     os.makedirs(STATIC_IMAGES_PATH, exist_ok=True)
 app.mount("/api/static/product_images", StaticFiles(directory=STATIC_IMAGES_PATH), name="product_images")
+
+@app.get("/api/admin/available-images")
+def list_available_images(admin: dict = Depends(get_current_admin)):
+    """List all images in the Supabase products bucket."""
+    if not SUPABASE_KEY:
+        print("ERROR: SUPABASE_SERVICE_ROLE_KEY not set")
+        return {"images": []}
+    
+    try:
+        url = f"{SUPABASE_URL}/storage/v1/object/list/{BUCKET_NAME}"
+        headers = {
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "prefix": "",
+            "limit": 5000,
+            "offset": 0,
+            "sortBy": {"column": "name", "order": "asc"}
+        }
+        
+        response = requests.post(url, headers=headers, json=payload, timeout=10)
+        
+        if response.status_code != 200:
+            print(f"Supabase Storage Error: {response.status_code} - {response.text}")
+            return {"images": []}
+            
+        files = response.json()
+        if not isinstance(files, list):
+            print(f"Unexpected Supabase response format: {files}")
+            return {"images": []}
+
+        image_names = [f["name"] for f in files if "name" in f and f["name"].lower().endswith(('.webp', '.jpg', '.jpeg', '.png'))]
+        print(f"Found {len(image_names)} images in Supabase bucket '{BUCKET_NAME}'")
+        return {"images": image_names}
+        
+    except Exception as e:
+        print(f"Exception in list_available_images: {str(e)}")
+        return {"images": []}
 
 # ── Serve Frontend ────────────────────────────────────────
 # Check if dist exists and mount it

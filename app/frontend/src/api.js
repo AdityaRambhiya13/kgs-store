@@ -27,7 +27,7 @@ async function request(method, path, body = null, signal = null, token = null) {
     return res.json()
 }
 
-export const getProducts = (signal) => request('GET', '/api/products', null, signal)
+export const getProducts = (signal, token = null) => request('GET', '/api/products', null, signal, token)
 
 export const placeOrder = (data, token) => request('POST', '/api/orders', data, null, token)
 
@@ -102,3 +102,6 @@ export const getRecommendations = () =>
 
 export const getTrending = () =>
     request('GET', '/api/trending')
+
+export const getAvailableImages = (token) =>
+    request('GET', '/api/admin/available-images', null, null, token)
