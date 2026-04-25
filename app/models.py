@@ -11,6 +11,19 @@ def sanitize_text(v: str) -> str:
     v = re.sub(r'<[^>]*>', '', v)
     return html.escape(v.strip())
 
+def clean_phone(v: str) -> str:
+    """Standardize Indian phone numbers to 10 digits."""
+    if not v: return v
+    # Remove all non-digit characters
+    cleaned = re.sub(r"\D", "", v)
+    # If starts with 91 and is 12 digits, remove 91
+    if cleaned.startswith("91") and len(cleaned) == 12:
+        cleaned = cleaned[2:]
+    # If starts with 0 and is 11 digits, remove 0
+    elif cleaned.startswith("0") and len(cleaned) == 11:
+        cleaned = cleaned[1:]
+    return cleaned
+
 class CartItem(BaseModel):
     product_id: int = Field(..., gt=0)
     name: str = Field(..., min_length=1, max_length=100)
@@ -110,11 +123,9 @@ class OTPRequest(BaseModel):
     @field_validator("phone")
     @classmethod
     def validate_phone(cls, v):
-        cleaned = re.sub(r"[\s\-\+]", "", v)
-        if cleaned.startswith("91") and len(cleaned) == 12:
-            cleaned = cleaned.removeprefix("91")
+        cleaned = clean_phone(v)
         if not re.match(r"^[6-9]\d{9}$", cleaned):
-            raise ValueError("Invalid Indian phone number")
+            raise ValueError("Invalid Indian phone number. Please enter a valid 10-digit number.")
         return cleaned
 
 class OTPVerifyRequest(BaseModel):
@@ -127,12 +138,7 @@ class OTPVerifyRequest(BaseModel):
     @field_validator("phone")
     @classmethod
     def validate_phone(cls, v):
-        cleaned = re.sub(r"[\s\-\+]", "", v)
-        if cleaned.startswith("91") and len(cleaned) == 12:
-            cleaned = cleaned.removeprefix("91")
-        if not re.match(r"^[6-9]\d{9}$", cleaned):
-            raise ValueError("Invalid Indian phone number")
-        return cleaned
+        return clean_phone(v)
         
     @field_validator("name", "address")
     @classmethod
@@ -154,11 +160,9 @@ class SignupRequest(BaseModel):
     @field_validator("phone")
     @classmethod
     def validate_phone(cls, v):
-        cleaned = re.sub(r"[\s\-\+]", "", v)
-        if cleaned.startswith("91") and len(cleaned) == 12:
-            cleaned = cleaned.removeprefix("91")
+        cleaned = clean_phone(v)
         if not re.match(r"^[6-9]\d{9}$", cleaned):
-            raise ValueError("Invalid Indian phone number")
+            raise ValueError("Invalid Indian phone number. Please enter a valid 10-digit number.")
         return cleaned
 
     @field_validator("name")
@@ -173,11 +177,13 @@ class LoginRequest(BaseModel):
     @field_validator("identifier")
     @classmethod
     def validate_identifier(cls, v):
-        cleaned = re.sub(r"[\s\-\+]", "", v)
-        if cleaned.startswith("91") and len(cleaned) == 12:
-            cleaned = cleaned.removeprefix("91")
-            return cleaned
-        return v.strip().lower()
+        if not v: return v
+        # If it looks like an email, just lowercase and strip
+        if "@" in v:
+            return v.strip().lower()
+        # Otherwise, treat as phone number and clean it
+        cleaned = clean_phone(v)
+        return cleaned
 
 class ForgotPinRequest(BaseModel):
     phone: str = Field(..., description="10-digit Indian phone number")
@@ -185,11 +191,9 @@ class ForgotPinRequest(BaseModel):
     @field_validator("phone")
     @classmethod
     def validate_phone(cls, v):
-        cleaned = re.sub(r"[\s\-\+]", "", v)
-        if cleaned.startswith("91") and len(cleaned) == 12:
-            cleaned = cleaned.removeprefix("91")
+        cleaned = clean_phone(v)
         if not re.match(r"^[6-9]\d{9}$", cleaned):
-            raise ValueError("Invalid Indian phone number")
+            raise ValueError("Phone number not registered or invalid format")
         return cleaned
 
 class ResetPinRequest(BaseModel):

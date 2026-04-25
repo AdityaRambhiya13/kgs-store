@@ -20,11 +20,12 @@ _db_pool = None
 
 def init_pool():
     global _db_pool
-    if not DATABASE_URL:
+    url = os.getenv("DATABASE_URL")
+    if not url:
         raise ValueError("DATABASE_URL environment variable is not set")
     if _db_pool is None:
-        print("🔧 Initializing Postgres Connection Pool...")
-        _db_pool = pool.ThreadedConnectionPool(1, 40, DATABASE_URL, cursor_factory=extras.RealDictCursor)
+        print("Initializing Postgres Connection Pool...")
+        _db_pool = pool.ThreadedConnectionPool(1, 40, url, cursor_factory=extras.RealDictCursor)
 
 def get_connection():
     """Get a PostgreSQL connection from the ThreadedConnectionPool."""
@@ -135,14 +136,14 @@ def init_db():
     
     if count == 0 or force_reseed:
         if force_reseed:
-            print("🔄 RESEED_DB=true detected. Forcing reseed...")
+            print("RESEED_DB=true detected. Forcing reseed...")
         else:
-            print("🌱 Database empty. Initializing products...")
+            print("Database empty. Initializing products...")
             
         cursor.execute("TRUNCATE TABLE products RESTART IDENTITY")
         _seed_products(cursor)
     else:
-        print(f"✅ Products already exist ({count} items). Skipping seeding to save time.")
+        print(f"Products already exist ({count} items). Skipping seeding to save time.")
 
     conn.commit()
     release_connection(conn)
@@ -245,11 +246,11 @@ def _seed_products(cursor):
 
                     final_products.append((name, price, description, img_url, category, sub_category, base_name, unit))
 
-            print(f"📦 Loaded {len(final_products)} products from ULTIMATE_ZEPTO_CATALOG.csv.")
+            print(f"Loaded {len(final_products)} products from ULTIMATE_ZEPTO_CATALOG.csv.")
         except Exception as e:
-            print(f"❌ Error during CSV parsing: {e}")
+            print(f"Error during CSV parsing: {e}")
     else:
-        print(f"⚠️ CSV not found at {csv_file_path}.")
+        print(f"CSV not found at {csv_file_path}.")
 
     # 2. Load from store.db (SQLite) — local grains/staples
     if os.path.exists(sqlite_db_path):
@@ -267,11 +268,11 @@ def _seed_products(cursor):
                 img_url = get_image(category) or image_url
                 unit = "kg"
                 final_products.append((name, price, description, img_url, mapped_category, sub_category, base_name or name, unit))
-            print(f"📦 Loaded {len(sqlite_rows)} products from store.db.")
+            print(f"Loaded {len(sqlite_rows)} products from store.db.")
         except Exception as e:
-            print(f"❌ Error during SQLite parsing: {e}")
+            print(f"Error during SQLite parsing: {e}")
     else:
-        print(f"⚠️ store.db not found at {sqlite_db_path}.")
+        print(f"store.db not found at {sqlite_db_path}.")
 
     # 3. Insert all into PostgreSQL
     if final_products:
@@ -280,11 +281,11 @@ def _seed_products(cursor):
                 "INSERT INTO products (name, price, description, image_url, category, sub_category, base_name, unit) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
                 final_products,
             )
-            print(f"✅ Successfully seeded {len(final_products)} products into database.")
+            print(f"Successfully seeded {len(final_products)} products into database.")
         except Exception as e:
-            print(f"❌ Error during PostgreSQL insertion: {e}")
+            print(f"Error during PostgreSQL insertion: {e}")
     else:
-        print("⚠️ No products found to seed.")
+        print("No products found to seed.")
 
 def get_all_products():
     """Fetch all products (5-min in-memory cache)."""

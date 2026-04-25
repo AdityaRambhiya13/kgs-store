@@ -52,11 +52,11 @@ try:
     service_account_json = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
     if service_account_json:
         if service_account_json.strip().startswith("{"):
-            print("🔧 Initializing Firebase Admin from environment variable...")
+            print("Initializing Firebase Admin from environment variable...")
             cred_dict = json.loads(service_account_json)
             cred = credentials.Certificate(cred_dict)
         else:
-            print(f"🔧 Initializing Firebase Admin from path: {service_account_json}")
+            print(f"Initializing Firebase Admin from path: {service_account_json}")
             cred = credentials.Certificate(service_account_json)
     else:
         # Try local path first, then app/ path
@@ -65,15 +65,15 @@ try:
             cert_path = os.path.join("app", "firebase-adminsdk.json")
             
         if os.path.exists(cert_path):
-            print(f"🔧 Initializing Firebase Admin from file: {cert_path}")
+            print(f"Initializing Firebase Admin from file: {cert_path}")
             cred = credentials.Certificate(cert_path)
         else:
-            print("⚠️ Firebase Admin config not found (checked firebase-adminsdk.json and app/firebase-adminsdk.json)")
+            print("Firebase Admin config not found (checked firebase-adminsdk.json and app/firebase-adminsdk.json)")
             raise FileNotFoundError("firebase-adminsdk.json not found")
     
     firebase_admin.initialize_app(cred)
 except Exception as e:
-    print(f"⚠️ Firebase Admin initialization failed: {e}")
+    print(f"Firebase Admin initialization failed: {e}")
 
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 SECRET_KEY     = os.getenv("SECRET_KEY", "quickshop-secret-key-change-in-production")
@@ -151,7 +151,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
 async def lifespan(app: FastAPI):
     init_db()
     print("=" * 55)
-    print("🌾 KGS Grain Store — FastAPI Backend v3.0")
+    print("KGS Grain Store - FastAPI Backend v3.0")
     print("=" * 55)
     yield
 
@@ -617,7 +617,7 @@ def list_available_images(admin: dict = Depends(get_current_admin)):
 # Check if dist exists and mount it
 DIST_PATH = os.path.join(os.path.dirname(__file__), "frontend", "dist")
 if os.path.exists(DIST_PATH):
-    print(f"📦 Serving frontend from: {DIST_PATH}")
+    print(f"Serving frontend from: {DIST_PATH}")
     app.mount("/assets", StaticFiles(directory=os.path.join(DIST_PATH, "assets")), name="assets")
     
     @app.get("/{full_path:path}")
@@ -629,7 +629,7 @@ if os.path.exists(DIST_PATH):
         index_file = os.path.join(DIST_PATH, "index.html")
         return FileResponse(index_file)
 else:
-    print(f"⚠️ Frontend dist not found at {DIST_PATH}. Frontend will not be served.")
+    print(f"Frontend dist not found at {DIST_PATH}. Frontend will not be served.")
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
