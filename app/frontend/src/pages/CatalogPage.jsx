@@ -120,11 +120,22 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
     products.forEach(p => {
       if (BLOCKED_CATEGORIES.has(p.category)) return
       const key = (p.base_name || p.name) + '|' + p.category
-      if (!groups[key]) groups[key] = { ...p, variants: [] }
+      if (!groups[key]) {
+        groups[key] = { ...p, variants: [] }
+      }
       groups[key].variants.push(p)
       groups[key].variants.sort((a, b) => a.price - b.price)
     })
-    return Object.values(groups)
+    
+    // Ensure all variants in a group share the group's main image
+    return Object.values(groups).map(group => {
+      const mainImage = group.image_url
+      group.variants = group.variants.map(v => ({
+        ...v,
+        image_url: mainImage // Force same image for all variants as requested
+      }))
+      return group
+    })
   }, [products])
 
   // Filtered products by search / category / sub-category

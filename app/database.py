@@ -159,29 +159,30 @@ def _seed_products(cursor):
     csv_file_path = os.path.join(root_dir, "ULTIMATE_ZEPTO_CATALOG.csv")
     sqlite_db_path = os.path.join(os.path.dirname(__file__), "store.db")
 
-    # Category-based Unsplash image mapping
+    PLACEHOLDER = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNmM2Y0ZjYiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjgwIiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj4/PC90ZXh0Pjwvc3ZnPg=="
+
     CATEGORY_IMAGES = {
-        "Atta, Rice & Dal":         "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=300&fit=crop",
-        "Masala & Dry Fruits":      "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&h=300&fit=crop",
-        "Snacks & Munchies":        "https://images.unsplash.com/photo-1599490659213-e2b9527bd087?w=400&h=300&fit=crop",
-        "Sweet Tooth":              "https://images.unsplash.com/photo-1589119908995-c6837fa14848?w=400&h=300&fit=crop",
-        "Cleaning Essentials":      "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=400&h=300&fit=crop",
-        "Instant & Frozen Food":    "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=400&h=300&fit=crop",
-        "Dairy, Bread & Eggs":      "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=400&h=300&fit=crop",
-        "Personal Care":            "https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=400&h=300&fit=crop",
-        "Cold Drinks & Juices":     "https://images.unsplash.com/photo-1534353473418-4cfa0a62e3d8?w=400&h=300&fit=crop",
-        "Pharma & Wellness":        "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&h=300&fit=crop",
-        "Tea, Coffee & Health Drinks": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=400&h=300&fit=crop",
-        "Paan Corner":              "https://images.unsplash.com/photo-1596547609652-9fc5d8d428ce?w=400&h=300&fit=crop",
-        "Pantry Staples":           "https://images.unsplash.com/photo-1615485925763-86db9d2d22f0?w=400&h=300&fit=crop",
-        "Baby Care":                "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400&h=300&fit=crop",
-        "Home & Lifestyle":         "https://images.unsplash.com/photo-1565183928294-7063f23ce0f8?w=400&h=300&fit=crop",
-        "Pooja Needs":              "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&h=300&fit=crop",
-        "Rice":                     "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=300&fit=crop",
-        "Wheat":                    "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400&h=300&fit=crop",
-        "Jowari":                   "https://images.unsplash.com/photo-1596547609652-9fc5d8d428ce?w=400&h=300&fit=crop",
-        "Bajri":                    "https://images.unsplash.com/photo-1615485925763-86db9d2d22f0?w=400&h=300&fit=crop",
-        "Default":                  "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNmM2Y0ZjYiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjgwIiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj4/PC90ZXh0Pjwvc3ZnPg=="
+        "Atta, Rice & Dal":         PLACEHOLDER,
+        "Masala & Dry Fruits":      PLACEHOLDER,
+        "Snacks & Munchies":        PLACEHOLDER,
+        "Sweet Tooth":              PLACEHOLDER,
+        "Cleaning Essentials":      PLACEHOLDER,
+        "Instant & Frozen Food":    PLACEHOLDER,
+        "Dairy, Bread & Eggs":      PLACEHOLDER,
+        "Personal Care":            PLACEHOLDER,
+        "Cold Drinks & Juices":     PLACEHOLDER,
+        "Pharma & Wellness":        PLACEHOLDER,
+        "Tea, Coffee & Health Drinks": PLACEHOLDER,
+        "Paan Corner":              PLACEHOLDER,
+        "Pantry Staples":           PLACEHOLDER,
+        "Baby Care":                PLACEHOLDER,
+        "Home & Lifestyle":         PLACEHOLDER,
+        "Pooja Needs":              PLACEHOLDER,
+        "Rice":                     PLACEHOLDER,
+        "Wheat":                    PLACEHOLDER,
+        "Jowari":                   PLACEHOLDER,
+        "Bajri":                    PLACEHOLDER,
+        "Default":                  PLACEHOLDER
     }
 
     def get_image(category):
