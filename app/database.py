@@ -44,110 +44,112 @@ def release_connection(conn):
 def init_db():
     """Create tables, run migrations, and reseed products."""
     conn = get_connection()
-    cursor = conn.cursor()
+    try:
+        cursor = conn.cursor()
 
-    # ── Products table ────────────────────────────────────
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS products (
-            id SERIAL PRIMARY KEY,
-            name TEXT NOT NULL,
-            price REAL NOT NULL,
-            description TEXT NOT NULL,
-            image_url TEXT NOT NULL,
-            category TEXT NOT NULL,
-            sub_category TEXT NOT NULL DEFAULT '',
-            base_name TEXT NOT NULL DEFAULT '',
-            unit TEXT NOT NULL DEFAULT 'kg'
+        # ── Products table ────────────────────────────────────
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS products (
+                id SERIAL PRIMARY KEY,
+                name TEXT NOT NULL,
+                price REAL NOT NULL,
+                description TEXT NOT NULL,
+                image_url TEXT NOT NULL,
+                category TEXT NOT NULL,
+                sub_category TEXT NOT NULL DEFAULT '',
+                base_name TEXT NOT NULL DEFAULT '',
+                unit TEXT NOT NULL DEFAULT 'kg'
+            )
+        """)
+
+        # ── Migration: Add sub_category if missing ────────────
+        cursor.execute("""
+            DO $$ BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name='products' AND column_name='sub_category'
+                ) THEN
+                    ALTER TABLE products ADD COLUMN sub_category TEXT NOT NULL DEFAULT '';
+                END IF;
+            END $$;
+        """)
+
+        # ── Orders table ──────────────────────────────────────
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS orders (
+                id SERIAL PRIMARY KEY,
+                token TEXT NOT NULL UNIQUE,
+                phone TEXT NOT NULL,
+                items_json TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'Processing',
+                total REAL NOT NULL,
+                timestamp TEXT NOT NULL,
+                address TEXT,
+                delivery_type TEXT NOT NULL DEFAULT 'pickup',
+                delivery_time TEXT NOT NULL DEFAULT 'same_day',
+                delivered_at TEXT,
+                delivery_otp TEXT
+            )
+        """)
+
+        # ── Customers table ───────────────────────────────────
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS customers (
+                phone TEXT PRIMARY KEY,
+                name TEXT,
+                email TEXT,
+                address TEXT,
+                pin_hash TEXT,
+                cancel_timestamps TEXT DEFAULT '[]',
+                created_at TEXT NOT NULL
+            )
+        """)
+
+        # ── Token counter table ───────────────────────────────
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS counters (
+                name TEXT PRIMARY KEY,
+                value INTEGER NOT NULL DEFAULT 100
+            )
+        """)
+
+        # ── Initialize counter ────────────────────────────────
+        cursor.execute(
+            "INSERT INTO counters (name, value) VALUES ('order_token', 100) ON CONFLICT DO NOTHING"
         )
-    """)
 
-    # ── Migration: Add sub_category if missing ────────────
-    cursor.execute("""
-        DO $$ BEGIN
-            IF NOT EXISTS (
-                SELECT 1 FROM information_schema.columns
-                WHERE table_name='products' AND column_name='sub_category'
-            ) THEN
-                ALTER TABLE products ADD COLUMN sub_category TEXT NOT NULL DEFAULT '';
-            END IF;
-        END $$;
-    """)
+        # ── Customer Favorites table ──────────────────────────────────
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS customer_favorites (
+                phone TEXT NOT NULL,
+                product_id INTEGER NOT NULL,
+                added_at TEXT NOT NULL,
+                PRIMARY KEY (phone, product_id)
+            )
+        """)
 
-    # ── Orders table ──────────────────────────────────────
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS orders (
-            id SERIAL PRIMARY KEY,
-            token TEXT NOT NULL UNIQUE,
-            phone TEXT NOT NULL,
-            items_json TEXT NOT NULL,
-            status TEXT NOT NULL DEFAULT 'Processing',
-            total REAL NOT NULL,
-            timestamp TEXT NOT NULL,
-            address TEXT,
-            delivery_type TEXT NOT NULL DEFAULT 'pickup',
-            delivery_time TEXT NOT NULL DEFAULT 'same_day',
-            delivered_at TEXT,
-            delivery_otp TEXT
-        )
-    """)
-
-    # ── Customers table ───────────────────────────────────
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS customers (
-            phone TEXT PRIMARY KEY,
-            name TEXT,
-            email TEXT,
-            address TEXT,
-            pin_hash TEXT,
-            cancel_timestamps TEXT DEFAULT '[]',
-            created_at TEXT NOT NULL
-        )
-    """)
-
-    # ── Token counter table ───────────────────────────────
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS counters (
-            name TEXT PRIMARY KEY,
-            value INTEGER NOT NULL DEFAULT 100
-        )
-    """)
-
-    # ── Initialize counter ────────────────────────────────
-    cursor.execute(
-        "INSERT INTO counters (name, value) VALUES ('order_token', 100) ON CONFLICT DO NOTHING"
-    )
-
-    # ── Customer Favorites table ──────────────────────────────────
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS customer_favorites (
-            phone TEXT NOT NULL,
-            product_id INTEGER NOT NULL,
-            added_at TEXT NOT NULL,
-            PRIMARY KEY (phone, product_id)
-        )
-    """)
-
-    # ── Conditional reseed products ───────────────────────
-    cursor.execute("SELECT COUNT(*) as count FROM products")
-    row = cursor.fetchone()
-    count = row['count'] if row else 0
-    
-    force_reseed = os.getenv("RESEED_DB", "false").lower() == "true"
-    
-    if count == 0 or force_reseed:
-        if force_reseed:
-            print("RESEED_DB=true detected. Forcing reseed...")
+        # ── Conditional reseed products ───────────────────────
+        cursor.execute("SELECT COUNT(*) as count FROM products")
+        row = cursor.fetchone()
+        count = row['count'] if row else 0
+        
+        force_reseed = os.getenv("RESEED_DB", "false").lower() == "true"
+        
+        if count == 0 or force_reseed:
+            if force_reseed:
+                print("RESEED_DB=true detected. Forcing reseed...")
+            else:
+                print("Database empty. Initializing products...")
+                
+            cursor.execute("TRUNCATE TABLE products RESTART IDENTITY")
+            _seed_products(cursor)
         else:
-            print("Database empty. Initializing products...")
-            
-        cursor.execute("TRUNCATE TABLE products RESTART IDENTITY")
-        _seed_products(cursor)
-    else:
-        print(f"Products already exist ({count} items). Skipping seeding to save time.")
+            print(f"Products already exist ({count} items). Skipping seeding to save time.")
 
-    conn.commit()
-    release_connection(conn)
-    _invalidate_products_cache()
+        conn.commit()
+    finally:
+        release_connection(conn)
+        _invalidate_products_cache()
 
 def _seed_products(cursor):
     """Seed products from the ultimate Zepto CSV and store.db SQLite."""
@@ -330,8 +332,8 @@ def get_customer_by_email(email: str):
 
 def create_or_update_customer(phone: str, name: "Optional[str]" = None, email: "Optional[str]" = None, address: "Optional[str]" = None, pin_hash: "Optional[str]" = None):
     """Insert or update customer details."""
-    conn = get_connection()
     existing = get_customer(phone)
+    conn = get_connection()
     try:
         if existing:
             # Update existing
@@ -615,6 +617,9 @@ def get_category_preferences(phone: str) -> dict:
     """Compute category weights from order history and favorites.
     Returns {category_name: weight} sorted by weight descending.
     """
+    all_products = {p['id']: p for p in get_all_products()}
+    favorite_ids = get_favorites(phone)
+    
     conn = get_connection()
     try:
         cursor = conn.cursor()
@@ -626,7 +631,6 @@ def get_category_preferences(phone: str) -> dict:
             (phone,)
         )
         orders = cursor.fetchall()
-        all_products = {p['id']: p for p in get_all_products()}
         for order in orders:
             try:
                 items = json.loads(order['items_json'])
@@ -639,7 +643,6 @@ def get_category_preferences(phone: str) -> dict:
                 pass
 
         # Weight from favorites (2 pts per favorited product — stronger signal)
-        favorite_ids = get_favorites(phone)
         for fid in favorite_ids:
             if fid in all_products:
                 cat = all_products[fid].get('category', '')
@@ -651,6 +654,8 @@ def get_category_preferences(phone: str) -> dict:
 
 def get_trending_products(limit: int = 12) -> list:
     """Return most-ordered products for trending/guest recommendations."""
+    all_products = {p['id']: p for p in get_all_products()}
+    
     conn = get_connection()
     try:
         cursor = conn.cursor()
@@ -672,7 +677,6 @@ def get_trending_products(limit: int = 12) -> list:
             except Exception:
                 pass
 
-        all_products = {p['id']: p for p in get_all_products()}
         # Sort by frequency
         sorted_pids = sorted(pid_counts.keys(), key=lambda x: pid_counts[x], reverse=True)
         result = [all_products[pid] for pid in sorted_pids if pid in all_products]
