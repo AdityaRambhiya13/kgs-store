@@ -15,6 +15,7 @@ import SignupPage from './pages/SignupPage'
 import ForgotPinPage from './pages/ForgotPinPage'
 import ResetPinPage from './pages/ResetPinPage'
 import ImageMapper from './pages/ImageMapper'
+import CategoryMapper from './pages/CategoryMapper'
 import TestPage from './pages/TestPage'
 import CartPanel from './components/CartPanel'
 import Navbar from './components/Navbar'
@@ -38,7 +39,8 @@ export default function App() {
   // Hide Navbar/Cart on Auth and Admin pages
   const isAuthPage = ['/login', '/signup', '/forgot-pin', '/reset-pin'].includes(location.pathname) || 
                      location.pathname.startsWith('/manage-store') || 
-                     location.pathname === '/admin/mapper'
+                     location.pathname === '/admin/mapper' ||
+                     location.pathname === '/admin/category-mapper'
   const showSearch = location.pathname === '/'
 
   const handleCategorySelect = (catName) => {
@@ -76,6 +78,7 @@ export default function App() {
           {/* Admin Routes */}
           <Route path="/manage-store-99" element={<AdminPage />} />
           <Route path="/admin/mapper" element={<ImageMapper />} />
+          <Route path="/admin/category-mapper" element={<CategoryMapper />} />
           <Route path="/test" element={<TestPage />} />
         </Routes>
 
