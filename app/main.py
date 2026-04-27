@@ -203,8 +203,8 @@ def check_rate_limit(request: Request, limit: int, window: int, scope: str):
 
 
 def verify_admin_password(password: str) -> bool:
-
-    return password == ADMIN_PASSWORD
+    if not password: return False
+    return password.strip() == ADMIN_PASSWORD.strip()
 
 
 

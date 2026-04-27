@@ -25,14 +25,27 @@ def init_pool():
         raise ValueError("DATABASE_URL environment variable is not set")
     if _db_pool is None:
         print("Initializing Postgres Connection Pool...")
-        _db_pool = pool.ThreadedConnectionPool(1, 40, url, cursor_factory=extras.RealDictCursor)
+        # Add connect_timeout to help with slow remote connections
+        _db_pool = pool.ThreadedConnectionPool(1, 40, url, cursor_factory=extras.RealDictCursor, connect_timeout=10)
 
 def get_connection():
-    """Get a PostgreSQL connection from the ThreadedConnectionPool."""
+    """Get a PostgreSQL connection with retry logic."""
     if _db_pool is None:
         init_pool()
     assert _db_pool is not None
-    return _db_pool.getconn()
+    
+    max_retries = 3
+    last_err = None
+    for attempt in range(max_retries):
+        try:
+            return _db_pool.getconn()
+        except Exception as e:
+            last_err = e
+            print(f"Connection attempt {attempt+1} failed: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(1) # Wait before retry
+    
+    raise last_err or Exception("Could not get connection from pool")
 
 def release_connection(conn):
     if _db_pool is not None and conn is not None:
