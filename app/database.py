@@ -16,6 +16,15 @@ def _invalidate_products_cache():
     global _products_cache
     _products_cache = None
 
+def _update_cache_item(product_id, updates):
+    """Update a single item in the in-memory cache to avoid full re-fetches."""
+    global _products_cache
+    if _products_cache is not None:
+        for p in _products_cache:
+            if p.get('id') == product_id:
+                p.update(updates)
+                break
+
 _db_pool = None
 
 def init_pool():
@@ -556,7 +565,8 @@ def update_product(product_id: int, updates: dict) -> bool:
         cursor.execute(query, tuple(params))
         updated = cursor.rowcount > 0
         conn.commit()
-        _invalidate_products_cache()
+        # Instead of clearing everything, just update the one item
+        _update_cache_item(product_id, updates)
     except Exception as e:
         print(f"Error updating product {product_id}: {e}")
         updated = False
