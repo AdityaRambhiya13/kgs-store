@@ -17,25 +17,21 @@ export default function InstallPrompt() {
       setDeferredPrompt(e)
     })
 
-    // 2. Check logic for showing the prompt
-    const status = localStorage.getItem('pwa_install_status')
-    const lastPrompt = localStorage.getItem('pwa_last_prompt')
-    
-    if (status === 'installed') return
+    if (status === 'installed' || status === 'dismissed') return
 
-    const now = Date.now()
-    const fourDays = 4 * 24 * 60 * 60 * 1000
-
-    if (status === 'remind_later' && lastPrompt) {
-      if (now - parseInt(lastPrompt) < fourDays) return
-    }
-
-    // 3. Wait 2 minutes (120,000 ms)
+    // 3. Show immediately (or after a very short delay to ensure everything is loaded)
     const timer = setTimeout(() => {
       setShow(true)
-    }, 120000)
+    }, 1000)
 
-    return () => clearTimeout(timer)
+    // Listen for manual trigger from Profile
+    const handleManualTrigger = () => setShow(true)
+    window.addEventListener('pwa-manual-prompt', handleManualTrigger)
+
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('pwa-manual-prompt', handleManualTrigger)
+    }
   }, [])
 
   const handleInstall = async () => {
@@ -61,9 +57,8 @@ export default function InstallPrompt() {
     }
   }
 
-  const handleRemindLater = () => {
-    localStorage.setItem('pwa_install_status', 'remind_later')
-    localStorage.setItem('pwa_last_prompt', Date.now().toString())
+  const handleNotNow = () => {
+    localStorage.setItem('pwa_install_status', 'dismissed')
     setShow(false)
   }
 
@@ -83,7 +78,7 @@ export default function InstallPrompt() {
               <p>Add KGS to your home screen for a faster and smoother shopping experience!</p>
             </div>
             <div className="pwa-actions">
-              <button className="pwa-btn-later" onClick={handleRemindLater}>Remind Later</button>
+              <button className="pwa-btn-later" onClick={handleNotNow}>Not Now</button>
               <button className="pwa-btn-yes" onClick={handleInstall}>Yes, Install</button>
             </div>
           </div>
