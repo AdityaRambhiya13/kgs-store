@@ -46,6 +46,17 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
   const [selectedProductDetails, setSelectedProductDetails] = useState(null)
   const { cartCount } = useCart()
   const { user } = useAuth()
+  const [productLimit, setProductLimit] = useState(40)
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery)
+      setProductLimit(40) // Reset limit on search
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
   const abortRef = useRef(null)
   const prevCartCount = useRef(cartCount)
   const location = useLocation()
@@ -143,8 +154,8 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
     let result = grouped
 
     // Search mode: flat list
-    if (searchQuery && searchQuery.trim()) {
-      const lq = searchQuery.toLowerCase()
+    if (debouncedSearch && debouncedSearch.trim()) {
+      const lq = debouncedSearch.toLowerCase()
       return result.filter(g =>
         (g.name && g.name.toLowerCase().includes(lq)) ||
         (g.base_name && g.base_name.toLowerCase().includes(lq)) ||
@@ -168,7 +179,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
 
   // When "All" selected, group for section display
   const sectionedData = useMemo(() => {
-    if (activeCategory !== 'All' || (searchQuery && searchQuery.trim())) return null
+    if (activeCategory !== 'All' || (debouncedSearch && debouncedSearch.trim())) return null
     const catMap = {}
     filtered.forEach(g => {
       const cat = g.category || 'Other'
@@ -180,11 +191,12 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
       .map(c => ({ ...c, items: catMap[c.name] }))
   }, [filtered, activeCategory, searchQuery, availableCategories])
 
-  const isSearchMode = !!(searchQuery && searchQuery.trim())
+  const isSearchMode = !!(debouncedSearch && debouncedSearch.trim())
 
   const handleCategorySelect = (catName) => {
     setActiveCategory(catName)
     setActiveSubCategory('All')
+    setProductLimit(40) // Reset limit on category change
     setTimeout(() => {
       document.querySelector('.catalog-main-content')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }, 50)
@@ -328,7 +340,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
               {filtered.length} result{filtered.length !== 1 ? 's' : ''} for &quot;{searchQuery}&quot;
             </p>
             <div className="product-grid product-grid-multi">
-              {filtered.map(g => (
+              {filtered.slice(0, productLimit).map(g => (
                 <div key={(g.base_name || g.name) + g.category}>
                   <ProductCard
                     product={g}
@@ -338,6 +350,17 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
                 </div>
               ))}
             </div>
+            {filtered.length > productLimit && (
+              <div style={{ textAlign: 'center', marginTop: '24px', paddingBottom: '40px' }}>
+                <button
+                  className="btn btn-outline"
+                  onClick={() => setProductLimit(prev => prev + 40)}
+                  style={{ maxWidth: '300px', width: '100%' }}
+                >
+                  Load More Results ({filtered.length - productLimit} left)
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -401,7 +424,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
               <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{filtered.length} items</span>
             </div>
             <div className="product-grid product-grid-multi">
-              {filtered.map(g => (
+              {filtered.slice(0, productLimit).map(g => (
                 <div key={(g.base_name || g.name) + g.category}>
                   <ProductCard
                     product={g}
@@ -411,6 +434,17 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
                 </div>
               ))}
             </div>
+            {filtered.length > productLimit && (
+              <div style={{ textAlign: 'center', marginTop: '24px', paddingBottom: '40px' }}>
+                <button
+                  className="btn btn-outline"
+                  onClick={() => setProductLimit(prev => prev + 40)}
+                  style={{ maxWidth: '300px', width: '100%' }}
+                >
+                  Load More in {activeCategory} ({filtered.length - productLimit} left)
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

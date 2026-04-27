@@ -79,7 +79,7 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
       {/* Product Image */}
       <div className="pc-img-wrap">
         <img
-          src={product.image_url}
+          src={product.image_url?.includes('supabase.co') ? `${product.image_url}?width=300` : product.image_url}
           alt={product.base_name || product.name}
           loading="lazy"
           className="pc-img"
