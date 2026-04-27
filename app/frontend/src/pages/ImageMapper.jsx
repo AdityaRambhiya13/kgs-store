@@ -64,26 +64,6 @@ export default function ImageMapper() {
     )
   }, [products, search])
 
-  const productsMissingImages = useMemo(() => {
-    return filteredProducts.filter(p => !p.image_url || !p.image_url.includes(SUPABASE_BASE_URL))
-  }, [filteredProducts])
-
-  const productsWithImages = useMemo(() => {
-    return filteredProducts.filter(p => p.image_url && p.image_url.includes(SUPABASE_BASE_URL))
-  }, [filteredProducts])
-
-  // Get list of images already used by any product (full relative path)
-  const usedImagePaths = useMemo(() => {
-    const used = new Set()
-    products.forEach(p => {
-      if (p.image_url && p.image_url.includes(SUPABASE_BASE_URL)) {
-        const relPath = p.image_url.replace(`${SUPABASE_BASE_URL}/`, '')
-        used.add(decodeURIComponent(relPath))
-      }
-    })
-    return used
-  }, [products])
-
   const folders = useMemo(() => {
     const s = new Set(['All Folders'])
     images.forEach(img => {
@@ -98,10 +78,9 @@ export default function ImageMapper() {
 
   const filteredImages = useMemo(() => {
     return images
-      .filter(img => !usedImagePaths.has(img))
       .filter(img => selectedFolder === 'All Folders' || img.startsWith(`${selectedFolder}/`))
       .filter(img => img.toLowerCase().includes(imgSearch.toLowerCase()))
-  }, [images, usedImagePaths, imgSearch, selectedFolder])
+  }, [images, imgSearch, selectedFolder])
 
   async function onDrop(productId, imageName) {
     try {
@@ -174,19 +153,10 @@ export default function ImageMapper() {
         {/* Left: Product List */}
         <div className="mapper-column products-col">
           <section className="product-section">
-            <h3>Needs Images ({productsMissingImages.length})</h3>
+            <h3>All Products ({filteredProducts.length})</h3>
             <div className="product-list">
-              {productsMissingImages.map(p => (
-                <ProductRow key={p.id} product={p} onDrop={onDrop} />
-              ))}
-            </div>
-          </section>
-
-          <section className="product-section">
-            <h3>Already Mapped ({productsWithImages.length})</h3>
-            <div className="product-list">
-              {productsWithImages.map(p => (
-                <ProductRow key={p.id} product={p} onDrop={onDrop} />
+              {filteredProducts.map(p => (
+                <ProductRow key={p.id} product={p} onDrop={onDrop} isMapped={p.image_url && p.image_url.includes(SUPABASE_BASE_URL)} />
               ))}
             </div>
           </section>
@@ -430,7 +400,7 @@ export default function ImageMapper() {
   )
 }
 
-function ProductRow({ product, onDrop }) {
+function ProductRow({ product, onDrop, isMapped }) {
   const [isOver, setIsOver] = useState(false)
 
   const handleDragOver = (e) => {
@@ -453,7 +423,7 @@ function ProductRow({ product, onDrop }) {
 
   return (
     <div 
-      className={`product-row ${isOver ? 'drag-over' : ''}`}
+      className={`product-row ${isOver ? 'drag-over' : ''} ${isMapped ? 'mapped' : ''}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -467,7 +437,7 @@ function ProductRow({ product, onDrop }) {
         <p>{product.name}</p>
         <span>{product.category}</span>
       </div>
-      {product.image_url && !product.image_url.includes('unsplash') && (
+      {isMapped && (
         <div className="row-check">✅</div>
       )}
     </div>
