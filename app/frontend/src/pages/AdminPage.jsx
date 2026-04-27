@@ -50,7 +50,7 @@ export default function AdminPage() {
         setLoginError('')
         setLoading(true)
         try {
-            const res = await adminLogin(password)
+            const res = await adminLogin(password.trim())
             const token = res.access_token
             setAdminToken(token)
             setAuthed(true)

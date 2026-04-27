@@ -34,8 +34,14 @@ def upload_images():
     print(f"Starting bulk upload to Supabase bucket: {BUCKET_NAME}")
     print(f"URL: {SUPABASE_URL}")
 
-    files = list(IMAGE_DIR.glob('*.webp')) + list(IMAGE_DIR.glob('*.jpg')) + list(IMAGE_DIR.glob('*.png'))
-    print(f"Found {len(files)} images to upload.\n")
+    # Get all images recursively
+    files_to_upload = []
+    for root, dirs, files in os.walk(IMAGE_DIR):
+        for file in files:
+            if file.lower().endswith(('.webp', '.jpg', '.jpeg', '.png')):
+                files_to_upload.append(Path(root) / file)
+    
+    print(f"Found {len(files_to_upload)} images to upload.\n")
 
     headers = {
         "Authorization": f"Bearer {SUPABASE_KEY}",
@@ -45,10 +51,14 @@ def upload_images():
     success_count = 0
     error_count = 0
 
-    for file_path in files:
-        file_name = file_path.name
+    for file_path in files_to_upload:
+        # Get path relative to IMAGE_DIR to maintain structure in Supabase
+        rel_path = os.path.relpath(file_path, IMAGE_DIR)
+        # Convert backslashes to forward slashes for Supabase storage paths
+        storage_path = rel_path.replace('\\', '/')
+        
         # Supabase Storage API endpoint
-        url = f"{SUPABASE_URL}/storage/v1/object/{BUCKET_NAME}/{file_name}"
+        url = f"{SUPABASE_URL}/storage/v1/object/{BUCKET_NAME}/{storage_path}"
         
         try:
             with open(file_path, 'rb') as f:
@@ -56,13 +66,13 @@ def upload_images():
             
             if response.status_code == 200:
                 success_count += 1
-                print(f"OK: Uploaded: {file_name}", flush=True)
+                print(f"OK: Uploaded: {storage_path}", flush=True)
             else:
                 error_count += 1
-                print(f"FAIL: {file_name} - {response.status_code} {response.text}", flush=True)
+                print(f"FAIL: {storage_path} - {response.status_code} {response.text}", flush=True)
         except Exception as e:
             error_count += 1
-            print(f"ERROR uploading {file_name}: {str(e)}", flush=True)
+            print(f"ERROR uploading {storage_path}: {str(e)}", flush=True)
 
     print("\n" + "="*30)
     print(f"Upload Complete!")

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { getProducts, getAvailableImages, updateProduct } from '../api'
+import { getProducts, getAvailableImages, updateProduct, adminLogin } from '../api'
 
 const PROJECT_ID = 'iezqlltomqrdkgogdgqu'
 const BUCKET_NAME = 'products'
@@ -32,7 +32,13 @@ export default function ImageMapper() {
       setProducts(pData)
       setImages(iData.images)
     } catch (err) {
-      setStatus({ type: 'error', msg: err.message })
+      if (err.message.includes('Unauthorized') || err.message.includes('401')) {
+        setToken('')
+        localStorage.removeItem('adminToken')
+        setStatus({ type: 'error', msg: 'Session expired. Please login again.' })
+      } else {
+        setStatus({ type: 'error', msg: err.message })
+      }
     } finally {
       setLoading(false)
     }
@@ -40,19 +46,14 @@ export default function ImageMapper() {
 
   async function handleLogin(e) {
     e.preventDefault()
+    setStatus({ type: '', msg: '' })
     try {
-      const res = await fetch('/api/auth/admin-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password })
-      })
-      if (!res.ok) throw new Error('Invalid Password')
-      const data = await res.json()
+      const data = await adminLogin(password.trim())
       localStorage.setItem('adminToken', data.access_token)
       setToken(data.access_token)
       setStatus({ type: 'success', msg: 'Logged in!' })
     } catch (err) {
-      setStatus({ type: 'error', msg: err.message })
+      setStatus({ type: 'error', msg: err.message || 'Login failed' })
     }
   }
 
@@ -64,30 +65,43 @@ export default function ImageMapper() {
   }, [products, search])
 
   const productsMissingImages = useMemo(() => {
-    return filteredProducts.filter(p => !p.image_url || p.image_url.includes('unsplash') || p.image_url.includes('/api/static/'))
+    return filteredProducts.filter(p => !p.image_url || !p.image_url.includes(SUPABASE_BASE_URL))
   }, [filteredProducts])
 
   const productsWithImages = useMemo(() => {
     return filteredProducts.filter(p => p.image_url && p.image_url.includes(SUPABASE_BASE_URL))
   }, [filteredProducts])
 
-  // Get list of images already used by any product
-  const usedImageFilenames = useMemo(() => {
+  // Get list of images already used by any product (full relative path)
+  const usedImagePaths = useMemo(() => {
     const used = new Set()
     products.forEach(p => {
       if (p.image_url && p.image_url.includes(SUPABASE_BASE_URL)) {
-        const parts = p.image_url.split('/')
-        used.add(decodeURIComponent(parts[parts.length - 1]))
+        const relPath = p.image_url.replace(`${SUPABASE_BASE_URL}/`, '')
+        used.add(decodeURIComponent(relPath))
       }
     })
     return used
   }, [products])
 
+  const folders = useMemo(() => {
+    const s = new Set(['All Folders'])
+    images.forEach(img => {
+      if (img.includes('/')) {
+        s.add(img.split('/')[0])
+      }
+    })
+    return Array.from(s).sort()
+  }, [images])
+
+  const [selectedFolder, setSelectedFolder] = useState('All Folders')
+
   const filteredImages = useMemo(() => {
     return images
-      .filter(img => !usedImageFilenames.has(img))
+      .filter(img => !usedImagePaths.has(img))
+      .filter(img => selectedFolder === 'All Folders' || img.startsWith(`${selectedFolder}/`))
       .filter(img => img.toLowerCase().includes(imgSearch.toLowerCase()))
-  }, [images, usedImageFilenames, imgSearch])
+  }, [images, usedImagePaths, imgSearch, selectedFolder])
 
   async function onDrop(productId, imageName) {
     try {
@@ -142,7 +156,11 @@ export default function ImageMapper() {
             onChange={e => setSearch(e.target.value)} 
             className="mapper-search"
           />
-          <button onClick={loadData} className="refresh-btn">Refresh Data</button>
+          <button onClick={loadData} className="refresh-btn">Refresh</button>
+          <button onClick={() => {
+            setToken('')
+            localStorage.removeItem('adminToken')
+          }} className="logout-btn">Logout</button>
         </div>
       </header>
 
@@ -177,10 +195,17 @@ export default function ImageMapper() {
         {/* Right: Image Grid */}
         <div className="mapper-column images-col">
           <div className="col-header">
-            <h3>Unassigned Images ({filteredImages.length})</h3>
+            <h3>Unassigned ({filteredImages.length})</h3>
+            <select 
+              value={selectedFolder} 
+              onChange={e => setSelectedFolder(e.target.value)}
+              className="folder-select"
+            >
+              {folders.map(f => <option key={f} value={f}>{f}</option>)}
+            </select>
             <input 
               type="text" 
-              placeholder="Search images..." 
+              placeholder="Search..." 
               value={imgSearch} 
               onChange={e => setImgSearch(e.target.value)} 
               className="col-search"
@@ -232,6 +257,16 @@ export default function ImageMapper() {
           border-radius: 8px;
           cursor: pointer;
           font-weight: 600;
+          margin-right: 10px;
+        }
+        .logout-btn {
+          background: #ef4444;
+          border: none;
+          color: white;
+          padding: 8px 15px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: 600;
         }
         .mapper-layout {
           display: grid;
@@ -270,7 +305,15 @@ export default function ImageMapper() {
           border-radius: 6px;
           font-size: 0.8rem;
           flex: 1;
-          max-width: 200px;
+        }
+        .folder-select {
+          background: #0f172a;
+          border: 1px solid #334155;
+          color: white;
+          padding: 6px;
+          border-radius: 6px;
+          font-size: 0.8rem;
+          max-width: 120px;
         }
         .product-list { margin-bottom: 30px; }
         .product-row {
