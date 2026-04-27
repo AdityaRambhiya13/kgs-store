@@ -15,6 +15,20 @@ export default function ImageMapper() {
   const [status, setStatus] = useState({ type: '', msg: '' })
   const [token, setToken] = useState(localStorage.getItem('adminToken') || '')
   const [password, setPassword] = useState('')
+  const [productLimit, setProductLimit] = useState(100)
+  const [imageLimit, setImageLimit] = useState(100)
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [debouncedImgSearch, setDebouncedImgSearch] = useState('')
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(timer)
+  }, [search])
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedImgSearch(imgSearch), 300)
+    return () => clearTimeout(timer)
+  }, [imgSearch])
 
   useEffect(() => {
     if (token) {
@@ -59,10 +73,14 @@ export default function ImageMapper() {
 
   const filteredProducts = useMemo(() => {
     return products.filter(p => 
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.category.toLowerCase().includes(search.toLowerCase())
+      p.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      p.category.toLowerCase().includes(debouncedSearch.toLowerCase())
     )
-  }, [products, search])
+  }, [products, debouncedSearch])
+
+  const visibleProducts = useMemo(() => {
+    return filteredProducts.slice(0, productLimit)
+  }, [filteredProducts, productLimit])
 
   const folders = useMemo(() => {
     const s = new Set(['All Folders'])
@@ -79,23 +97,31 @@ export default function ImageMapper() {
   const filteredImages = useMemo(() => {
     return images
       .filter(img => selectedFolder === 'All Folders' || img.startsWith(`${selectedFolder}/`))
-      .filter(img => img.toLowerCase().includes(imgSearch.toLowerCase()))
-  }, [images, imgSearch, selectedFolder])
+      .filter(img => img.toLowerCase().includes(debouncedImgSearch.toLowerCase()))
+  }, [images, debouncedImgSearch, selectedFolder])
+
+  const visibleImages = useMemo(() => {
+    return filteredImages.slice(0, imageLimit)
+  }, [filteredImages, imageLimit])
 
   async function onDrop(productId, imageName) {
+    setStatus({ type: 'loading', msg: `Mapping ${imageName}...` })
     try {
-      const imageUrl = `${SUPABASE_BASE_URL}/${imageName}`
+      const encodedName = imageName.split('/').map(part => encodeURIComponent(part)).join('/')
+      const imageUrl = `${SUPABASE_BASE_URL}/${encodedName}`
+      
+      console.log(`Updating product ${productId} with image ${imageUrl}`)
       await updateProduct(productId, { image_url: imageUrl }, token)
       
-      // Update local state
       setProducts(prev => prev.map(p => 
         p.id === productId ? { ...p, image_url: imageUrl } : p
       ))
       
-      setStatus({ type: 'success', msg: `Mapped ${imageName} to product!` })
-      setTimeout(() => setStatus({ type: '', msg: '' }), 2000)
+      setStatus({ type: 'success', msg: `Mapped ${imageName}!` })
+      setTimeout(() => setStatus({ type: '', msg: '' }), 1500)
     } catch (err) {
-      setStatus({ type: 'error', msg: err.message })
+      console.error('Drop error:', err)
+      setStatus({ type: 'error', msg: err.message || 'Failed to update product' })
     }
   }
 
@@ -155,10 +181,15 @@ export default function ImageMapper() {
           <section className="product-section">
             <h3>All Products ({filteredProducts.length})</h3>
             <div className="product-list">
-              {filteredProducts.map(p => (
+              {visibleProducts.map(p => (
                 <ProductRow key={p.id} product={p} onDrop={onDrop} isMapped={p.image_url && p.image_url.includes(SUPABASE_BASE_URL)} />
               ))}
             </div>
+            {filteredProducts.length > productLimit && (
+              <button onClick={() => setProductLimit(prev => prev + 200)} className="load-more-btn">
+                Load More Products ({filteredProducts.length - productLimit} left)
+              </button>
+            )}
           </section>
         </div>
 
@@ -182,10 +213,15 @@ export default function ImageMapper() {
             />
           </div>
           <div className="image-grid">
-            {filteredImages.map(img => (
+            {visibleImages.map(img => (
               <DraggableImage key={img} name={img} />
             ))}
           </div>
+          {filteredImages.length > imageLimit && (
+            <button onClick={() => setImageLimit(prev => prev + 200)} className="load-more-btn" style={{ marginTop: 20, width: '100%' }}>
+              Load More Images ({filteredImages.length - imageLimit} left)
+            </button>
+          )}
         </div>
       </div>
 
@@ -395,6 +431,22 @@ export default function ImageMapper() {
         }
         .floating-status.success { background: #059669; color: white; }
         .floating-status.error { background: #dc2626; color: white; }
+        .floating-status.loading { background: #3b82f6; color: white; }
+        .load-more-btn {
+          background: #334155;
+          color: #94a3b8;
+          border: 1px solid #475569;
+          padding: 12px;
+          border-radius: 8px;
+          cursor: pointer;
+          width: 100%;
+          font-weight: 600;
+          transition: 0.2s;
+        }
+        .load-more-btn:hover {
+          background: #475569;
+          color: white;
+        }
       `}} />
     </div>
   )
@@ -429,9 +481,10 @@ function ProductRow({ product, onDrop, isMapped }) {
       onDrop={handleDrop}
     >
       <img 
-        src={product.image_url || 'https://via.placeholder.com/40'} 
+        src={product.image_url ? `${product.image_url}?width=80` : 'https://via.placeholder.com/40'} 
         className="row-thumb" 
         alt="" 
+        loading="lazy"
       />
       <div className="row-info">
         <p>{product.name}</p>
@@ -455,7 +508,7 @@ function DraggableImage({ name }) {
       draggable 
       onDragStart={handleDragStart}
     >
-      <img src={`${SUPABASE_BASE_URL}/${name}`} alt="" />
+      <img src={`${SUPABASE_BASE_URL}/${name}?width=200`} alt="" loading="lazy" />
       <p>{name}</p>
     </div>
   )
