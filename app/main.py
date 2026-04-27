@@ -387,12 +387,11 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 
 @app.get("/api/products", response_model=List[ProductOut])
-
-def list_products(request: Request, user: dict = Depends(get_current_user)):
-
-    check_rate_limit(request, limit=60, window=60, scope="products")
-
-    return get_all_products()
+def list_products(request: Request):
+    check_rate_limit(request, limit=120, window=60, scope="products")
+    products = get_all_products()
+    print(f"DEBUG: Serving {len(products)} products to public endpoint")
+    return products
 
 
 
