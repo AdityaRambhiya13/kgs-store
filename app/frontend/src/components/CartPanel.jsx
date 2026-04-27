@@ -52,9 +52,6 @@ export default function CartPanel() {
           <div className="cart-header">
             <div>
               <h2 className="cart-title">🛒 My Cart</h2>
-              {cartCount > 0 && (
-                <p className="cart-delivery-eta">⚡ Delivers in 10 mins</p>
-              )}
             </div>
             <button className="cart-close" onClick={() => setCartOpen(false)}>✕</button>
           </div>

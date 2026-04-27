@@ -14,13 +14,11 @@ const SEARCH_CATEGORIES = [
   { name: 'Dairy, Bread & Eggs',        emoji: '🥛' },
   { name: 'Personal Care',              emoji: '💄' },
   { name: 'Cold Drinks & Juices',       emoji: '🥤' },
-  { name: 'Pharma & Wellness',          emoji: '💊' },
+  { name: '& Wellness',                emoji: '💊' },
   { name: 'Tea, Coffee & Health Drinks',emoji: '☕' },
-  { name: 'Paan Corner',                emoji: '🌿' },
-  { name: 'Pantry Staples',             emoji: '🏪' },
-  { name: 'Baby Care',                  emoji: '👶' },
   { name: 'Home & Lifestyle',           emoji: '🏠' },
   { name: 'Pooja Needs',                emoji: '🪔' },
+  { name: 'Miscellaneous',              emoji: '📦' },
 ]
 
 export default function Navbar({ searchQuery, onSearchChange, onCategorySelect }) {
@@ -81,9 +79,6 @@ export default function Navbar({ searchQuery, onSearchChange, onCategorySelect }
           <div className="nav-left">
             <div className="nav-logo" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
               <span className="nav-logo-text">KGS</span>
-              <div className="nav-delivery-badge">
-                <span className="nav-delivery-time">⚡ 10 mins</span>
-              </div>
             </div>
 
             {/* Location selector */}

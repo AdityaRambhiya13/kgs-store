@@ -11,15 +11,24 @@ export default function InstallPrompt() {
     const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
     setIsIOS(ios)
 
-    // 1. Capture the install prompt event
+    // Read status from localStorage (bug fix: was reading window.status before)
+    const installStatus = localStorage.getItem('pwa_install_status')
+
+    // 1. Capture the install prompt event (always do this regardless of status)
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault()
       setDeferredPrompt(e)
     })
 
-    if (status === 'installed' || status === 'dismissed') return
+    // 2. Don't show if already installed or dismissed
+    if (installStatus === 'installed' || installStatus === 'dismissed') {
+      // Still listen for manual trigger from Profile page
+      const handleManualTrigger = () => setShow(true)
+      window.addEventListener('pwa-manual-prompt', handleManualTrigger)
+      return () => window.removeEventListener('pwa-manual-prompt', handleManualTrigger)
+    }
 
-    // 3. Show immediately (or after a very short delay to ensure everything is loaded)
+    // 3. Show after 1 second delay
     const timer = setTimeout(() => {
       setShow(true)
     }, 1000)
@@ -44,14 +53,10 @@ export default function InstallPrompt() {
       setDeferredPrompt(null)
       setShow(false)
     } else if (isIOS) {
-      // For iOS, we can't trigger automatically, so we show the guide
-      alert("To install on iOS: \n1. Tap the Share button below \n2. Select 'Add to Home Screen' from the menu.")
-      // We don't hide yet, or we hide and mark as prompted
-      localStorage.setItem('pwa_install_status', 'remind_later')
-      localStorage.setItem('pwa_last_prompt', Date.now().toString())
+      alert("To install on iOS:\n1. Tap the Share button (bottom of screen)\n2. Select 'Add to Home Screen'")
+      localStorage.setItem('pwa_install_status', 'installed')
       setShow(false)
     } else {
-      // Fallback for others
       localStorage.setItem('pwa_install_status', 'installed')
       setShow(false)
     }

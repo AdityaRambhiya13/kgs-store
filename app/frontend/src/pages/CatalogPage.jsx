@@ -433,11 +433,11 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
               ))}
             </div>
             {filtered.length > productLimit && (
-              <div style={{ textAlign: 'center', marginTop: '24px', paddingBottom: '40px' }}>
+              <div style={{ textAlign: 'center', marginTop: '16px', paddingBottom: '24px', gridColumn: '1 / -1' }}>
                 <button
                   className="btn btn-outline"
                   onClick={() => setProductLimit(prev => prev + 40)}
-                  style={{ maxWidth: '300px', width: '100%' }}
+                  style={{ maxWidth: '320px', width: '100%', borderRadius: '12px' }}
                 >
                   Load More in {activeCategory} ({filtered.length - productLimit} left)
                 </button>

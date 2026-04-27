@@ -140,7 +140,6 @@ export default function ProductDetailsModal({ product, onClose, mrp }) {
               </AnimatePresence>
             </div>
             <div className="pdm-main-info">
-              <div className="pdm-eta">⚡ 10 mins</div>
               <h1 className="pdm-title">{activeVariant.name || activeVariant.base_name || product.base_name || product.name}</h1>
               <p className="pdm-subtitle">{product.category} · {activeVariant.unit}</p>
               
