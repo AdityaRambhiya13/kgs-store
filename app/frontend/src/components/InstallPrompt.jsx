@@ -4,8 +4,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 export default function InstallPrompt() {
   const [show, setShow] = useState(false)
   const [deferredPrompt, setDeferredPrompt] = useState(null)
+  const [isIOS, setIsIOS] = useState(false)
 
   useEffect(() => {
+    // Check if iOS
+    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
+    setIsIOS(ios)
+
     // 1. Capture the install prompt event
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault()
@@ -41,12 +46,19 @@ export default function InstallPrompt() {
         localStorage.setItem('pwa_install_status', 'installed')
       }
       setDeferredPrompt(null)
+      setShow(false)
+    } else if (isIOS) {
+      // For iOS, we can't trigger automatically, so we show the guide
+      alert("To install on iOS: \n1. Tap the Share button below \n2. Select 'Add to Home Screen' from the menu.")
+      // We don't hide yet, or we hide and mark as prompted
+      localStorage.setItem('pwa_install_status', 'remind_later')
+      localStorage.setItem('pwa_last_prompt', Date.now().toString())
+      setShow(false)
     } else {
-      // Fallback for iOS/Other: Just record success or show instruction
+      // Fallback for others
       localStorage.setItem('pwa_install_status', 'installed')
-      alert("To add to home screen:\n1. Tap 'Share' (bottom center)\n2. Scroll down and tap 'Add to Home Screen'")
+      setShow(false)
     }
-    setShow(false)
   }
 
   const handleRemindLater = () => {
