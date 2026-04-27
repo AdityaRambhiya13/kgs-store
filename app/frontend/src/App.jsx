@@ -21,6 +21,7 @@ import CartPanel from './components/CartPanel'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import MobileCartBar from './components/MobileCartBar'
+import InstallPrompt from './components/InstallPrompt'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -85,6 +86,7 @@ export default function App() {
         {!isAuthPage && <CartPanel />}
         {!isAuthPage && <MobileCartBar />}
         {!isAuthPage && <Footer />}
+        <InstallPrompt />
       </>
     </FavoritesProvider>
   )

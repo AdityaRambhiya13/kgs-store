@@ -58,10 +58,7 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
       transition={{ duration: 0.15 }}
       onClick={handleCardClick}
     >
-      {/* Discount Badge */}
-      {discount > 0 && (
-        <div className="pc-discount-badge">{discount}% OFF</div>
-      )}
+
 
       {/* Favorite Button */}
       <motion.button
@@ -90,8 +87,7 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
         {variantCount > 1 && (
           <div className="pc-variants-badge">{variantCount} options</div>
         )}
-        {/* Delivery time badge */}
-        <div className="pc-delivery-badge">⚡ 10 mins</div>
+
       </div>
 
       {/* Card Body */}
