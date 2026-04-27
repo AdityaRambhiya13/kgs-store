@@ -19,6 +19,7 @@ export default function ImageMapper() {
   const [imageLimit, setImageLimit] = useState(100)
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [debouncedImgSearch, setDebouncedImgSearch] = useState('')
+  const [mappingInProgress, setMappingInProgress] = useState(false)
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300)
@@ -105,6 +106,9 @@ export default function ImageMapper() {
   }, [filteredImages, imageLimit])
 
   async function onDrop(productId, imageName) {
+    if (mappingInProgress) return
+    
+    setMappingInProgress(true)
     setStatus({ type: 'loading', msg: `Mapping ${imageName}...` })
     try {
       const encodedName = imageName.split('/').map(part => encodeURIComponent(part)).join('/')
@@ -122,6 +126,9 @@ export default function ImageMapper() {
     } catch (err) {
       console.error('Drop error:', err)
       setStatus({ type: 'error', msg: err.message || 'Failed to update product' })
+      setTimeout(() => setStatus({ type: '', msg: '' }), 5000)
+    } finally {
+      setMappingInProgress(false)
     }
   }
 

@@ -6,25 +6,40 @@ const BASE = import.meta.env.VITE_API_URL || ''
 async function request(method, path, body = null, signal = null, token = null) {
     const defaultToken = localStorage.getItem('kgsToken')
     const activeToken = token || defaultToken
+    
+    // Create a timeout controller if no signal is provided
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 15000)
+    
     const opts = {
         method,
         headers: { 'Content-Type': 'application/json' },
-        cache: 'no-store'
+        cache: 'no-store',
+        signal: signal || controller.signal
     }
+    
     if (activeToken) {
         opts.headers['Authorization'] = `Bearer ${activeToken}`
     }
     if (body) opts.body = JSON.stringify(body)
-    if (signal) opts.signal = signal
-    const res = await fetch(`${BASE}${path}`, opts)
-    if (!res.ok) {
-        if (res.status === 401) {
-            window.dispatchEvent(new Event('auth-error'))
+    
+    try {
+        const res = await fetch(`${BASE}${path}`, opts)
+        clearTimeout(timeoutId)
+        
+        if (!res.ok) {
+            if (res.status === 401) {
+                window.dispatchEvent(new Event('auth-error'))
+            }
+            const err = await res.json().catch(() => ({ detail: res.statusText }))
+            throw new Error(err.detail || 'Request failed')
         }
-        const err = await res.json().catch(() => ({ detail: res.statusText }))
-        throw new Error(err.detail || 'Request failed')
+        return res.json()
+    } catch (err) {
+        clearTimeout(timeoutId)
+        if (err.name === 'AbortError') throw new Error('Request timed out (15s)')
+        throw err
     }
-    return res.json()
 }
 
 export const getProducts = (signal, token = null) => request('GET', '/api/products', null, signal, token)
