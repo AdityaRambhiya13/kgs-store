@@ -20,13 +20,11 @@ const CATEGORY_CONFIG = [
   { name: 'Dairy, Bread & Eggs',        emoji: '🥛', color: '#3b82f6' },
   { name: 'Personal Care',              emoji: '💄', color: '#d946ef' },
   { name: 'Cold Drinks & Juices',       emoji: '🥤', color: '#22c55e' },
-  { name: 'Pharma & Wellness',          emoji: '💊', color: '#14b8a6' },
+  { name: '& Wellness',                emoji: '💊', color: '#14b8a6' },
   { name: 'Tea, Coffee & Health Drinks',emoji: '☕', color: '#92400e' },
-  { name: 'Paan Corner',                emoji: '🌿', color: '#16a34a' },
-  { name: 'Pantry Staples',             emoji: '🏪', color: '#6366f1' },
-  { name: 'Baby Care',                  emoji: '👶', color: '#fb7185' },
   { name: 'Home & Lifestyle',           emoji: '🏠', color: '#0ea5e9' },
   { name: 'Pooja Needs',                emoji: '🪔', color: '#eab308' },
+  { name: 'Miscellaneous',              emoji: '📦', color: '#64748b' },
 ]
 
 const CATEGORY_MAP = Object.fromEntries(CATEGORY_CONFIG.map(c => [c.name, c]))

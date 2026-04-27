@@ -157,7 +157,8 @@ export default function ProductRenamer() {
               <th>Current Name</th>
               <th>Base Name (Grouping)</th>
               <th>Category</th>
-              <th>Price</th>
+              <th>Price (₹)</th>
+              <th>Unit</th>
             </tr>
           </thead>
           <tbody>
@@ -184,7 +185,26 @@ export default function ProductRenamer() {
                   />
                 </td>
                 <td className="td-cat">{p.category}</td>
-                <td className="td-price">₹{p.price}</td>
+                <td>
+                  <input 
+                    className="edit-input td-price"
+                    type="number"
+                    defaultValue={p.price}
+                    onBlur={(e) => {
+                      const val = parseFloat(e.target.value)
+                      if (!isNaN(val) && val !== p.price) handleUpdate(p.id, 'price', val)
+                    }}
+                  />
+                </td>
+                <td>
+                  <input 
+                    className="edit-input td-unit"
+                    defaultValue={p.unit || 'kg'}
+                    onBlur={(e) => {
+                      if (e.target.value !== p.unit) handleUpdate(p.id, 'unit', e.target.value)
+                    }}
+                  />
+                </td>
               </tr>
             ))}
           </tbody>
