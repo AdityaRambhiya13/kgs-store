@@ -1270,19 +1270,17 @@ if os.path.exists(DIST_PATH):
     
 
     @app.get("/{full_path:path}")
-
     async def serve_frontend(full_path: str):
-
         # If the path starts with api/, it's a 404 for API
-
         if full_path.startswith("api/"):
-
             raise HTTPException(status_code=404, detail="API endpoint not found")
-
-        
-
+            
+        # Check if requested file exists in dist (e.g. manifest.json, sw.js)
+        file_path = os.path.join(DIST_PATH, full_path)
+        if full_path and os.path.exists(file_path) and os.path.isfile(file_path):
+            return FileResponse(file_path)
+            
         index_file = os.path.join(DIST_PATH, "index.html")
-
         return FileResponse(index_file)
 
 else:
