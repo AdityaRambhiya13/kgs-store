@@ -22,6 +22,14 @@ export function CartProvider({ children }) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(cart))
     }, [cart])
 
+    // Clear cart on logout
+    const { user } = useAuth()
+    useEffect(() => {
+        if (!user) {
+            setCart({})
+        }
+    }, [user])
+
     const addToCart = (product, delta = 1) => {
         setCart(prev => {
             const current = prev[product.id]?.quantity || 0

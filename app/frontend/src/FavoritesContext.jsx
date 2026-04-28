@@ -31,12 +31,14 @@ export function FavoritesProvider({ children }) {
       getFavorites()
         .then(products => {
           const serverIds = new Set(products.map(p => p.id))
-          setFavorites(prev => new Set([...prev, ...serverIds]))
+          // REPLACE instead of merging to avoid seeing old user's favorites
+          setFavorites(serverIds)
           setSynced(true)
         })
         .catch(() => setSynced(true))
     }
     if (!user) {
+      setFavorites(new Set()) // Clear local favorites on logout
       setSynced(false)
     }
   }, [user, synced])
