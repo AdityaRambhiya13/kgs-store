@@ -108,9 +108,20 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
   const availableCategories = useMemo(() => {
     const set = new Set()
     products.forEach(p => {
-      if (p.category && !BLOCKED_CATEGORIES.has(p.category)) set.add(p.category)
+      if (!p.category) return
+      const cat = p.category.trim()
+      if (!BLOCKED_CATEGORIES.has(cat)) set.add(cat)
     })
-    return CATEGORY_CONFIG.filter(c => set.has(c.name))
+    
+    // Robust matching: handle potential name changes (e.g. Dairy, Bread & Eggs -> Dairy & Bread)
+    return CATEGORY_CONFIG.filter(c => {
+      if (set.has(c.name)) return true
+      // Fallbacks for common renames
+      if (c.name === 'Dairy & Bread' && set.has('Dairy, Bread & Eggs')) return true
+      if (c.name === 'Wellness' && set.has('Pharma & Wellness')) return true
+      if (c.name === 'Wellness' && set.has('& Wellness')) return true
+      return false
+    })
   }, [products])
 
   // Sub-categories for the active category
@@ -127,10 +138,16 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
   const grouped = useMemo(() => {
     const groups = {}
     products.forEach(p => {
-      if (BLOCKED_CATEGORIES.has(p.category)) return
-      const key = (p.base_name || p.name) + '|' + p.category
+      if (!p.category || BLOCKED_CATEGORIES.has(p.category)) return
+      
+      // Standardize category name for grouping
+      let cat = p.category
+      if (cat === 'Dairy, Bread & Eggs') cat = 'Dairy & Bread'
+      if (cat === 'Pharma & Wellness' || cat === '& Wellness') cat = 'Wellness'
+
+      const key = (p.base_name || p.name) + '|' + cat
       if (!groups[key]) {
-        groups[key] = { ...p, variants: [] }
+        groups[key] = { ...p, category: cat, variants: [] }
       }
       groups[key].variants.push(p)
       groups[key].variants.sort((a, b) => a.price - b.price)
@@ -369,7 +386,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
               const preview = section.items.slice(0, 6)
               const hasMore = section.items.length > 6
               return (
-                <div key={section.name} className="category-section" style={{ marginBottom: '40px' }}>
+                <div key={section.name} className="category-section">
                   <div className="section-header">
                     <h2 className="section-title" style={{ color: section.color }}>
                       {section.emoji} {section.name}
@@ -379,7 +396,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
                         onClick={() => handleCategorySelect(section.name)}
                         className="see-all-btn"
                       >
-                        See All {section.items.length} →
+                        See All →
                       </button>
                     )}
                   </div>
@@ -395,13 +412,13 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
                     ))}
                   </div>
                   {hasMore && (
-                    <div style={{ textAlign: 'center', marginTop: '12px' }}>
+                    <div style={{ textAlign: 'center', marginTop: '16px' }}>
                       <button
                         className="btn btn-outline"
                         onClick={() => handleCategorySelect(section.name)}
-                        style={{ maxWidth: '300px', padding: '10px 24px', width: '100%' }}
+                        style={{ maxWidth: '300px', padding: '12px 24px', width: '100%', borderRadius: '12px' }}
                       >
-                        View all {section.items.length} items in {section.name}
+                        View {section.items.length - preview.length} more in {section.name}
                       </button>
                     </div>
                   )}

@@ -727,6 +727,24 @@ p { line-height: 1.6; }
 }
 .see-all-btn:hover { background: var(--primary-glow); }
 
+/* Category Section Box Styling */
+.category-section {
+  background: var(--bg-card);
+  border-radius: var(--r-lg);
+  padding: 20px;
+  margin-bottom: 32px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.category-section .section-header {
+  margin-bottom: 16px;
+}
+
+.category-section .product-grid {
+  margin-bottom: 12px;
+}
+
 /* Search results label */
 .search-results-label {
   font-size: 13px;
