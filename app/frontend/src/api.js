@@ -93,7 +93,7 @@ export const resetPin = (token, new_pin) =>
     request('POST', '/api/auth/reset-pin', { token, new_pin: String(new_pin) })
 
 export const getProfile = () =>
-    request('GET', '/api/auth/me')
+    request('GET', `/api/auth/me?t=${Date.now()}`)
 
 export const updateProfile = (name) =>
     request('PATCH', '/api/auth/profile', { name })
@@ -104,13 +104,14 @@ export const getOrderHistory = () => {
     // This prevents any stale-token crossover between accounts
     const freshToken = localStorage.getItem('kgsToken')
     if (!freshToken) return Promise.resolve([])
-    return request('GET', '/api/orders/history', null, null, freshToken)
+    // Use a timestamp to cache-bust any old Service Worker that might be caching the API call
+    return request('GET', `/api/orders/history?t=${Date.now()}`, null, null, freshToken)
 }
 
 // ── Favorites ─────────────────────────────────────────────
 
 export const getFavorites = () =>
-    request('GET', '/api/favorites')
+    request('GET', `/api/favorites?t=${Date.now()}`)
 
 export const toggleFavorite = (productId) =>
     request('POST', `/api/favorites/${productId}`)
@@ -118,7 +119,7 @@ export const toggleFavorite = (productId) =>
 // ── Recommendations ─────────────────────────────────────────
 
 export const getRecommendations = () =>
-    request('GET', '/api/recommendations')
+    request('GET', `/api/recommendations?t=${Date.now()}`)
 
 export const getTrending = () =>
     request('GET', '/api/trending')
