@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { login } from './api';
+import { login, getProfile } from './api';
 
 const AuthContext = createContext();
 
@@ -30,15 +30,12 @@ export const AuthProvider = ({ children }) => {
         if (phone && token) {
             setUser({ phone, token, name, address });
             // Always refresh profile from server to ensure data is fresh
-            fetch('/api/auth/me', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            })
-            .then(r => r.ok ? r.json() : null)
+            getProfile()
             .then(data => {
                 if (data) {
                     if (data.name) localStorage.setItem('kgsName', data.name);
                     if (data.address) localStorage.setItem('kgsAddress', data.address);
-                    setUser({ phone, token, name: data.name || name, address: data.address || address });
+                    setUser(prev => ({ ...prev, name: data.name || prev.name, address: data.address || prev.address }));
                 }
             })
             .catch(() => {}) // Silently ignore network errors

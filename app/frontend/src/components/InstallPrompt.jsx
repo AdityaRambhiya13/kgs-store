@@ -23,20 +23,25 @@ export default function InstallPrompt() {
   }, [])
 
   useEffect(() => {
-    // Read status
-    const isInstalled = localStorage.getItem('pwa_install_status') === 'installed'
     const isDismissed = sessionStorage.getItem('pwa_install_dismissed') === 'true'
 
-    // Check if already in standalone mode
+    // Check if actually running as installed PWA
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true
     
     if (isStandalone) {
+      // Running as installed app — mark and exit
       localStorage.setItem('pwa_install_status', 'installed')
       return
+    } else {
+      // NOT in standalone — if previously marked as installed, user must have deleted the app
+      // Clear the stale flag so the prompt can show again
+      if (localStorage.getItem('pwa_install_status') === 'installed') {
+        localStorage.removeItem('pwa_install_status')
+      }
     }
 
-    // Don't show automatic prompt if already marked as installed or dismissed in THIS session
-    if (isInstalled || isDismissed) {
+    // Don't auto-show if user dismissed in this session
+    if (isDismissed) {
       const handleManualTrigger = () => setShow(true)
       window.addEventListener('pwa-manual-prompt', handleManualTrigger)
       return () => window.removeEventListener('pwa-manual-prompt', handleManualTrigger)
