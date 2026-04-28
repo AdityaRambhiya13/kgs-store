@@ -263,17 +263,22 @@ export default function ProfilePage() {
                         <span className="profile-action-chevron">›</span>
                     </motion.button>
 
-                    {localStorage.getItem('pwa_install_status') !== 'installed' && (
-                        <motion.button
-                            className="profile-action-row"
-                            onClick={() => window.dispatchEvent(new Event('pwa-manual-prompt'))}
-                            whileTap={{ scale: 0.98 }}
-                            style={{ color: '#3b82f6', fontWeight: 600 }}
-                        >
-                            <span>📲 Install Ketan Stores App</span>
-                            <span className="profile-action-chevron">›</span>
-                        </motion.button>
-                    )}
+                    {(() => {
+                        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true
+                        if (isStandalone) return null
+                        
+                        return (
+                            <motion.button
+                                className="profile-action-row"
+                                onClick={() => window.dispatchEvent(new Event('pwa-manual-prompt'))}
+                                whileTap={{ scale: 0.98 }}
+                                style={{ color: '#3b82f6', fontWeight: 600 }}
+                            >
+                                <span>📲 Install Ketan Stores App</span>
+                                <span className="profile-action-chevron">›</span>
+                            </motion.button>
+                        )
+                    })()}
 
                     <motion.button
                         className="profile-action-row"

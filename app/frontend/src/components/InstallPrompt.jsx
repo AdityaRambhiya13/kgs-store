@@ -7,34 +7,53 @@ export default function InstallPrompt() {
   const [isIOS, setIsIOS] = useState(false)
 
   useEffect(() => {
+    // 1. Capture the install prompt event
+    const handlePrompt = (e) => {
+      e.preventDefault()
+      setDeferredPrompt(e)
+    }
+    window.addEventListener('beforeinstallprompt', handlePrompt)
+
     // Check if iOS
     const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
     setIsIOS(ios)
 
-    // Read status from localStorage (bug fix: was reading window.status before)
+    return () => window.removeEventListener('beforeinstallprompt', handlePrompt)
+  }, [])
+
+  useEffect(() => {
+    // Read status from localStorage
     const installStatus = localStorage.getItem('pwa_install_status')
 
-    // 1. Capture the install prompt event (always do this regardless of status)
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault()
-      setDeferredPrompt(e)
-    })
+    // Check if already in standalone mode
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true
+    
+    // If we are in standalone, definitely mark as installed
+    if (isStandalone) {
+      localStorage.setItem('pwa_install_status', 'installed')
+      return
+    } else {
+      // If NOT in standalone but marked as installed, it might be a mistake (e.g. user clicked but didn't finish)
+      // Or it's a different session. Let's allow manual trigger from Profile regardless.
+      if (installStatus === 'installed') {
+        // We'll leave it as 'installed' but ProfilePage will show it if not in standalone
+      }
+    }
 
-    // 2. Don't show if already installed
-    if (installStatus === 'installed') {
+    // Don't show automatic prompt if already marked as installed or dismissed
+    if (installStatus === 'installed' || installStatus === 'dismissed') {
       const handleManualTrigger = () => setShow(true)
       window.addEventListener('pwa-manual-prompt', handleManualTrigger)
       return () => window.removeEventListener('pwa-manual-prompt', handleManualTrigger)
     }
 
-    // 3. Show after 1 second delay unless dismissed recently
+    // Show after delay ONLY IF we have a prompt or are on iOS
     const timer = setTimeout(() => {
-      if (installStatus !== 'dismissed') {
+      if (deferredPrompt || isIOS) {
         setShow(true)
       }
-    }, 1000)
+    }, 3000)
 
-    // Listen for manual trigger from Profile (works even if dismissed)
     const handleManualTrigger = () => setShow(true)
     window.addEventListener('pwa-manual-prompt', handleManualTrigger)
 
@@ -42,7 +61,7 @@ export default function InstallPrompt() {
       clearTimeout(timer)
       window.removeEventListener('pwa-manual-prompt', handleManualTrigger)
     }
-  }, [])
+  }, [deferredPrompt, isIOS])
 
   const handleInstall = async () => {
     if (deferredPrompt) {
@@ -50,15 +69,16 @@ export default function InstallPrompt() {
       const { outcome } = await deferredPrompt.userChoice
       if (outcome === 'accepted') {
         localStorage.setItem('pwa_install_status', 'installed')
+        setShow(false)
       }
       setDeferredPrompt(null)
-      setShow(false)
     } else if (isIOS) {
       alert("To install on iOS:\n1. Tap the Share button (bottom of screen)\n2. Select 'Add to Home Screen'")
       localStorage.setItem('pwa_install_status', 'installed')
       setShow(false)
     } else {
-      localStorage.setItem('pwa_install_status', 'installed')
+      // If no prompt and not iOS, we can't do much, but let's not mark as installed
+      alert("Installation is not supported in this browser. Try using Chrome or Safari.")
       setShow(false)
     }
   }
