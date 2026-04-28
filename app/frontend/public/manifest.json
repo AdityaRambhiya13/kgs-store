@@ -1,9 +1,9 @@
 {
-  "short_name": "KGS Store",
-  "name": "Ketan Grain Store",
+  "short_name": "Ketan",
+  "name": "Ketan Stores",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/3081/3081840.png",
+      "src": "/icon-512.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any maskable"
@@ -11,6 +11,6 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#ffffff",
+  "theme_color": "#9b0a3d",
   "background_color": "#ffffff"
 }

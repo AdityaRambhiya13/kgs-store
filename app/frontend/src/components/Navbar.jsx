@@ -78,7 +78,7 @@ export default function Navbar({ searchQuery, onSearchChange, onCategorySelect }
           {/* Left group: Logo + Location */}
           <div className="nav-left">
             <div className="nav-logo" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
-              <span className="nav-logo-text">KGS</span>
+              <span className="nav-logo-text">Ketan</span>
             </div>
 
             {/* Location selector */}

@@ -20,20 +20,21 @@ export default function InstallPrompt() {
       setDeferredPrompt(e)
     })
 
-    // 2. Don't show if already installed or dismissed
-    if (installStatus === 'installed' || installStatus === 'dismissed') {
-      // Still listen for manual trigger from Profile page
+    // 2. Don't show if already installed
+    if (installStatus === 'installed') {
       const handleManualTrigger = () => setShow(true)
       window.addEventListener('pwa-manual-prompt', handleManualTrigger)
       return () => window.removeEventListener('pwa-manual-prompt', handleManualTrigger)
     }
 
-    // 3. Show after 1 second delay
+    // 3. Show after 1 second delay unless dismissed recently
     const timer = setTimeout(() => {
-      setShow(true)
+      if (installStatus !== 'dismissed') {
+        setShow(true)
+      }
     }, 1000)
 
-    // Listen for manual trigger from Profile
+    // Listen for manual trigger from Profile (works even if dismissed)
     const handleManualTrigger = () => setShow(true)
     window.addEventListener('pwa-manual-prompt', handleManualTrigger)
 
@@ -63,8 +64,10 @@ export default function InstallPrompt() {
   }
 
   const handleNotNow = () => {
-    localStorage.setItem('pwa_install_status', 'dismissed')
-    setShow(false)
+    if (window.confirm("Are you sure? Installing the app gives you a much better experience and offline access.")) {
+      localStorage.setItem('pwa_install_status', 'dismissed')
+      setShow(false)
+    }
   }
 
   return (
@@ -77,10 +80,10 @@ export default function InstallPrompt() {
           exit={{ opacity: 0, y: 50 }}
         >
           <div className="pwa-prompt-card">
-            <div className="pwa-icon">🛍️</div>
+            <div className="pwa-icon">🏪</div>
             <div className="pwa-content">
-              <h3>Install KGS App</h3>
-              <p>Add KGS to your home screen for a faster and smoother shopping experience!</p>
+              <h3>Install Ketan Stores App</h3>
+              <p>Add Ketan Stores to your home screen for a faster and smoother shopping experience!</p>
             </div>
             <div className="pwa-actions">
               <button className="pwa-btn-later" onClick={handleNotNow}>Not Now</button>

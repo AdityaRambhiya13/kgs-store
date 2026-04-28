@@ -263,14 +263,14 @@ export default function ProfilePage() {
                         <span className="profile-action-chevron">›</span>
                     </motion.button>
 
-                    {localStorage.getItem('pwa_install_status') === 'dismissed' && (
+                    {localStorage.getItem('pwa_install_status') !== 'installed' && (
                         <motion.button
                             className="profile-action-row"
                             onClick={() => window.dispatchEvent(new Event('pwa-manual-prompt'))}
                             whileTap={{ scale: 0.98 }}
                             style={{ color: '#3b82f6', fontWeight: 600 }}
                         >
-                            <span>📲 Install KGS App</span>
+                            <span>📲 Install Ketan Stores App</span>
                             <span className="profile-action-chevron">›</span>
                         </motion.button>
                     )}
