@@ -5,6 +5,7 @@ export default function InstallPrompt() {
   const [show, setShow] = useState(false)
   const [deferredPrompt, setDeferredPrompt] = useState(null)
   const [isIOS, setIsIOS] = useState(false)
+  const [secondaryMessage, setSecondaryMessage] = useState(false)
 
   useEffect(() => {
     // 1. Capture the install prompt event
@@ -22,26 +23,20 @@ export default function InstallPrompt() {
   }, [])
 
   useEffect(() => {
-    // Read status from localStorage
-    const installStatus = localStorage.getItem('pwa_install_status')
+    // Read status
+    const isInstalled = localStorage.getItem('pwa_install_status') === 'installed'
+    const isDismissed = sessionStorage.getItem('pwa_install_dismissed') === 'true'
 
     // Check if already in standalone mode
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true
     
-    // If we are in standalone, definitely mark as installed
     if (isStandalone) {
       localStorage.setItem('pwa_install_status', 'installed')
       return
-    } else {
-      // If NOT in standalone but marked as installed, it might be a mistake (e.g. user clicked but didn't finish)
-      // Or it's a different session. Let's allow manual trigger from Profile regardless.
-      if (installStatus === 'installed') {
-        // We'll leave it as 'installed' but ProfilePage will show it if not in standalone
-      }
     }
 
-    // Don't show automatic prompt if already marked as installed or dismissed
-    if (installStatus === 'installed' || installStatus === 'dismissed') {
+    // Don't show automatic prompt if already marked as installed or dismissed in THIS session
+    if (isInstalled || isDismissed) {
       const handleManualTrigger = () => setShow(true)
       window.addEventListener('pwa-manual-prompt', handleManualTrigger)
       return () => window.removeEventListener('pwa-manual-prompt', handleManualTrigger)
@@ -52,7 +47,7 @@ export default function InstallPrompt() {
       if (deferredPrompt || isIOS) {
         setShow(true)
       }
-    }, 3000)
+    }, 4000)
 
     const handleManualTrigger = () => setShow(true)
     window.addEventListener('pwa-manual-prompt', handleManualTrigger)
@@ -77,17 +72,18 @@ export default function InstallPrompt() {
       localStorage.setItem('pwa_install_status', 'installed')
       setShow(false)
     } else {
-      // If no prompt and not iOS, we can't do much, but let's not mark as installed
       alert("Installation is not supported in this browser. Try using Chrome or Safari.")
       setShow(false)
     }
   }
 
   const handleNotNow = () => {
-    if (window.confirm("Are you sure? Installing the app gives you a much better experience and offline access.")) {
-      localStorage.setItem('pwa_install_status', 'dismissed')
+    sessionStorage.setItem('pwa_install_dismissed', 'true')
+    setSecondaryMessage(true)
+    setTimeout(() => {
+      setSecondaryMessage(false)
       setShow(false)
-    }
+    }, 3000)
   }
 
   return (
@@ -100,15 +96,29 @@ export default function InstallPrompt() {
           exit={{ opacity: 0, y: 50 }}
         >
           <div className="pwa-prompt-card">
-            <div className="pwa-icon">🏪</div>
-            <div className="pwa-content">
-              <h3>Install Ketan Stores App</h3>
-              <p>Add Ketan Stores to your home screen for a faster and smoother shopping experience!</p>
-            </div>
-            <div className="pwa-actions">
-              <button className="pwa-btn-later" onClick={handleNotNow}>Not Now</button>
-              <button className="pwa-btn-yes" onClick={handleInstall}>Yes, Install</button>
-            </div>
+            {secondaryMessage ? (
+              <motion.div 
+                className="pwa-secondary-msg"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+              >
+                <div className="pwa-icon">💡</div>
+                <h3>No problem!</h3>
+                <p>You can install the app anytime from your <b>Profile</b> section.</p>
+              </motion.div>
+            ) : (
+              <>
+                <div className="pwa-icon">🏪</div>
+                <div className="pwa-content">
+                  <h3>Install Ketan Stores App</h3>
+                  <p>Add Ketan Stores to your home screen for a faster and smoother shopping experience!</p>
+                </div>
+                <div className="pwa-actions">
+                  <button className="pwa-btn-later" onClick={handleNotNow}>Not Now</button>
+                  <button className="pwa-btn-yes" onClick={handleInstall}>Yes, Install</button>
+                </div>
+              </>
+            )}
           </div>
 
           <style dangerouslySetInnerHTML={{ __html: `
@@ -125,9 +135,9 @@ export default function InstallPrompt() {
             .pwa-prompt-card {
               background: rgba(255, 255, 255, 0.95);
               backdrop-filter: blur(10px);
-              padding: 20px;
-              border-radius: 20px;
-              box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+              padding: 24px;
+              border-radius: 24px;
+              box-shadow: 0 15px 50px rgba(0,0,0,0.2);
               display: flex;
               flex-direction: column;
               align-items: center;
@@ -148,14 +158,20 @@ export default function InstallPrompt() {
               justify-content: center;
               border-radius: 20px;
             }
-            .pwa-content h3 {
+            .pwa-secondary-msg {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+            }
+            .pwa-content h3, .pwa-secondary-msg h3 {
               margin: 0 0 8px;
-              font-size: 1.2rem;
+              font-size: 1.3rem;
+              font-weight: 700;
               color: #111827;
             }
-            .pwa-content p {
+            .pwa-content p, .pwa-secondary-msg p {
               margin: 0 0 20px;
-              font-size: 0.9rem;
+              font-size: 0.95rem;
               color: #4b5563;
               line-height: 1.5;
             }
@@ -166,12 +182,13 @@ export default function InstallPrompt() {
             }
             .pwa-actions button {
               flex: 1;
-              padding: 12px;
-              border-radius: 12px;
+              padding: 14px;
+              border-radius: 14px;
               font-weight: 600;
               cursor: pointer;
               transition: 0.2s;
               border: none;
+              font-size: 1rem;
             }
             .pwa-btn-later {
               background: #f3f4f6;
