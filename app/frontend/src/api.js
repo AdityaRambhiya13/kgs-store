@@ -99,8 +99,13 @@ export const updateProfile = (name) =>
     request('PATCH', '/api/auth/profile', { name })
 
 // ── Order History ──────────────────────────────────────────────
-export const getOrderHistory = (token) =>
-    request('GET', '/api/orders/history', null, null, token)
+export const getOrderHistory = () => {
+    // Always use the fresh token from localStorage at call time
+    // This prevents any stale-token crossover between accounts
+    const freshToken = localStorage.getItem('kgsToken')
+    if (!freshToken) return Promise.resolve([])
+    return request('GET', '/api/orders/history', null, null, freshToken)
+}
 
 // ── Favorites ─────────────────────────────────────────────
 

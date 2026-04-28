@@ -1,5 +1,5 @@
 // Service Worker - Network First strategy to avoid stale cache issues
-const CACHE_NAME = 'kgs-cache-v2';
+const CACHE_NAME = 'ketan-cache-v1';
 
 self.addEventListener('install', (event) => {
   // Skip waiting so new SW activates immediately

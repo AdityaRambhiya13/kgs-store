@@ -108,7 +108,11 @@ export default function InstallPrompt() {
               </motion.div>
             ) : (
               <>
-                <div className="pwa-icon">🏪</div>
+                <img 
+                  src="/icon-512.png" 
+                  alt="Ketan Stores" 
+                  style={{ width: 80, height: 80, borderRadius: 20, marginBottom: 16, objectFit: 'cover', border: '1px solid #f3f4f6' }} 
+                />
                 <div className="pwa-content">
                   <h3>Install Ketan Stores App</h3>
                   <p>Add Ketan Stores to your home screen for a faster and smoother shopping experience!</p>

@@ -1,7 +1,13 @@
 {
-  "short_name": "Ketan",
+  "short_name": "Ketan Stores",
   "name": "Ketan Stores",
   "icons": [
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
     {
       "src": "/icon-512.png",
       "type": "image/png",

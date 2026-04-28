@@ -39,7 +39,7 @@ export default function ProfilePage() {
     useEffect(() => {
         if (!user) { navigate('/login'); return }
         setNameInput(user.name || '')
-        getOrderHistory(user.token)
+        getOrderHistory()
             .then(data => setOrders(Array.isArray(data) ? data : []))
             .catch(() => setOrders([]))
             .finally(() => setOrdersLoading(false))
