@@ -2,7 +2,7 @@ import sys
 import os
 
 # Set ENV VAR
-os.environ["DATABASE_URL"] = "postgresql://postgres.iezqlltomqrdkgogdgqu:Ketan!RC365365@aws-1-ap-south-1.pooler.supabase.com:5432/postgres"
+os.environ["DATABASE_URL"] = "postgresql://postgres.iezqlltomqrdkgogdgqu:PilImEP1jI5Qmx0m@aws-1-ap-south-1.pooler.supabase.com:6543/postgres"
 
 # Import app modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'app')))

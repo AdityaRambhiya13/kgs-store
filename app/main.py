@@ -178,6 +178,22 @@ BUCKET_NAME = "products"
 
 
 
+import asyncio
+
+async def cleanup_rate_limits():
+    while True:
+        await asyncio.sleep(600)  # Cleanup every 10 minutes
+        current_time = time.time()
+        keys_to_delete = []
+        for key, timestamps in list(rate_limit_store.items()):
+            valid_timestamps = [t for t in timestamps if current_time - t < 3600]
+            if not valid_timestamps:
+                keys_to_delete.append(key)
+            else:
+                rate_limit_store[key] = valid_timestamps
+        for key in keys_to_delete:
+            rate_limit_store.pop(key, None)
+
 def check_rate_limit(request: Request, limit: int, window: int, scope: str):
 
     client_ip = request.client.host if request.client else "127.0.0.1"
@@ -250,7 +266,20 @@ def get_current_admin(credentials: HTTPAuthorizationCredentials = Depends(securi
 
 def hash_pin(pin: str) -> str:
 
-    return hashlib.sha256(pin.encode()).hexdigest()
+    return bcrypt.hashpw(pin.encode(), bcrypt.gensalt()).decode()
+
+
+def verify_pin(pin: str, hashed_pin: str) -> bool:
+
+    try:
+
+        return bcrypt.checkpw(pin.encode(), hashed_pin.encode())
+
+    except ValueError:
+
+        # Fallback for old SHA-256 hashes during migration
+
+        return hashlib.sha256(pin.encode()).hexdigest() == hashed_pin
 
 
 
@@ -304,6 +333,8 @@ async def lifespan(app: FastAPI):
 
     init_db()
 
+    cleanup_task = asyncio.create_task(cleanup_rate_limits())
+
     print("=" * 55)
 
     print("KGS Grain Store - FastAPI Backend v3.0")
@@ -311,6 +342,8 @@ async def lifespan(app: FastAPI):
     print("=" * 55)
 
     yield
+
+    cleanup_task.cancel()
 
 
 
@@ -923,7 +956,7 @@ def login(body: LoginRequest, request: Request):
 
         
 
-    if customer["pin_hash"] != hash_pin(body.pin):
+    if not verify_pin(body.pin, customer["pin_hash"]):
 
         raise HTTPException(status_code=401, detail="Incorrect PIN")
 
