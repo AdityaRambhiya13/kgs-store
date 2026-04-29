@@ -122,11 +122,17 @@ export default function CategoryMapper() {
       <header className="mapper-header">
         <div className="header-left">
           <h1>Product Category Manager</h1>
-          <p>Drag products to categories or select multiple to batch assign.</p>
+          <p>Drag products between categories to reassign them.</p>
         </div>
         <div className="header-right">
-          <button onClick={() => setSelectedIds(new Set(filteredProducts.map(p => p.id)))} className="secondary-btn">Select All Filtered</button>
-          <button onClick={() => setSelectedIds(new Set())} className="secondary-btn">Clear Selection</button>
+          <input 
+            type="text" 
+            placeholder="Search products..." 
+            value={search} 
+            onChange={e => setSearch(e.target.value)} 
+            className="col-search"
+            style={{ marginTop: 0, width: '300px' }}
+          />
           <button onClick={loadData} className="refresh-btn">Refresh</button>
           <button onClick={() => { setToken(''); localStorage.removeItem('adminToken'); }} className="logout-btn">Logout</button>
         </div>
@@ -139,51 +145,27 @@ export default function CategoryMapper() {
       )}
 
       <div className="mapper-layout">
-        {/* Left: Product Selection Sidebar */}
-        <div className="mapper-column products-sidebar">
-          <div className="col-header">
-            <h3>Products ({filteredProducts.length})</h3>
-            <input 
-              type="text" 
-              placeholder="Search..." 
-              value={search} 
-              onChange={e => setSearch(e.target.value)} 
-              className="col-search"
-            />
-          </div>
-          <div className="product-selection-list">
-            {filteredProducts.map(p => (
-              <DraggableProduct 
-                key={p.id} 
-                product={p} 
-                isSelected={selectedIds.has(p.id)}
-                onClick={(e) => toggleSelect(p.id, e.shiftKey)}
-                onDragStart={(e) => {
-                  const ids = selectedIds.has(p.id) ? Array.from(selectedIds) : [p.id]
-                  e.dataTransfer.setData('productIds', JSON.stringify(ids))
-                }}
-              />
-            ))}
-          </div>
-          {selectedIds.size > 0 && (
-            <div className="selection-badge">
-              {selectedIds.size} selected
-            </div>
-          )}
-        </div>
-
-        {/* Right: Category Drop Zones */}
+        {/* Main View: Category Drop Zones */}
         <div className="mapper-column categories-grid-col">
           <div className="categories-grid">
+            {/* Unassigned Category */}
+            {products.some(p => !p.category) && (
+              <CategoryBox 
+                key="unassigned" 
+                name="Unassigned" 
+                products={products.filter(p => !p.category && (search === '' || p.name.toLowerCase().includes(search.toLowerCase())))}
+                onDrop={(ids) => assignCategory(ids, '')}
+                isUnassigned
+              />
+            )}
             {categories.map(cat => (
               <CategoryBox 
                 key={cat} 
                 name={cat} 
-                products={products.filter(p => p.category === cat)}
+                products={products.filter(p => p.category === cat && (search === '' || p.name.toLowerCase().includes(search.toLowerCase())))}
                 onDrop={(ids) => assignCategory(ids, cat)}
               />
             ))}
-            <AddCategoryBox onAdd={(name) => assignCategory(Array.from(selectedIds), name)} />
           </div>
         </div>
       </div>
@@ -228,7 +210,7 @@ export default function CategoryMapper() {
 
         .mapper-layout {
           display: grid;
-          grid-template-columns: 350px 1fr;
+          grid-template-columns: 1fr;
           gap: 20px;
           flex: 1;
           overflow: hidden;
@@ -261,8 +243,6 @@ export default function CategoryMapper() {
           padding: 10px 15px;
           border-radius: 10px;
           font-size: 0.9rem;
-          width: 100%;
-          margin-top: 15px;
         }
 
         .draggable-product {
@@ -300,49 +280,55 @@ export default function CategoryMapper() {
         .category-box {
           background: #1e293b;
           border-radius: 16px;
-          padding: 20px;
-          min-height: 200px;
+          padding: 15px;
+          height: 400px;
           display: flex;
           flex-direction: column;
-          border: 2px dashed #334155;
+          border: 2px solid #334155;
           transition: 0.3s;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .category-box.unassigned-box {
+          border-color: #ef4444;
+          background: rgba(239, 68, 68, 0.05);
         }
         .category-box.drag-over {
           background: #1e3a8a;
           border-color: #3b82f6;
-          transform: scale(1.02);
+          transform: translateY(-5px);
+          box-shadow: 0 10px 20px rgba(0,0,0,0.3);
         }
         .cat-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 15px;
+          margin-bottom: 12px;
+          padding-bottom: 8px;
+          border-bottom: 1px solid #334155;
         }
-        .cat-header h4 { margin: 0; font-size: 1rem; color: #60a5fa; }
-        .cat-count { font-size: 0.75rem; background: #334155; padding: 2px 8px; border-radius: 20px; color: #94a3b8; }
+        .cat-header h4 { margin: 0; font-size: 0.95rem; color: #60a5fa; font-weight: 700; }
+        .cat-count { font-size: 0.7rem; background: #334155; padding: 2px 8px; border-radius: 20px; color: #94a3b8; }
         
-        .cat-products-mini {
+        .cat-products-list {
           display: flex;
-          flex-wrap: wrap;
-          gap: 5px;
-          align-content: flex-start;
+          flex-direction: column;
+          gap: 8px;
           flex: 1;
+          overflow-y: auto;
+          padding-right: 5px;
         }
-        .mini-p {
-          width: 30px;
-          height: 30px;
-          border-radius: 4px;
-          object-fit: cover;
-          border: 1px solid rgba(255,255,255,0.1);
-        }
+        .cat-products-list::-webkit-scrollbar { width: 4px; }
+        .cat-products-list::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+
         .empty-cat {
           flex: 1;
           display: flex;
           align-items: center;
           justify-content: center;
           color: #475569;
-          font-size: 0.8rem;
+          font-size: 0.75rem;
           font-style: italic;
+          text-align: center;
         }
 
         .add-category-box {
@@ -446,25 +432,27 @@ export default function CategoryMapper() {
   )
 }
 
-function DraggableProduct({ product, isSelected, onClick, onDragStart }) {
+function DraggableProduct({ product }) {
+  const handleDragStart = (e) => {
+    e.dataTransfer.setData('productIds', JSON.stringify([product.id]))
+  }
+
   return (
     <div 
-      className={`draggable-product ${isSelected ? 'selected' : ''}`}
+      className="draggable-product"
       draggable
-      onDragStart={onDragStart}
-      onClick={onClick}
+      onDragStart={handleDragStart}
     >
       <img src={product.image_url || 'https://via.placeholder.com/40'} className="p-thumb" alt="" />
       <div className="p-info">
         <p>{product.name}</p>
-        <span>{product.category || 'No Category'}</span>
+        <span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>MRP: ₹{product.mrp || 'N/A'}</span>
       </div>
-      {isSelected && <div className="selected-icon">✅</div>}
     </div>
   )
 }
 
-function CategoryBox({ name, products, onDrop }) {
+function CategoryBox({ name, products, onDrop, isUnassigned }) {
   const [isOver, setIsOver] = useState(false)
 
   const handleDrop = (e) => {
@@ -479,7 +467,7 @@ function CategoryBox({ name, products, onDrop }) {
 
   return (
     <div 
-      className={`category-box ${isOver ? 'drag-over' : ''}`}
+      className={`category-box ${isOver ? 'drag-over' : ''} ${isUnassigned ? 'unassigned-box' : ''}`}
       onDragOver={(e) => { e.preventDefault(); setIsOver(true); }}
       onDragLeave={() => setIsOver(false)}
       onDrop={handleDrop}
@@ -488,10 +476,10 @@ function CategoryBox({ name, products, onDrop }) {
         <h4>{name}</h4>
         <span className="cat-count">{products.length} products</span>
       </div>
-      <div className="cat-products-mini">
+      <div className="cat-products-list">
         {products.length > 0 ? (
           products.map(p => (
-            <img key={p.id} src={p.image_url} className="mini-p" title={p.name} alt="" />
+            <DraggableProduct key={p.id} product={p} />
           ))
         ) : (
           <div className="empty-cat">Empty category - drop here</div>

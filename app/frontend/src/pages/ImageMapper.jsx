@@ -454,6 +454,14 @@ export default function ImageMapper() {
           background: #475569;
           color: white;
         }
+        .mrp-badge {
+          background: #059669;
+          color: white;
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-size: 0.7rem;
+          font-weight: 700;
+        }
       `}} />
     </div>
   )
@@ -495,7 +503,10 @@ function ProductRow({ product, onDrop, isMapped }) {
       />
       <div className="row-info">
         <p>{product.name}</p>
-        <span>{product.category}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{product.category}</span>
+          {product.mrp && <span className="mrp-badge">₹{product.mrp}</span>}
+        </div>
       </div>
       {isMapped && (
         <div className="row-check">✅</div>
