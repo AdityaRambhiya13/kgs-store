@@ -269,12 +269,14 @@ export default function CategoryMapper() {
         .p-info p { margin: 0; font-size: 0.85rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .p-info span { font-size: 0.7rem; color: #94a3b8; }
 
-        .categories-grid-col { background: transparent; border: none; padding: 0; overflow-y: auto; }
+        .categories-grid-col { background: transparent; border: none; padding: 0; overflow-x: auto; }
         .categories-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          grid-template-rows: repeat(2, 400px);
+          grid-auto-flow: column;
           gap: 20px;
           padding-bottom: 40px;
+          padding-right: 40px;
         }
 
         .category-box {
@@ -282,6 +284,7 @@ export default function CategoryMapper() {
           border-radius: 16px;
           padding: 15px;
           height: 400px;
+          min-width: 300px;
           display: flex;
           flex-direction: column;
           border: 2px solid #334155;

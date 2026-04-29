@@ -80,6 +80,7 @@ class ProductOut(BaseModel):
     id: int
     name: str
     price: float
+    mrp: float = 0.0
     description: str
     image_url: str
     category: str
@@ -90,6 +91,7 @@ class ProductOut(BaseModel):
 class ProductCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     price: float = Field(..., gt=0)
+    mrp: float = Field(0.0, ge=0)
     description: str = Field(..., max_length=500)
     image_url: str = Field(..., max_length=500)
     category: str = Field(..., min_length=1, max_length=50)
@@ -105,6 +107,7 @@ class ProductCreate(BaseModel):
 class ProductUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     price: Optional[float] = Field(None, gt=0)
+    mrp: Optional[float] = Field(None, ge=0)
     description: Optional[str] = Field(None, max_length=500)
     image_url: Optional[str] = Field(None, max_length=500)
     category: Optional[str] = Field(None, min_length=1, max_length=50)

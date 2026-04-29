@@ -86,6 +86,7 @@ def init_db():
                 id SERIAL PRIMARY KEY,
                 name TEXT NOT NULL,
                 price REAL NOT NULL,
+                mrp REAL NOT NULL DEFAULT 0.0,
                 description TEXT NOT NULL,
                 image_url TEXT NOT NULL,
                 category TEXT NOT NULL,
@@ -93,6 +94,18 @@ def init_db():
                 base_name TEXT NOT NULL DEFAULT '',
                 unit TEXT NOT NULL DEFAULT 'kg'
             )
+        """)
+
+        # ── Migration: Add mrp if missing ────────────
+        cursor.execute("""
+            DO $$ BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name='products' AND column_name='mrp'
+                ) THEN
+                    ALTER TABLE products ADD COLUMN mrp REAL NOT NULL DEFAULT 0.0;
+                END IF;
+            END $$;
         """)
 
         # ── Migration: Add sub_category if missing ────────────
@@ -227,7 +240,7 @@ def _seed_products(cursor):
     # Blocked categories — exclude irrelevant
     BLOCKED_CATEGORIES = {'Pet Supplies', 'Books & Media', 'Stationery', 'Packaging & Carry Bags'}
 
-    final_products = []  # (name, price, description, image_url, category, sub_category, base_name, unit)
+    final_products = []  # (name, price, mrp, description, image_url, category, sub_category, base_name, unit)
 
     # 1. Load from ULTIMATE_ZEPTO_CATALOG.csv
     if os.path.exists(csv_file_path):
@@ -246,8 +259,10 @@ def _seed_products(cursor):
                     size_weight = (row.get('Size_Weight') or '').strip()
 
                     try:
-                        price = float(row.get('mrp') or 0)
+                        mrp = float(row.get('mrp') or 0)
+                        price = mrp # Default selling price to MRP
                     except (ValueError, TypeError):
+                        mrp = 0.0
                         price = 0.0
 
                     if price <= 0 or not name:
@@ -279,7 +294,7 @@ def _seed_products(cursor):
                     description = f"₹{int(price)}/{unit} — {sub_category}" if sub_category else f"₹{int(price)}/{unit}"
                     img_url = get_image(category)
 
-                    final_products.append((name, price, description, img_url, category, sub_category, base_name, unit))
+                    final_products.append((name, price, mrp, description, img_url, category, sub_category, base_name, unit))
 
             print(f"Loaded {len(final_products)} products from ULTIMATE_ZEPTO_CATALOG.csv.")
         except Exception as e:
@@ -302,7 +317,8 @@ def _seed_products(cursor):
                 sub_category = category  # e.g. "Rice", "Wheat"
                 img_url = get_image(category) or image_url
                 unit = "kg"
-                final_products.append((name, price, description, img_url, mapped_category, sub_category, base_name or name, unit))
+                mrp = price
+                final_products.append((name, price, mrp, description, img_url, mapped_category, sub_category, base_name or name, unit))
             print(f"Loaded {len(sqlite_rows)} products from store.db.")
         except Exception as e:
             print(f"Error during SQLite parsing: {e}")
@@ -313,7 +329,7 @@ def _seed_products(cursor):
     if final_products:
         try:
             cursor.executemany(
-                "INSERT INTO products (name, price, description, image_url, category, sub_category, base_name, unit) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
+                "INSERT INTO products (name, price, mrp, description, image_url, category, sub_category, base_name, unit) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                 final_products,
             )
             print(f"Successfully seeded {len(final_products)} products into database.")

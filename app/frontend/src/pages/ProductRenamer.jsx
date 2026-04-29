@@ -158,6 +158,7 @@ export default function ProductRenamer() {
               <th>Base Name (Grouping)</th>
               <th>Category</th>
               <th>Price (₹)</th>
+              <th>MRP (₹)</th>
               <th>Unit</th>
             </tr>
           </thead>
@@ -193,6 +194,18 @@ export default function ProductRenamer() {
                     onBlur={(e) => {
                       const val = parseFloat(e.target.value)
                       if (!isNaN(val) && val !== p.price) handleUpdate(p.id, 'price', val)
+                    }}
+                  />
+                </td>
+                <td>
+                  <input 
+                    className="edit-input td-price"
+                    type="number"
+                    defaultValue={p.mrp || 0}
+                    style={{ color: '#ef4444' }}
+                    onBlur={(e) => {
+                      const val = parseFloat(e.target.value)
+                      if (!isNaN(val) && val !== p.mrp) handleUpdate(p.id, 'mrp', val)
                     }}
                   />
                 </td>

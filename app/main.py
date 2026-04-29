@@ -734,6 +734,8 @@ def admin_add_product(body: ProductCreate, admin: dict = Depends(get_current_adm
 
         price=body.price,
 
+        mrp=body.mrp,
+
         description=body.description,
 
         image_url=body.image_url,
