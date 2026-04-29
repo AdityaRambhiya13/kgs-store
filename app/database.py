@@ -32,10 +32,21 @@ def init_pool():
     url = os.getenv("DATABASE_URL")
     if not url:
         raise ValueError("DATABASE_URL environment variable is not set")
+    
     if _db_pool is None:
-        print("Initializing Postgres Connection Pool...")
-        # Add connect_timeout to help with slow remote connections
-        _db_pool = pool.ThreadedConnectionPool(1, 40, url, cursor_factory=extras.RealDictCursor, connect_timeout=10)
+        max_init_retries = 3
+        for attempt in range(max_init_retries):
+            try:
+                print(f"Initializing Postgres Connection Pool (Attempt {attempt+1})...")
+                # Increase timeout to 30s and reduce pool size for stability
+                _db_pool = pool.ThreadedConnectionPool(1, 20, url, cursor_factory=extras.RealDictCursor, connect_timeout=30)
+                print("Connection Pool Initialized successfully.")
+                break
+            except Exception as e:
+                print(f"Pool initialization failed: {e}")
+                if attempt == max_init_retries - 1:
+                    raise e
+                time.sleep(2)
 
 def get_connection():
     """Get a PostgreSQL connection with retry logic."""
