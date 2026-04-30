@@ -1,5 +1,5 @@
-// Service Worker v3 — Aggressive cache busting for Ketan Stores
-const CACHE_NAME = 'ketan-cache-v3';
+// Service Worker v4 — Aggressive cache busting for Ketan Stores
+const CACHE_NAME = 'ketan-cache-v4';
 
 self.addEventListener('install', (event) => {
   // Skip waiting so new SW activates immediately — no waiting for old tabs to close
@@ -18,7 +18,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   
-  // NEVER cache: JS, CSS, HTML, API calls, manifest, sw itself
+  // NEVER cache: JS, CSS, HTML, API calls, manifest, sw itself, and SPA routes
   if (
     event.request.destination === 'script' ||
     event.request.destination === 'style' ||
@@ -27,20 +27,37 @@ self.addEventListener('fetch', (event) => {
     url.pathname.startsWith('/api/') ||
     url.pathname.startsWith('/assets/') ||
     url.pathname === '/manifest.json' ||
-    url.pathname === '/sw.js'
+    url.pathname === '/sw.js' ||
+    !url.pathname.includes('.') // SPA routes like /login, /cart, etc.
   ) {
-    event.respondWith(fetch(event.request));
+    event.respondWith(
+      fetch(event.request).catch((error) => {
+        console.error('[SW] Fetch failed:', error);
+        return new Response('Network error. Please check your connection.', {
+          status: 503,
+          headers: { 'Content-Type': 'text/plain' }
+        });
+      })
+    );
     return;
   }
   
   // For images/fonts only — cache with network fallback
   event.respondWith(
     caches.match(event.request).then((cached) => {
-      return cached || fetch(event.request).then((response) => {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        return response;
-      });
+      if (cached) return cached;
+      
+      return fetch(event.request)
+        .then((response) => {
+          if (!response || response.status !== 200) return response;
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          return response;
+        })
+        .catch(() => {
+          // Silent fail for assets, or could return a placeholder
+          return new Response('Not found', { status: 404 });
+        });
     })
   );
 });
