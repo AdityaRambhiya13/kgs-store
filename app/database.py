@@ -33,20 +33,29 @@ def init_pool():
     if not url:
         raise ValueError("DATABASE_URL environment variable is not set")
     
+    # Auto-switch to Supabase transaction bouncer port (6543) for serverless stability
+    if "supabase.com" in url and ":5432" in url:
+        print("Switching to Supabase transaction bouncer port (6543) for better performance.")
+        url = url.replace(":5432", ":6543")
+
     if _db_pool is None:
-        max_init_retries = 3
+        max_init_retries = 2
         for attempt in range(max_init_retries):
             try:
-                print(f"Initializing Postgres Connection Pool (Attempt {attempt+1})...")
-                # Increase timeout to 30s and reduce pool size for stability
-                _db_pool = pool.ThreadedConnectionPool(1, 20, url, cursor_factory=extras.RealDictCursor, connect_timeout=30)
-                print("Connection Pool Initialized successfully.")
+                print(f"Initializing Postgres Pool (Attempt {attempt+1})...")
+                # Small pool, fast timeout for serverless
+                _db_pool = pool.ThreadedConnectionPool(
+                    1, 10, url, 
+                    cursor_factory=extras.RealDictCursor, 
+                    connect_timeout=10
+                )
+                print("Connection Pool Initialized.")
                 break
             except Exception as e:
                 print(f"Pool initialization failed: {e}")
                 if attempt == max_init_retries - 1:
                     raise e
-                time.sleep(2)
+                time.sleep(1)
 
 def get_connection():
     """Get a PostgreSQL connection with retry logic."""
@@ -75,13 +84,14 @@ def release_connection(conn):
             print(f"Error releasing connection: {e}")
 
 def init_db():
-    """Create tables, run migrations, and reseed products."""
+    """Create tables and run migrations in a single batch to minimize latency."""
     conn = get_connection()
     try:
         cursor = conn.cursor()
-
-        # ── Products table ────────────────────────────────────
-        cursor.execute("""
+        
+        # Combine all schema setup into one multi-statement block
+        setup_sql = """
+            -- Products table
             CREATE TABLE IF NOT EXISTS products (
                 id SERIAL PRIMARY KEY,
                 name TEXT NOT NULL,
@@ -93,35 +103,19 @@ def init_db():
                 sub_category TEXT NOT NULL DEFAULT '',
                 base_name TEXT NOT NULL DEFAULT '',
                 unit TEXT NOT NULL DEFAULT 'kg'
-            )
-        """)
+            );
 
-        # ── Migration: Add mrp if missing ────────────
-        cursor.execute("""
+            -- Migrations for products
             DO $$ BEGIN
-                IF NOT EXISTS (
-                    SELECT 1 FROM information_schema.columns
-                    WHERE table_name='products' AND column_name='mrp'
-                ) THEN
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='mrp') THEN
                     ALTER TABLE products ADD COLUMN mrp REAL NOT NULL DEFAULT 0.0;
                 END IF;
-            END $$;
-        """)
-
-        # ── Migration: Add sub_category if missing ────────────
-        cursor.execute("""
-            DO $$ BEGIN
-                IF NOT EXISTS (
-                    SELECT 1 FROM information_schema.columns
-                    WHERE table_name='products' AND column_name='sub_category'
-                ) THEN
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='sub_category') THEN
                     ALTER TABLE products ADD COLUMN sub_category TEXT NOT NULL DEFAULT '';
                 END IF;
             END $$;
-        """)
 
-        # ── Orders table ──────────────────────────────────────
-        cursor.execute("""
+            -- Orders table
             CREATE TABLE IF NOT EXISTS orders (
                 id SERIAL PRIMARY KEY,
                 token TEXT NOT NULL UNIQUE,
@@ -135,11 +129,9 @@ def init_db():
                 delivery_time TEXT NOT NULL DEFAULT 'same_day',
                 delivered_at TEXT,
                 delivery_otp TEXT
-            )
-        """)
+            );
 
-        # ── Customers table ───────────────────────────────────
-        cursor.execute("""
+            -- Customers table
             CREATE TABLE IF NOT EXISTS customers (
                 phone TEXT PRIMARY KEY,
                 name TEXT,
@@ -148,33 +140,26 @@ def init_db():
                 pin_hash TEXT,
                 cancel_timestamps TEXT DEFAULT '[]',
                 created_at TEXT NOT NULL
-            )
-        """)
+            );
 
-        # ── Token counter table ───────────────────────────────
-        cursor.execute("""
+            -- Token counter
             CREATE TABLE IF NOT EXISTS counters (
                 name TEXT PRIMARY KEY,
                 value INTEGER NOT NULL DEFAULT 100
-            )
-        """)
+            );
+            INSERT INTO counters (name, value) VALUES ('order_token', 100) ON CONFLICT DO NOTHING;
 
-        # ── Initialize counter ────────────────────────────────
-        cursor.execute(
-            "INSERT INTO counters (name, value) VALUES ('order_token', 100) ON CONFLICT DO NOTHING"
-        )
-
-        # ── Customer Favorites table ──────────────────────────────────
-        cursor.execute("""
+            -- Favorites
             CREATE TABLE IF NOT EXISTS customer_favorites (
                 phone TEXT NOT NULL,
                 product_id INTEGER NOT NULL,
                 added_at TEXT NOT NULL,
                 PRIMARY KEY (phone, product_id)
-            )
-        """)
-
-        # ── Conditional reseed products ───────────────────────
+            );
+        """
+        cursor.execute(setup_sql)
+        
+        # Check product count for conditional seeding
         cursor.execute("SELECT COUNT(*) as count FROM products")
         row = cursor.fetchone()
         count = row['count'] if row else 0
@@ -190,11 +175,14 @@ def init_db():
             cursor.execute("TRUNCATE TABLE products RESTART IDENTITY")
             _seed_products(cursor)
         else:
-            print(f"Products already exist ({count} items). Skipping seeding to save time.")
+            print(f"Products already exist ({count} items). Skipping seeding.")
 
         conn.commit()
+    except Exception as e:
+        print(f"Database initialization failed: {e}")
+        if conn: conn.rollback()
     finally:
-        release_connection(conn)
+        if conn: release_connection(conn)
         _invalidate_products_cache()
 
 def _seed_products(cursor):

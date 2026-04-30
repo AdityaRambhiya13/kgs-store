@@ -11,6 +11,7 @@ export default function CategoryMapper() {
   const [password, setPassword] = useState('')
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [lastClickedId, setLastClickedId] = useState(null)
+  const [sourceCategory, setSourceCategory] = useState('ALL')
 
   useEffect(() => {
     if (token) {
@@ -55,21 +56,43 @@ export default function CategoryMapper() {
     return Array.from(cats).sort()
   }, [products])
 
-  const filteredProducts = useMemo(() => {
-    return products.filter(p => 
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      (p.category && p.category.toLowerCase().includes(search.toLowerCase()))
-    )
-  }, [products, search])
+  const sourceProducts = useMemo(() => {
+    return products.filter(p => {
+      const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase())
+      const matchesCategory = sourceCategory === 'ALL' || 
+                             (sourceCategory === 'UNASSIGNED' ? !p.category : p.category === sourceCategory)
+      return matchesSearch && matchesCategory
+    })
+  }, [products, search, sourceCategory])
+
+  async function assignCategory(productIds, category) {
+    const targetCategory = category === 'UNASSIGNED' ? '' : category
+    setStatus({ type: 'loading', msg: `Moving to ${category}...` })
+    try {
+      await Promise.all(productIds.map(id => updateProduct(id, { category: targetCategory }, token)))
+      
+      setProducts(prev => prev.map(p => 
+        productIds.includes(p.id) ? { ...p, category: targetCategory } : p
+      ))
+      
+      setSelectedIds(new Set())
+      setStatus({ type: 'success', msg: `Moved ${productIds.length} items!` })
+      setTimeout(() => setStatus({ type: '', msg: '' }), 2000)
+    } catch (err) {
+      setStatus({ type: 'error', msg: err.message })
+    }
+  }
 
   const toggleSelect = (id, shiftKey) => {
     const newSelected = new Set(selectedIds)
     if (shiftKey && lastClickedId) {
-      const startIdx = filteredProducts.findIndex(p => p.id === lastClickedId)
-      const endIdx = filteredProducts.findIndex(p => p.id === id)
-      const [start, end] = startIdx < endIdx ? [startIdx, endIdx] : [endIdx, startIdx]
-      for (let i = start; i <= end; i++) {
-        newSelected.add(filteredProducts[i].id)
+      const startIdx = sourceProducts.findIndex(p => p.id === lastClickedId)
+      const endIdx = sourceProducts.findIndex(p => p.id === id)
+      if (startIdx !== -1 && endIdx !== -1) {
+        const [start, end] = startIdx < endIdx ? [startIdx, endIdx] : [endIdx, startIdx]
+        for (let i = start; i <= end; i++) {
+          newSelected.add(sourceProducts[i].id)
+        }
       }
     } else {
       if (newSelected.has(id)) newSelected.delete(id)
@@ -77,23 +100,6 @@ export default function CategoryMapper() {
       setLastClickedId(id)
     }
     setSelectedIds(newSelected)
-  }
-
-  async function assignCategory(productIds, category) {
-    setStatus({ type: 'loading', msg: `Assigning to ${category}...` })
-    try {
-      await Promise.all(productIds.map(id => updateProduct(id, { category }, token)))
-      
-      setProducts(prev => prev.map(p => 
-        productIds.includes(p.id) ? { ...p, category } : p
-      ))
-      
-      setSelectedIds(new Set())
-      setStatus({ type: 'success', msg: `Updated ${productIds.length} products!` })
-      setTimeout(() => setStatus({ type: '', msg: '' }), 2000)
-    } catch (err) {
-      setStatus({ type: 'error', msg: err.message })
-    }
   }
 
   if (!token) {
@@ -121,19 +127,11 @@ export default function CategoryMapper() {
     <div className="category-mapper-container">
       <header className="mapper-header">
         <div className="header-left">
-          <h1>Product Category Manager</h1>
-          <p>Drag products between categories to reassign them.</p>
+          <h1>Category Mapper</h1>
+          <p>Drag products from the left and drop them into categories on the right.</p>
         </div>
         <div className="header-right">
-          <input 
-            type="text" 
-            placeholder="Search products..." 
-            value={search} 
-            onChange={e => setSearch(e.target.value)} 
-            className="col-search"
-            style={{ marginTop: 0, width: '300px' }}
-          />
-          <button onClick={loadData} className="refresh-btn">Refresh</button>
+          <button onClick={loadData} className="refresh-btn">Refresh Data</button>
           <button onClick={() => { setToken(''); localStorage.removeItem('adminToken'); }} className="logout-btn">Logout</button>
         </div>
       </header>
@@ -145,27 +143,82 @@ export default function CategoryMapper() {
       )}
 
       <div className="mapper-layout">
-        {/* Main View: Category Drop Zones */}
-        <div className="mapper-column categories-grid-col">
-          <div className="categories-grid">
-            {/* Unassigned Category */}
-            {products.some(p => !p.category) && (
-              <CategoryBox 
-                key="unassigned" 
-                name="Unassigned" 
-                products={products.filter(p => !p.category && (search === '' || p.name.toLowerCase().includes(search.toLowerCase())))}
-                onDrop={(ids) => assignCategory(ids, '')}
-                isUnassigned
+        {/* Left Column: Source Products */}
+        <div className="mapper-column source-column">
+          <div className="col-header-area">
+            <div className="selector-group">
+              <label>View Category:</label>
+              <select 
+                value={sourceCategory} 
+                onChange={e => { setSourceCategory(e.target.value); setSelectedIds(new Set()); }}
+                className="category-selector"
+              >
+                <option value="ALL">All Products</option>
+                <option value="UNASSIGNED">Unassigned</option>
+                {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+              </select>
+            </div>
+            <div className="search-group">
+              <input 
+                type="text" 
+                placeholder="Search products..." 
+                value={search} 
+                onChange={e => setSearch(e.target.value)} 
+                className="product-search"
               />
-            )}
-            {categories.map(cat => (
-              <CategoryBox 
-                key={cat} 
-                name={cat} 
-                products={products.filter(p => p.category === cat && (search === '' || p.name.toLowerCase().includes(search.toLowerCase())))}
-                onDrop={(ids) => assignCategory(ids, cat)}
+            </div>
+          </div>
+
+          <div className="product-list-scroll">
+            <div className="product-grid">
+              {sourceProducts.map(p => (
+                <DraggableProduct 
+                  key={p.id} 
+                  product={p} 
+                  isSelected={selectedIds.has(p.id)}
+                  onClick={(e) => toggleSelect(p.id, e.shiftKey)}
+                  selectedCount={selectedIds.size}
+                  selectedIds={selectedIds}
+                />
+              ))}
+              {sourceProducts.length === 0 && (
+                <div className="empty-state">No products found in this category.</div>
+              )}
+            </div>
+          </div>
+
+          {selectedIds.size > 0 && (
+            <div className="selection-overlay">
+              <span>{selectedIds.size} products selected</span>
+              <button onClick={() => setSelectedIds(new Set())}>Clear</button>
+            </div>
+          )}
+        </div>
+
+        {/* Right Column: Target Categories */}
+        <div className="mapper-column target-column">
+          <div className="col-header-area">
+            <h3>Target Categories</h3>
+            <p>Drop here to reassign</p>
+          </div>
+          
+          <div className="target-list-scroll">
+            <div className="target-grid">
+              <CategoryDropZone 
+                name="UNASSIGNED" 
+                onDrop={(ids) => assignCategory(ids, 'UNASSIGNED')}
+                isSpecial
               />
-            ))}
+              {categories.map(cat => (
+                <CategoryDropZone 
+                  key={cat} 
+                  name={cat} 
+                  onDrop={(ids) => assignCategory(ids, cat)}
+                  isActive={sourceCategory === cat}
+                />
+              ))}
+              <AddCategoryDropZone onAdd={(name, ids) => assignCategory(ids, name)} selectedIds={selectedIds} />
+            </div>
           </div>
         </div>
       </div>
@@ -175,287 +228,252 @@ export default function CategoryMapper() {
           display: flex;
           flex-direction: column;
           height: 100vh;
-          background: #0f172a;
+          background: #0b0f1a;
           color: white;
-          font-family: 'Inter', sans-serif;
-          padding: 20px;
+          font-family: 'Outfit', sans-serif;
+          padding: 24px;
           overflow: hidden;
         }
         .mapper-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding-bottom: 20px;
-          border-bottom: 1px solid #334155;
-          margin-bottom: 20px;
+          margin-bottom: 24px;
+          padding-bottom: 16px;
+          border-bottom: 1px solid rgba(255,255,255,0.05);
         }
-        .header-left h1 { font-size: 1.5rem; margin: 0; background: linear-gradient(to right, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .header-left p { color: #94a3b8; font-size: 0.9rem; margin: 5px 0 0; }
-        .header-right { display: flex; gap: 10px; }
-        
-        .refresh-btn, .logout-btn, .secondary-btn {
-          border: none;
-          color: white;
-          padding: 8px 15px;
-          border-radius: 8px;
-          cursor: pointer;
+        .header-left h1 { 
+          margin: 0; 
+          font-size: 1.8rem; 
+          font-weight: 800; 
+          background: linear-gradient(135deg, #60a5fa 0%, #c084fc 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+        .header-left p { color: #64748b; margin: 4px 0 0; font-size: 0.9rem; }
+        .header-right { display: flex; gap: 12px; }
+
+        .refresh-btn, .logout-btn {
+          padding: 10px 20px;
+          border-radius: 12px;
           font-weight: 600;
-          font-size: 0.85rem;
-          transition: 0.2s;
+          cursor: pointer;
+          transition: 0.3s;
+          border: none;
         }
-        .secondary-btn { background: #334155; }
-        .secondary-btn:hover { background: #475569; }
-        .refresh-btn { background: #3b82f6; }
-        .logout-btn { background: #ef4444; }
+        .refresh-btn { background: rgba(59, 130, 246, 0.1); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.2); }
+        .refresh-btn:hover { background: rgba(59, 130, 246, 0.2); }
+        .logout-btn { background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); }
+        .logout-btn:hover { background: rgba(239, 68, 68, 0.2); }
 
         .mapper-layout {
           display: grid;
-          grid-template-columns: 1fr;
-          gap: 20px;
+          grid-template-columns: 1fr 400px;
+          gap: 24px;
           flex: 1;
           overflow: hidden;
         }
         .mapper-column {
+          background: rgba(30, 41, 59, 0.3);
+          border: 1px solid rgba(255,255,255,0.05);
+          border-radius: 24px;
           display: flex;
           flex-direction: column;
-          background: rgba(30, 41, 59, 0.5);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255,255,255,0.1);
-          border-radius: 16px;
-          padding: 20px;
           overflow: hidden;
+          backdrop-filter: blur(20px);
         }
-        .products-sidebar { position: relative; }
-        .product-selection-list {
-          flex: 1;
-          overflow-y: auto;
-          margin-top: 15px;
-          padding-right: 5px;
+        .col-header-area {
+          padding: 20px;
+          border-bottom: 1px solid rgba(255,255,255,0.05);
+          background: rgba(255,255,255,0.02);
         }
-        .product-selection-list::-webkit-scrollbar { width: 6px; }
-        .product-selection-list::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        .col-header-area h3 { margin: 0; font-size: 1.1rem; }
+        .col-header-area p { margin: 4px 0 0; font-size: 0.8rem; color: #64748b; }
 
-        .col-header h3 { font-size: 1rem; margin: 0; color: #f1f5f9; }
-        .col-search {
-          background: #0f172a;
-          border: 1px solid #334155;
+        /* Left Column Styles */
+        .selector-group { margin-bottom: 16px; display: flex; align-items: center; gap: 12px; }
+        .selector-group label { font-size: 0.85rem; color: #94a3b8; font-weight: 500; }
+        .category-selector {
+          background: #1e293b;
+          border: 1px solid rgba(255,255,255,0.1);
           color: white;
-          padding: 10px 15px;
+          padding: 8px 16px;
           border-radius: 10px;
+          font-weight: 600;
+          outline: none;
+          flex: 1;
+        }
+        .product-search {
+          width: 100%;
+          background: #0f172a;
+          border: 1px solid rgba(255,255,255,0.1);
+          color: white;
+          padding: 12px 16px;
+          border-radius: 12px;
           font-size: 0.9rem;
-        }
-
-        .draggable-product {
-          background: #1e293b;
-          padding: 10px;
-          border-radius: 10px;
-          margin-bottom: 8px;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          cursor: grab;
-          user-select: none;
-          transition: 0.2s;
-          border: 1px solid transparent;
-        }
-        .draggable-product:hover { background: #334155; }
-        .draggable-product.selected {
-          background: #1e3a8a;
-          border-color: #3b82f6;
-          box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
-        }
-        .p-thumb { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; }
-        .p-info { flex: 1; min-width: 0; }
-        .p-info p { margin: 0; font-size: 0.85rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .p-info span { font-size: 0.7rem; color: #94a3b8; }
-
-        .categories-grid-col { background: transparent; border: none; padding: 0; overflow-x: auto; }
-        .categories-grid {
-          display: grid;
-          grid-template-rows: repeat(2, 400px);
-          grid-auto-flow: column;
-          gap: 20px;
-          padding-bottom: 40px;
-          padding-right: 40px;
-        }
-
-        .category-box {
-          background: #1e293b;
-          border-radius: 16px;
-          padding: 15px;
-          height: 400px;
-          min-width: 300px;
-          display: flex;
-          flex-direction: column;
-          border: 2px solid #334155;
+          outline: none;
           transition: 0.3s;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
-        .category-box.unassigned-box {
-          border-color: #ef4444;
-          background: rgba(239, 68, 68, 0.05);
+        .product-search:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+
+        .product-list-scroll { flex: 1; overflow-y: auto; padding: 20px; }
+        .product-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+          gap: 16px;
         }
-        .category-box.drag-over {
-          background: #1e3a8a;
-          border-color: #3b82f6;
-          transform: translateY(-5px);
-          box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+
+        .draggable-product-card {
+          background: #1e293b;
+          border: 1px solid rgba(255,255,255,0.05);
+          border-radius: 16px;
+          padding: 12px;
+          cursor: grab;
+          transition: 0.2s;
+          user-select: none;
+          position: relative;
         }
-        .cat-header {
+        .draggable-product-card:hover { transform: translateY(-2px); background: #2d3748; border-color: rgba(255,255,255,0.1); }
+        .draggable-product-card.is-selected { 
+          border-color: #3b82f6; 
+          background: rgba(59, 130, 246, 0.15);
+          box-shadow: 0 0 0 1px #3b82f6;
+        }
+        .p-card-image { width: 100%; aspect-ratio: 1; border-radius: 12px; object-fit: cover; margin-bottom: 10px; }
+        .p-card-name { font-size: 0.85rem; font-weight: 600; margin: 0; color: #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .p-card-mrp { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
+
+        .selection-overlay {
+          padding: 12px 20px;
+          background: #3b82f6;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 12px;
-          padding-bottom: 8px;
-          border-bottom: 1px solid #334155;
+          font-weight: 700;
+          font-size: 0.9rem;
         }
-        .cat-header h4 { margin: 0; font-size: 0.95rem; color: #60a5fa; font-weight: 700; }
-        .cat-count { font-size: 0.7rem; background: #334155; padding: 2px 8px; border-radius: 20px; color: #94a3b8; }
-        
-        .cat-products-list {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          flex: 1;
-          overflow-y: auto;
-          padding-right: 5px;
-        }
-        .cat-products-list::-webkit-scrollbar { width: 4px; }
-        .cat-products-list::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-
-        .empty-cat {
-          flex: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #475569;
-          font-size: 0.75rem;
-          font-style: italic;
-          text-align: center;
+        .selection-overlay button {
+          background: white;
+          color: #3b82f6;
+          border: none;
+          padding: 4px 12px;
+          border-radius: 6px;
+          font-weight: 800;
+          cursor: pointer;
         }
 
-        .add-category-box {
-          background: rgba(30, 41, 59, 0.3);
-          border: 2px dashed #334155;
-          border-radius: 16px;
-          padding: 20px;
+        /* Right Column Styles */
+        .target-list-scroll { flex: 1; overflow-y: auto; padding: 16px; }
+        .target-grid { display: flex; flex-direction: column; gap: 10px; }
+
+        .category-drop-zone {
+          background: rgba(255,255,255,0.03);
+          border: 1.5px solid rgba(255,255,255,0.05);
+          border-radius: 14px;
+          padding: 14px 18px;
+          transition: 0.3s;
+          cursor: default;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .category-drop-zone.is-special { border-style: dashed; border-color: rgba(239, 68, 68, 0.3); color: #f87171; }
+        .category-drop-zone.is-active { opacity: 0.5; border-color: #3b82f6; background: rgba(59, 130, 246, 0.05); }
+        .category-drop-zone.drag-over { 
+          background: rgba(59, 130, 246, 0.2); 
+          border-color: #3b82f6; 
+          transform: scale(1.02);
+          box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);
+        }
+        .drop-zone-name { font-weight: 700; font-size: 0.9rem; }
+        .drop-icon { opacity: 0.3; font-size: 1.2rem; }
+
+        .add-category-zone {
+          margin-top: 10px;
+          background: rgba(16, 185, 129, 0.05);
+          border: 1.5px dashed rgba(16, 185, 129, 0.2);
+          border-radius: 14px;
+          padding: 14px;
           display: flex;
           flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 15px;
+          gap: 10px;
         }
-        .add-category-box input {
+        .add-category-zone input {
           background: #0f172a;
-          border: 1px solid #334155;
+          border: 1px solid rgba(16, 185, 129, 0.3);
           color: white;
           padding: 8px 12px;
           border-radius: 8px;
-          width: 100%;
-          text-align: center;
+          font-size: 0.85rem;
+          outline: none;
         }
-        .add-cat-btn {
+        .add-category-zone button {
           background: #10b981;
+          color: white;
           border: none;
-          color: white;
-          padding: 8px 20px;
-          border-radius: 8px;
-          cursor: pointer;
-          font-weight: 700;
-          font-size: 0.8rem;
-        }
-
-        .selection-badge {
-          position: absolute;
-          bottom: 20px;
-          left: 50%;
-          transform: translateX(-50%);
-          background: #3b82f6;
-          color: white;
-          padding: 8px 20px;
-          border-radius: 30px;
-          font-weight: 800;
-          font-size: 0.9rem;
-          box-shadow: 0 10px 20px rgba(59, 130, 246, 0.4);
-          z-index: 10;
-        }
-
-        .mapper-login {
-          height: 100vh;
-          background: #0f172a;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .login-card {
-          background: #1e293b;
-          padding: 40px;
-          border-radius: 20px;
-          width: 400px;
-          text-align: center;
-          box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-        }
-        .login-card input {
-          width: 100%;
-          padding: 12px;
-          background: #0f172a;
-          border: 1px solid #334155;
-          color: white;
-          border-radius: 8px;
-          margin: 20px 0;
-        }
-        .login-card button {
-          width: 100%;
-          padding: 12px;
-          background: #3b82f6;
-          border: none;
-          color: white;
+          padding: 8px;
           border-radius: 8px;
           font-weight: 700;
           cursor: pointer;
         }
-        .status.error { color: #f87171; }
-        .status.success { color: #4ade80; }
+
+        /* Generic UI */
+        .empty-state { grid-column: 1/-1; text-align: center; padding: 40px; color: #475569; font-style: italic; }
         .floating-status {
           position: fixed;
-          top: 20px;
+          top: 32px;
           left: 50%;
           transform: translateX(-50%);
-          padding: 10px 20px;
-          border-radius: 30px;
-          z-index: 100;
-          font-weight: 600;
-          box-shadow: 0 10px 15px rgba(0,0,0,0.3);
+          padding: 12px 24px;
+          border-radius: 40px;
+          z-index: 1000;
+          font-weight: 700;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        .floating-status.success { background: #059669; color: white; }
-        .floating-status.error { background: #dc2626; color: white; }
-        .floating-status.loading { background: #3b82f6; color: white; }
+        .floating-status.success { background: #059669; border: 1px solid #10b981; }
+        .floating-status.error { background: #dc2626; border: 1px solid #ef4444; }
+        .floating-status.loading { background: #2563eb; border: 1px solid #3b82f6; }
+
+        .mapper-login { height: 100vh; display: flex; align-items: center; justify-content: center; background: #0b0f1a; }
+        .login-card { background: #1e293b; padding: 48px; border-radius: 32px; width: 420px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        .login-card h2 { margin: 0 0 32px; font-weight: 800; font-size: 2rem; }
+        .login-card input { width: 100%; padding: 14px; background: #0f172a; border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 12px; margin-bottom: 20px; font-size: 1rem; }
+        .login-card button { width: 100%; padding: 14px; background: #3b82f6; color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 1rem; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
       `}} />
     </div>
   )
 }
 
-function DraggableProduct({ product }) {
+function DraggableProduct({ product, isSelected, onClick, selectedCount, selectedIds }) {
   const handleDragStart = (e) => {
-    e.dataTransfer.setData('productIds', JSON.stringify([product.id]))
+    let idsToDrag = [product.id]
+    if (isSelected && selectedCount > 1) {
+      idsToDrag = Array.from(selectedIds)
+    }
+    e.dataTransfer.setData('productIds', JSON.stringify(idsToDrag))
+    e.dataTransfer.effectAllowed = 'move'
   }
 
   return (
     <div 
-      className="draggable-product"
+      className={`draggable-product-card ${isSelected ? 'is-selected' : ''}`}
       draggable
       onDragStart={handleDragStart}
+      onClick={onClick}
     >
-      <img src={product.image_url || 'https://via.placeholder.com/40'} className="p-thumb" alt="" />
-      <div className="p-info">
-        <p>{product.name}</p>
-        <span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>MRP: ₹{product.mrp || 'N/A'}</span>
-      </div>
+      <img src={product.image_url || 'https://via.placeholder.com/100'} className="p-card-image" alt="" />
+      <h4 className="p-card-name">{product.name}</h4>
+      <div className="p-card-mrp">₹{product.mrp || product.price}</div>
     </div>
   )
 }
 
-function CategoryBox({ name, products, onDrop, isUnassigned }) {
+function CategoryDropZone({ name, onDrop, isSpecial, isActive }) {
   const [isOver, setIsOver] = useState(false)
 
   const handleDrop = (e) => {
@@ -470,54 +488,54 @@ function CategoryBox({ name, products, onDrop, isUnassigned }) {
 
   return (
     <div 
-      className={`category-box ${isOver ? 'drag-over' : ''} ${isUnassigned ? 'unassigned-box' : ''}`}
-      onDragOver={(e) => { e.preventDefault(); setIsOver(true); }}
+      className={`category-drop-zone ${isOver ? 'drag-over' : ''} ${isSpecial ? 'is-special' : ''} ${isActive ? 'is-active' : ''}`}
+      onDragOver={(e) => { e.preventDefault(); if (!isActive) setIsOver(true); }}
       onDragLeave={() => setIsOver(false)}
       onDrop={handleDrop}
     >
-      <div className="cat-header">
-        <h4>{name}</h4>
-        <span className="cat-count">{products.length} products</span>
-      </div>
-      <div className="cat-products-list">
-        {products.length > 0 ? (
-          products.map(p => (
-            <DraggableProduct key={p.id} product={p} />
-          ))
-        ) : (
-          <div className="empty-cat">Empty category - drop here</div>
-        )}
-      </div>
+      <span className="drop-zone-name">{name}</span>
+      <span className="drop-icon">📥</span>
     </div>
   )
 }
 
-function AddCategoryBox({ onAdd }) {
+function AddCategoryDropZone({ onAdd, selectedIds }) {
   const [newCat, setNewCat] = useState('')
+  const [isOver, setIsOver] = useState(false)
+
+  const handleAdd = () => {
+    if (newCat && selectedIds.size > 0) {
+      onAdd(newCat, Array.from(selectedIds))
+      setNewCat('')
+    }
+  }
 
   return (
-    <div className="add-category-box">
-      <h4>Create New Category</h4>
+    <div 
+      className={`add-category-zone ${isOver ? 'drag-over' : ''}`}
+      onDragOver={(e) => { e.preventDefault(); setIsOver(true); }}
+      onDragLeave={() => setIsOver(false)}
+      onDrop={(e) => {
+        e.preventDefault()
+        setIsOver(false)
+        const rawIds = e.dataTransfer.getData('productIds')
+        if (rawIds) {
+          const ids = JSON.parse(rawIds)
+          const name = prompt("Enter new category name:")
+          if (name) onAdd(name, ids)
+        }
+      }}
+    >
       <input 
         type="text" 
-        placeholder="Category Name" 
+        placeholder="New Category Name..." 
         value={newCat} 
         onChange={e => setNewCat(e.target.value)} 
       />
-      <button 
-        className="add-cat-btn"
-        onClick={() => {
-          if (newCat) {
-            onAdd(newCat)
-            setNewCat('')
-          }
-        }}
-      >
-        Assign Selected Here
+      <button onClick={handleAdd} disabled={!newCat || selectedIds.size === 0}>
+        Move Selected to New
       </button>
-      <p style={{ fontSize: '0.7rem', color: '#64748b', textAlign: 'center' }}>
-        Type name and click to move selected products to a new category
-      </p>
     </div>
   )
 }
+
