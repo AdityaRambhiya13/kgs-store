@@ -367,13 +367,29 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error }
 
     const [otpInput, setOtpInput] = useState('')
     const [showOtpInput, setShowOtpInput] = useState(false)
+    const [otpError, setOtpError] = useState('')
 
     const handleAction = () => {
-        if (!isProcessing && deliveryType === 'delivery' && !showOtpInput) {
-            setShowOtpInput(true)
+        if (isProcessing) {
+            onAction(order.token, 'Ready for Pickup', null)
             return
         }
-        onAction(order.token, isProcessing ? 'Ready for Pickup' : 'Delivered', showOtpInput ? otpInput : null)
+        // For delivery orders going to Delivered, require OTP from customer
+        if (isReady && deliveryType === 'delivery') {
+            if (!showOtpInput) {
+                setShowOtpInput(true)
+                setOtpError('')
+                return
+            }
+            if (otpInput.length !== 4) {
+                setOtpError('Enter 4-digit OTP')
+                return
+            }
+            onAction(order.token, 'Delivered', otpInput)
+        } else {
+            // Pickup — no OTP required
+            onAction(order.token, 'Delivered', null)
+        }
     }
 
     return (
@@ -407,22 +423,52 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error }
             </AnimatePresence>
 
             {!isDelivered && (
-                <div style={{ padding: 12, borderTop: '1px solid #e2e8f0', display: 'flex', gap: 8, alignItems: 'center' }}>
-                    {showOtpInput && (
-                        <input className="input" placeholder="OTP" style={{ width: 60, padding: '4px 8px', fontSize: 12 }} maxLength={4} value={otpInput} onChange={e => setOtpInput(e.target.value)} />
-                    )}
-                    <button 
-                        className={`btn ${isProcessing ? 'btn-secondary' : 'btn-primary'}`} 
-                        style={{ flex: 1, padding: '6px', fontSize: 12 }} 
-                        onClick={handleAction}
-                        disabled={toggling}
-                    >
-                        {toggling ? '...' : isProcessing ? 'Mark Ready' : 'Mark Delivered'}
-                    </button>
-                    {isReady && <button className="btn-icon" onClick={() => onAction(order.token, 'Processing')}>↩️</button>}
+                <div style={{ padding: 12, borderTop: '1px solid #e2e8f0' }}>
+                    {/* OTP Input Panel — appears when delivery person clicks Mark Delivered */}
+                    <AnimatePresence>
+                        {showOtpInput && isReady && deliveryType === 'delivery' && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                style={{ marginBottom: 10, background: 'rgba(30,58,138,0.05)', border: '1.5px solid #1e3a8a', borderRadius: 10, padding: '12px' }}
+                            >
+                                <div style={{ fontSize: 12, fontWeight: 700, color: '#1e3a8a', marginBottom: 8, textAlign: 'center' }}>
+                                    🔐 Enter OTP from Customer
+                                </div>
+                                <input
+                                    className="input"
+                                    type="tel"
+                                    inputMode="numeric"
+                                    placeholder="• • • •"
+                                    maxLength={4}
+                                    value={otpInput}
+                                    onChange={e => { setOtpInput(e.target.value.replace(/\D/g, '')); setOtpError('') }}
+                                    style={{ width: '100%', textAlign: 'center', fontSize: 24, letterSpacing: '10px', fontWeight: 800, padding: '8px', borderColor: otpError ? 'red' : '#1e3a8a' }}
+                                    autoFocus
+                                />
+                                {otpError && <div style={{ color: 'red', fontSize: 11, marginTop: 4, textAlign: 'center' }}>{otpError}</div>}
+                                <div style={{ fontSize: 11, color: '#64748b', marginTop: 6, textAlign: 'center' }}>
+                                    Ask the customer for their 4-digit delivery OTP
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <button 
+                            className={`btn ${isProcessing ? 'btn-secondary' : 'btn-primary'}`} 
+                            style={{ flex: 1, padding: '8px', fontSize: 13, fontWeight: 700 }} 
+                            onClick={handleAction}
+                            disabled={toggling}
+                        >
+                            {toggling ? '⏳ Updating...' : isProcessing ? '✅ Mark Ready' : showOtpInput ? '🎯 Confirm Delivery' : '🚀 Mark Delivered'}
+                        </button>
+                        {isReady && <button className="btn-icon" onClick={() => onAction(order.token, 'Processing')}>↩️</button>}
+                    </div>
                 </div>
             )}
-            {error && <div style={{ padding: '4px 16px', color: 'var(--danger)', fontSize: 11 }}>⚠️ {error}</div>}
+            {error && <div style={{ padding: '4px 16px 8px', color: 'var(--danger)', fontSize: 12 }}>⚠️ {error}</div>}
         </motion.div>
     )
 }

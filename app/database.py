@@ -458,10 +458,10 @@ def create_order(phone: str, items: list, total: float, delivery_type: str = "pi
         )
 
         conn.commit()
-        return token
+        return token, delivery_otp
     finally:
         release_connection(conn)
-    return ""
+    return "", None
 
 def get_all_orders():
     """Fetch all orders (newest first) with customer names."""

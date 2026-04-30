@@ -63,8 +63,8 @@ export default function ConfirmPage() {
     const [deliveryType, setDeliveryType] = useState('pickup')
     const [deliveryTime, setDeliveryTime] = useState('same_day')
 
-    const FREE_DELIVERY_THRESHOLD = 250
-    const DELIVERY_FEE = 250
+    const FREE_DELIVERY_THRESHOLD = 500
+    const DELIVERY_FEE = 50
 
     const isFreeDelivery = cartTotal >= FREE_DELIVERY_THRESHOLD
     const activeDeliveryFee = (deliveryType === 'delivery' && !isFreeDelivery) ? DELIVERY_FEE : 0
@@ -208,12 +208,19 @@ export default function ConfirmPage() {
                                 ))}
                                 
                                 {deliveryType === 'delivery' && (
-                                    <div className="confirm-item-row delivery-fee-row" style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed var(--border)' }}>
-                                        <span style={{ color: 'var(--text-muted)' }}>Delivery Fee</span>
-                                        <span style={{ fontWeight: 600, color: activeDeliveryFee > 0 ? 'var(--text)' : 'var(--primary)' }}>
-                                            {activeDeliveryFee > 0 ? `₹${activeDeliveryFee}` : 'FREE'}
-                                        </span>
-                                    </div>
+                                    <>
+                                        <div className="confirm-item-row delivery-fee-row" style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed var(--border)' }}>
+                                            <span style={{ color: 'var(--text-muted)' }}>Delivery Fee</span>
+                                            <span style={{ fontWeight: 600, color: activeDeliveryFee > 0 ? 'var(--text)' : 'var(--secondary)' }}>
+                                                {activeDeliveryFee > 0 ? `₹${activeDeliveryFee}` : '🎉 FREE'}
+                                            </span>
+                                        </div>
+                                        {!isFreeDelivery && (
+                                            <div style={{ marginTop: 6, padding: '6px 10px', background: 'rgba(16,185,129,0.08)', borderRadius: 8, fontSize: 12, color: 'var(--secondary)', textAlign: 'center' }}>
+                                                Add ₹{(FREE_DELIVERY_THRESHOLD - cartTotal).toFixed(0)} more for <strong>FREE delivery</strong> 🚀
+                                            </div>
+                                        )}
+                                    </>
                                 )}
 
                                 <div className="confirm-total">
@@ -368,9 +375,10 @@ export default function ConfirmPage() {
 
                             {/* Delivery OTP */}
                             {deliveryOtp && (
-                                <div className="order-otp-box">
-                                    <span style={{ fontSize: 13, color: 'var(--primary)' }}>Delivery OTP</span>
-                                    <span className="order-otp-value">{deliveryOtp}</span>
+                                <div className="order-otp-box" style={{ background: 'linear-gradient(135deg, rgba(30,58,138,0.06), rgba(99,102,241,0.06))', border: '2px solid var(--primary)', borderRadius: 16, padding: '16px 20px', marginTop: 16, textAlign: 'center' }}>
+                                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 6 }}>🔐 Your Delivery OTP</div>
+                                    <div style={{ fontSize: 38, fontWeight: 900, color: 'var(--primary)', letterSpacing: '10px', marginBottom: 8 }}>{deliveryOtp}</div>
+                                    <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>Share this OTP with the delivery person when your order arrives. <strong>Do not share with anyone else.</strong></div>
                                 </div>
                             )}
 

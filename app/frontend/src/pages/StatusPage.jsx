@@ -225,13 +225,16 @@ export default function StatusPage() {
                                 {deliveryType === 'delivery' ? '🚚 Home Delivery' : '🏪 Store Pickup'}
                                 <span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 500 }}>({deliveryTime === 'next_day' ? 'Next Day' : 'Same Day'})</span>
                             </span>
-
-                            {order?.delivery_otp && (
-                                <span className="badge badge-accent" style={{ padding: '6px 12px', fontSize: 15, letterSpacing: '1px' }}>
-                                    OTP: {order.delivery_otp}
-                                </span>
-                            )}
                         </div>
+
+                        {/* OTP Card — shown for delivery orders, visible to customer only */}
+                        {order?.delivery_otp && deliveryType === 'delivery' && !isDelivered && (
+                            <div style={{ background: 'linear-gradient(135deg, rgba(30,58,138,0.07), rgba(99,102,241,0.07))', border: '2px solid var(--primary)', borderRadius: 14, padding: '16px 20px', marginBottom: 16, textAlign: 'center' }}>
+                                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 6 }}>🔐 Your Delivery OTP</div>
+                                <div style={{ fontSize: 36, fontWeight: 900, color: 'var(--primary)', letterSpacing: '10px', marginBottom: 8 }}>{order.delivery_otp}</div>
+                                <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>Give this OTP to the delivery person when they arrive. <strong>Do not share with anyone else.</strong></div>
+                            </div>
+                        )}
 
                         {deliveryType === 'delivery' && addressObj && (
                             <div style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6, background: 'var(--bg-surface)', padding: 12, borderRadius: 8 }}>

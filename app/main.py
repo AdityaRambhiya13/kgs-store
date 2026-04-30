@@ -508,9 +508,9 @@ def place_order(order: OrderCreate, request: Request, customer_token: dict = Dep
 
 
 
-    if order.delivery_type == "delivery" and calculated_total < 250.0:
+    if order.delivery_type == "delivery" and calculated_total < 500.0:
 
-        calculated_total += 250.0
+        calculated_total += 50.0
 
 
 
@@ -534,9 +534,13 @@ def place_order(order: OrderCreate, request: Request, customer_token: dict = Dep
 
 
 
-    token = create_order(phone, validated_items, calculated_total, order.delivery_type, order.delivery_time, address_str)
+    token, delivery_otp = create_order(phone, validated_items, calculated_total, order.delivery_type, order.delivery_time, address_str)
 
-    return {"token": token, "total": calculated_total, "status": "Processing"}
+    response = {"token": token, "total": calculated_total, "status": "Processing"}
+    # Only return OTP to the customer (never visible to admin)
+    if delivery_otp:
+        response["delivery_otp"] = delivery_otp
+    return response
 
 
 
@@ -546,7 +550,11 @@ def list_all_orders(request: Request, admin_token: dict = Depends(get_current_ad
 
     check_rate_limit(request, limit=60, window=60, scope="admin-orders")
 
-    return get_all_orders()
+    orders = get_all_orders()
+    # Strip delivery OTP — admin must not know it; only customer has it
+    for o in orders:
+        o.pop("delivery_otp", None)
+    return orders
 
 
 
