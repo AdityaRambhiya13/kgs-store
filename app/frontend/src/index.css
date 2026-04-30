@@ -3004,16 +3004,12 @@ p { line-height: 1.6; }
 .mobile-cart-bar-wrap {
   position: fixed;
   bottom: 20px;
-  left: 16px;
-  right: 16px;
+  left: 0;
+  right: 0;
+  padding: 0 16px;
   z-index: 900;
-  display: none; /* Hidden by default, shown on mobile */
-}
-
-@media (max-width: 767px) {
-  .mobile-cart-bar-wrap {
-    display: block;
-  }
+  display: flex;
+  justify-content: center;
 }
 
 .mobile-cart-bar {
@@ -3028,6 +3024,8 @@ p { line-height: 1.6; }
   box-shadow: 0 12px 30px rgba(30, 64, 175, 0.4);
   cursor: pointer;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  width: 100%;
+  max-width: 600px;
 }
 
 .mcb-left {
