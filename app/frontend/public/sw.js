@@ -35,7 +35,12 @@ self.addEventListener('fetch', (event) => {
         console.error('[SW] Fetch failed:', error);
         return new Response('Network error. Please check your connection.', {
           status: 503,
-          headers: { 'Content-Type': 'text/plain' }
+          headers: { 
+            'Content-Type': 'text/plain',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': '*',
+            'Access-Control-Allow-Headers': '*'
+          }
         });
       })
     );
