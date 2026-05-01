@@ -64,7 +64,7 @@ export default function ConfirmPage() {
     const [deliveryTime, setDeliveryTime] = useState('same_day')
 
     const FREE_DELIVERY_THRESHOLD = 500
-    const DELIVERY_FEE = 200
+    const DELIVERY_FEE = 150
 
     const isFreeDelivery = cartTotal >= FREE_DELIVERY_THRESHOLD
     const activeDeliveryFee = (deliveryType === 'delivery' && !isFreeDelivery) ? DELIVERY_FEE : 0
