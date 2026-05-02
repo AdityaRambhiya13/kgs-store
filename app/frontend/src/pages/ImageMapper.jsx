@@ -20,6 +20,7 @@ export default function ImageMapper() {
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [debouncedImgSearch, setDebouncedImgSearch] = useState('')
   const [mappingInProgress, setMappingInProgress] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState('All Categories')
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300)
@@ -72,12 +73,22 @@ export default function ImageMapper() {
     }
   }
 
+  const productCategories = useMemo(() => {
+    const s = new Set(['All Categories'])
+    products.forEach(p => {
+      if (p.category) s.add(p.category)
+    })
+    return Array.from(s).sort()
+  }, [products])
+
   const filteredProducts = useMemo(() => {
-    return products.filter(p => 
-      p.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-      p.category.toLowerCase().includes(debouncedSearch.toLowerCase())
-    )
-  }, [products, debouncedSearch])
+    return products.filter(p => {
+      const matchesSearch = p.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+                          p.category.toLowerCase().includes(debouncedSearch.toLowerCase())
+      const matchesCategory = selectedCategory === 'All Categories' || p.category === selectedCategory
+      return matchesSearch && matchesCategory
+    })
+  }, [products, debouncedSearch, selectedCategory])
 
   const visibleProducts = useMemo(() => {
     return filteredProducts.slice(0, productLimit)
@@ -186,7 +197,16 @@ export default function ImageMapper() {
         {/* Left: Product List */}
         <div className="mapper-column products-col">
           <section className="product-section">
-            <h3>All Products ({filteredProducts.length})</h3>
+            <div className="col-header">
+              <h3>Products ({filteredProducts.length})</h3>
+              <select 
+                value={selectedCategory} 
+                onChange={e => setSelectedCategory(e.target.value)}
+                className="category-select"
+              >
+                {productCategories.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
             <div className="product-list">
               {visibleProducts.map(p => (
                 <ProductRow key={p.id} product={p} onDrop={onDrop} isMapped={p.image_url && p.image_url.includes(SUPABASE_BASE_URL)} />
@@ -319,14 +339,14 @@ export default function ImageMapper() {
           font-size: 0.8rem;
           flex: 1;
         }
-        .folder-select {
+        .folder-select, .category-select {
           background: #0f172a;
           border: 1px solid #334155;
           color: white;
           padding: 6px;
           border-radius: 6px;
           font-size: 0.8rem;
-          max-width: 120px;
+          max-width: 150px;
         }
         .product-list { margin-bottom: 30px; }
         .product-row {
