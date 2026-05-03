@@ -25,7 +25,7 @@ export default function Navbar({ searchQuery, onSearchChange, onCategorySelect }
   const { cartCount, setCartOpen } = useCart()
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [locationName, setLocationName] = useState('Kalyan (W)')
+  const [locationName, setLocationName] = useState('Dombivali (W)')
   const [searchFocused, setSearchFocused] = useState(false)
   const searchWrapRef = useRef(null)
 
