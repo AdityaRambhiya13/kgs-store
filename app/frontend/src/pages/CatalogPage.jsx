@@ -180,10 +180,12 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
       return products
         .filter(p => {
           if (!p.category || BLOCKED_CATEGORIES.has(p.category)) return false
+          // Only match on product name and base_name.
+          // Do NOT match on category/sub_category — many products have
+          // brand names (e.g. "Maggi") set as their sub_category, which
+          // causes completely unrelated products to appear in results.
           return (p.name && p.name.toLowerCase().includes(lq)) ||
-                 (p.base_name && p.base_name.toLowerCase().includes(lq)) ||
-                 (p.category && p.category.toLowerCase().includes(lq)) ||
-                 (p.sub_category && p.sub_category.toLowerCase().includes(lq))
+                 (p.base_name && p.base_name.toLowerCase().includes(lq))
         })
         .map(p => {
           // Standardize category name for matching group key
@@ -200,6 +202,16 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
             category: cat,
             variants: group ? group.variants : [p]
           }
+        })
+        .sort((a, b) => {
+          // Simple relevance sort: items starting with the query first
+          const aName = (a.name || '').toLowerCase()
+          const bName = (b.name || '').toLowerCase()
+          const aStarts = aName.startsWith(lq)
+          const bStarts = bName.startsWith(lq)
+          if (aStarts && !bStarts) return -1
+          if (!aStarts && bStarts) return 1
+          return 0
         })
     }
 
@@ -378,11 +390,12 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
         {!loading && !error && isSearchMode && filtered.length > 0 && (
           <div style={{ padding: '0 16px', marginTop: '8px' }}>
             <p className="search-results-label">
-              {filtered.length} result{filtered.length !== 1 ? 's' : ''} for &quot;{searchQuery}&quot;
+              {filtered.length} result{filtered.length !== 1 ? 's' : ''} for &quot;{debouncedSearch}&quot;
+              {searchQuery !== debouncedSearch && <span style={{ marginLeft: '8px', opacity: 0.5, fontSize: '0.8em' }}>(updating...)</span>}
             </p>
             <div className="product-grid product-grid-multi">
               {filtered.slice(0, productLimit).map(g => (
-                <div key={(g.base_name || g.name) + g.category}>
+                <div key={g.id + (g.displayName || g.name)}>
                   <ProductCard
                     product={g}
                     onDetailClick={(prod, mrp) => setSelectedProductDetails({ product: prod, mrp })}
