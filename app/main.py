@@ -1204,73 +1204,79 @@ def list_available_images(admin: dict = Depends(get_current_admin)):
 
     def fetch_recursive(prefix=""):
 
-        url = f"{SUPABASE_URL}/storage/v1/object/list/{BUCKET_NAME}"
+        offset = 0
 
-        headers = {
+        page_size = 1000
 
-            "Authorization": f"Bearer {SUPABASE_KEY}",
+        while True:
 
-            "Content-Type": "application/json"
+            url = f"{SUPABASE_URL}/storage/v1/object/list/{BUCKET_NAME}"
 
-        }
+            headers = {
 
-        payload = {
+                "Authorization": f"Bearer {SUPABASE_KEY}",
 
-            "prefix": prefix,
+                "Content-Type": "application/json"
 
-            "limit": 5000,
+            }
 
-            "offset": 0,
+            payload = {
 
-            "sortBy": {"column": "name", "order": "asc"}
+                "prefix": prefix,
 
-        }
+                "limit": page_size,
 
-        
+                "offset": offset,
 
-        try:
+                "sortBy": {"column": "name", "order": "asc"}
 
-            response = requests.post(url, headers=headers, json=payload, timeout=10)
+            }
 
-            if response.status_code != 200:
+            try:
 
-                print(f"Supabase Storage Error: {response.status_code} - {response.text}")
+                response = requests.post(url, headers=headers, json=payload, timeout=15)
 
-                return
+                if response.status_code != 200:
 
-            
+                    print(f"Supabase Storage Error: {response.status_code} - {response.text}")
 
-            items = response.json()
+                    break
 
-            for item in items:
+                items = response.json()
 
-                name = item.get("name")
+                if not items:
 
-                if not name: continue
+                    break
 
-                
+                for item in items:
 
-                full_path = f"{prefix}{name}"
+                    name = item.get("name")
 
-                
+                    if not name: continue
 
-                # If item has an 'id', it's a file
+                    full_path = f"{prefix}{name}"
 
-                if item.get("id"):
+                    if item.get("id"): # It's a file
 
-                    if name.lower().endswith(('.webp', '.jpg', '.jpeg', '.png')):
+                        if name.lower().endswith(('.webp', '.jpg', '.jpeg', '.png')):
 
-                        all_images.append(full_path)
+                            all_images.append(full_path)
 
-                else:
+                    else: # It's a folder
 
-                    # It's a folder, recurse into it
+                        fetch_recursive(f"{full_path}/")
 
-                    fetch_recursive(f"{full_path}/")
+                if len(items) < page_size:
 
-        except Exception as e:
+                    break
 
-            print(f"Error in fetch_recursive for prefix '{prefix}': {e}")
+                offset += page_size
+
+            except Exception as e:
+
+                print(f"Error in fetch_recursive: {e}")
+
+                break
 
 
 
@@ -1278,7 +1284,7 @@ def list_available_images(admin: dict = Depends(get_current_admin)):
 
         fetch_recursive("")
 
-        print(f"Found {len(all_images)} total images across all folders in Supabase bucket '{BUCKET_NAME}'")
+        print(f"Found {len(all_images)} total images in Supabase")
 
         return {"images": all_images}
 
@@ -1288,9 +1294,6 @@ def list_available_images(admin: dict = Depends(get_current_admin)):
 
         return {"images": []}
 
-
-
-        print(f"Found {len(image_names)} images in Supabase bucket '{BUCKET_NAME}'")
 
 
         
