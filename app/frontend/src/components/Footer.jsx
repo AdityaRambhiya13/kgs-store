@@ -10,14 +10,14 @@ export default function Footer() {
                 <div className="footer-cols">
                     <div className="footer-col">
                         <h4>📍 Store Address</h4>
-                        <p>Shop No. 5, Govind Nagar,<br />
-                            Near Rly Station Road,<br />
-                            Kalyan (W) — 421301</p>
+                        <p>63, G4, Vasant Dhanber,<br />
+                            Gupte Road,<br />
+                            Dombivali (West) — 421202</p>
                     </div>
 
                     <div className="footer-col">
                         <h4>📞 Contact</h4>
-                        <p>+91 98765 XXXXX</p>
+                        <p>+91 88794 85171</p>
                         <p style={{ marginTop: 6 }}>Mon – Sat: 8 AM – 9 PM<br />Sunday: 9 AM – 7 PM</p>
                     </div>
 

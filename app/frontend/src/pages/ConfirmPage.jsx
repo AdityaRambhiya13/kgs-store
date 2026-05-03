@@ -173,7 +173,7 @@ export default function ConfirmPage() {
     const whatsappMsg = encodeURIComponent(
         `Hi KGS! My order token is *${token}*. Please confirm my ${deliveryType === 'delivery' ? 'home delivery' : 'store pickup'} order.`
     )
-    const whatsappUrl = `https://wa.me/?text=${whatsappMsg}`
+    const whatsappUrl = `https://wa.me/918879485171?text=${whatsappMsg}`
 
     return (
         <div>
