@@ -442,61 +442,63 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error }
             background: #fff;
             width: 80mm;
             margin: 0 auto;
-            padding: 10px 8px 20px;
+            padding: 15px 10px 30px;
         }
         .store-name {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 900;
             text-align: center;
-            letter-spacing: 1px;
-            margin-bottom: 4px;
+            letter-spacing: 1.5px;
+            margin-bottom: 10px;
         }
         .store-addr {
             text-align: center;
-            font-size: 11.5px;
-            line-height: 1.5;
-            margin-bottom: 4px;
+            font-size: 11px;
+            line-height: 1.6;
+            margin-bottom: 10px;
         }
         .store-meta {
             text-align: center;
-            font-size: 11.5px;
+            font-size: 11px;
             font-weight: bold;
-            margin-bottom: 6px;
+            margin-bottom: 12px;
         }
-        .sep-dash { border: none; border-top: 1px dashed #000; margin: 6px 0; }
-        .sep-eq   { border: none; border-top: 2px solid #000;   margin: 6px 0; }
+        .sep-dash { border: none; border-top: 1px dashed #000; margin: 10px 0; }
+        .sep-eq   { border: none; border-top: 2px solid #000;   margin: 10px 0; }
         .title {
             text-align: center;
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 900;
-            letter-spacing: 2px;
-            margin: 6px 0;
+            letter-spacing: 4px;
+            margin: 14px 0;
+            text-decoration: underline;
         }
-        .meta-row { display: flex; justify-content: space-between; margin-bottom: 2px; font-size: 12px; }
+        .meta-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; }
         .meta-label { font-weight: bold; }
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 11.5px;
+            font-size: 11px;
+            margin: 12px 0;
         }
         thead tr th {
             font-weight: 900;
             text-align: left;
-            padding: 2px 1px;
-            border-bottom: 1px dashed #000;
-            border-top: 1px dashed #000;
+            padding: 10px 2px;
+            border-bottom: 1.5px dashed #000;
+            border-top: 1.5px dashed #000;
             white-space: nowrap;
         }
-        td { padding: 3px 1px; vertical-align: top; }
+        td { padding: 8px 2px; vertical-align: top; }
         td:nth-child(3), td:nth-child(4), td:nth-child(5), td:nth-child(6) { text-align: right; }
         th:nth-child(3), th:nth-child(4), th:nth-child(5), th:nth-child(6) { text-align: right; }
         .divider-row td { padding: 0; }
         .divider-row hr { border: none; border-top: 1px dashed #000; }
-        .total-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 13px; }
-        .net-row   { display: flex; justify-content: space-between; padding: 4px 0; font-size: 17px; font-weight: 900; }
-        .footer-meta { font-size: 12px; margin: 4px 0; }
-        .footer-row { display: flex; justify-content: space-between; font-size: 12px; padding: 3px 0; font-weight: bold; }
-        .thank { text-align: center; font-size: 12px; margin-top: 8px; }
+        .total-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; font-weight: bold; }
+        .net-row   { display: flex; justify-content: space-between; padding: 12px 0; font-size: 20px; font-weight: 900; }
+        .footer-meta { font-size: 12px; margin: 12px 0; font-weight: bold; }
+        .footer-row { display: flex; justify-content: space-between; font-size: 13px; padding: 10px 0; font-weight: 900; border-top: 1px dashed #000; border-bottom: 1px dashed #000; }
+        .thank { text-align: center; font-size: 14px; margin-top: 32px; font-weight: 900; letter-spacing: 1px; }
         @media print {
             body { width: 80mm; }
             @page { size: 80mm auto; margin: 0; }
