@@ -506,7 +506,7 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error }
 <body>
     <div class="store-name">KETAN GENERAL STORES</div>
     <div class="store-addr">
-        63, G4, Vasant Dhanber, Gupte Road,<br>
+        G3, G4, Vasant Chamber, Gupte Road,<br>
         Dombivali (West) - 421202
     </div>
     <div class="store-meta">Phone: 8879485171 &nbsp;&nbsp; GSTIN: 27AAAPF9753F2ZP</div>

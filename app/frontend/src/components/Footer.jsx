@@ -10,7 +10,7 @@ export default function Footer() {
                 <div className="footer-cols">
                     <div className="footer-col">
                         <h4>📍 Store Address</h4>
-                        <p>63, G4, Vasant Dhanber,<br />
+                        <p>G3, G4, Vasant Chamber,<br />
                             Gupte Road,<br />
                             Dombivali (West) — 421202</p>
                     </div>
