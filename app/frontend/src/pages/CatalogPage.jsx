@@ -51,7 +51,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery)
       setProductLimit(40) // Reset limit on search
-    }, 300)
+    }, 200) // Faster response
     return () => clearTimeout(timer)
   }, [searchQuery])
 
@@ -166,18 +166,44 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
 
   // Filtered products by search / category / sub-category
   const filtered = useMemo(() => {
-    let result = grouped
-
-    // Search mode: flat list
+    // Search mode: show all individual matching products but keep variant groups for modal
     if (debouncedSearch && debouncedSearch.trim()) {
       const lq = debouncedSearch.toLowerCase()
-      return result.filter(g =>
-        (g.name && g.name.toLowerCase().includes(lq)) ||
-        (g.base_name && g.base_name.toLowerCase().includes(lq)) ||
-        (g.category && g.category.toLowerCase().includes(lq)) ||
-        (g.sub_category && g.sub_category.toLowerCase().includes(lq))
-      )
+      
+      // Map for easy group lookup to get variants
+      const groupMap = {}
+      grouped.forEach(g => {
+        const key = (g.base_name || g.name) + '|' + g.category
+        groupMap[key] = g
+      })
+
+      return products
+        .filter(p => {
+          if (!p.category || BLOCKED_CATEGORIES.has(p.category)) return false
+          return (p.name && p.name.toLowerCase().includes(lq)) ||
+                 (p.base_name && p.base_name.toLowerCase().includes(lq)) ||
+                 (p.category && p.category.toLowerCase().includes(lq)) ||
+                 (p.sub_category && p.sub_category.toLowerCase().includes(lq))
+        })
+        .map(p => {
+          // Standardize category name for matching group key
+          let cat = p.category
+          if (cat === 'Dairy, Bread & Eggs') cat = 'Dairy & Bread'
+          if (cat === 'Pharma & Wellness' || cat === '& Wellness') cat = 'Wellness'
+          
+          const key = (p.base_name || p.name) + '|' + cat
+          const group = groupMap[key]
+          return {
+            ...p,
+            displayName: p.name, // Show specific name (e.g. Moong Dal 500g)
+            displayPrice: p.price, // Show specific price
+            category: cat,
+            variants: group ? group.variants : [p]
+          }
+        })
     }
+
+    let result = grouped
 
     // Category filter
     if (activeCategory !== 'All') {
@@ -190,7 +216,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
     }
 
     return result
-  }, [grouped, activeCategory, activeSubCategory, searchQuery])
+  }, [grouped, products, activeCategory, activeSubCategory, debouncedSearch])
 
   // When "All" selected, group for section display
   const sectionedData = useMemo(() => {

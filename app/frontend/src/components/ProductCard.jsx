@@ -49,6 +49,10 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
     toggleFavorite(product)
   }
 
+  const displayName = product.displayName || product.base_name || product.name
+  const displayPrice = product.displayPrice || minPrice
+  const displayMrp = product.displayPrice ? getMRP(product.displayPrice, product.id || 1) : mrp
+
   return (
     <motion.div
       className="product-card"
@@ -77,7 +81,7 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
       <div className="pc-img-wrap">
         <img
           src={product.image_url?.includes('supabase.co') ? `${product.image_url}?width=300` : product.image_url}
-          alt={product.base_name || product.name}
+          alt={displayName}
           loading="lazy"
           className="pc-img"
           onError={e => {
@@ -92,7 +96,7 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
 
       {/* Card Body */}
       <div className="pc-body">
-        <p className="pc-name">{product.base_name || product.name}</p>
+        <p className="pc-name">{displayName}</p>
 
         {/* Rating */}
         <div className="pc-rating-row">
@@ -104,8 +108,8 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
 
         <div className="pc-footer-row">
           <div className="pc-price-block">
-            <span className="pc-price">₹{minPrice}</span>
-            <span className="pc-mrp">₹{mrp}</span>
+            <span className="pc-price">₹{displayPrice}</span>
+            <span className="pc-mrp">₹{displayMrp}</span>
           </div>
 
           <div className="pc-add-zone" onClick={e => e.stopPropagation()}>
