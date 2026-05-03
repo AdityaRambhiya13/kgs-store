@@ -478,9 +478,17 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error }
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 11px;
+            font-size: 10.5px;
             margin: 12px 0;
+            table-layout: fixed;
         }
+        th:nth-child(1) { width: 32px; }
+        th:nth-child(2) { width: auto; }
+        th:nth-child(3) { width: 55px; }
+        th:nth-child(4) { width: 55px; }
+        th:nth-child(5) { width: 45px; }
+        th:nth-child(6) { width: 65px; }
+        
         thead tr th {
             font-weight: 900;
             text-align: left;
@@ -488,8 +496,14 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error }
             border-bottom: 1.5px dashed #000;
             border-top: 1.5px dashed #000;
             white-space: nowrap;
+            overflow: hidden;
         }
-        td { padding: 8px 2px; vertical-align: top; }
+        td { 
+            padding: 8px 2px; 
+            vertical-align: top; 
+            word-wrap: break-word;
+            overflow: hidden;
+        }
         td:nth-child(3), td:nth-child(4), td:nth-child(5), td:nth-child(6) { text-align: right; }
         th:nth-child(3), th:nth-child(4), th:nth-child(5), th:nth-child(6) { text-align: right; }
         .divider-row td { padding: 0; }
