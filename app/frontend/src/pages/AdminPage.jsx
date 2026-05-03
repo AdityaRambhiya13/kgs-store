@@ -374,7 +374,6 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error }
             onAction(order.token, 'Ready for Pickup', null)
             return
         }
-        // For delivery orders going to Delivered, require OTP from customer
         if (isReady && deliveryType === 'delivery') {
             if (!showOtpInput) {
                 setShowOtpInput(true)
@@ -387,15 +386,184 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error }
             }
             onAction(order.token, 'Delivered', otpInput)
         } else {
-            // Pickup — no OTP required
             onAction(order.token, 'Delivered', null)
         }
+    }
+
+    // ── Bill Generator ─────────────────────────────────────────────
+    const generateBill = () => {
+        const now = new Date()
+        const pad = (n) => String(n).padStart(2, '0')
+        const dateStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`
+        const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`
+
+        const subtotal = items.reduce((s, it) => s + (it.price * it.quantity), 0)
+        const deliveryFee = order.total - subtotal
+        const totalQty = items.reduce((s, it) => s + it.quantity, 0)
+
+        const rows = items.map((it, i) => `
+            <tr>
+                <td>${i + 1}</td>
+                <td>${it.name}</td>
+                <td>${Number(it.price).toFixed(2)}</td>
+                <td>${Number(it.price).toFixed(2)}</td>
+                <td>${Number(it.quantity).toFixed(3)}</td>
+                <td>${(it.price * it.quantity).toFixed(2)}</td>
+            </tr>
+            <tr class="divider-row"><td colspan="6"><hr/></td></tr>
+        `).join('')
+
+        const deliveryRow = deliveryFee > 0 ? `
+            <tr>
+                <td>${items.length + 1}</td>
+                <td>Delivery Charges</td>
+                <td>${deliveryFee.toFixed(2)}</td>
+                <td>${deliveryFee.toFixed(2)}</td>
+                <td>1.000</td>
+                <td>${deliveryFee.toFixed(2)}</td>
+            </tr>
+            <tr class="divider-row"><td colspan="6"><hr/></td></tr>
+        ` : ''
+
+        const billNo = order.token.replace(/-/g, '').slice(0, 10).toUpperCase()
+        const customerName = order.customer_name || order.name || 'Customer'
+
+        const html = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Tax Invoice - ${billNo}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 13px;
+            color: #000;
+            background: #fff;
+            width: 80mm;
+            margin: 0 auto;
+            padding: 10px 8px 20px;
+        }
+        .store-name {
+            font-size: 18px;
+            font-weight: 900;
+            text-align: center;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+        .store-addr {
+            text-align: center;
+            font-size: 11.5px;
+            line-height: 1.5;
+            margin-bottom: 4px;
+        }
+        .store-meta {
+            text-align: center;
+            font-size: 11.5px;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+        .sep-dash { border: none; border-top: 1px dashed #000; margin: 6px 0; }
+        .sep-eq   { border: none; border-top: 2px solid #000;   margin: 6px 0; }
+        .title {
+            text-align: center;
+            font-size: 16px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin: 6px 0;
+        }
+        .meta-row { display: flex; justify-content: space-between; margin-bottom: 2px; font-size: 12px; }
+        .meta-label { font-weight: bold; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11.5px;
+        }
+        thead tr th {
+            font-weight: 900;
+            text-align: left;
+            padding: 2px 1px;
+            border-bottom: 1px dashed #000;
+            border-top: 1px dashed #000;
+            white-space: nowrap;
+        }
+        td { padding: 3px 1px; vertical-align: top; }
+        td:nth-child(3), td:nth-child(4), td:nth-child(5), td:nth-child(6) { text-align: right; }
+        th:nth-child(3), th:nth-child(4), th:nth-child(5), th:nth-child(6) { text-align: right; }
+        .divider-row td { padding: 0; }
+        .divider-row hr { border: none; border-top: 1px dashed #000; }
+        .total-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 13px; }
+        .net-row   { display: flex; justify-content: space-between; padding: 4px 0; font-size: 17px; font-weight: 900; }
+        .footer-meta { font-size: 12px; margin: 4px 0; }
+        .footer-row { display: flex; justify-content: space-between; font-size: 12px; padding: 3px 0; font-weight: bold; }
+        .thank { text-align: center; font-size: 12px; margin-top: 8px; }
+        @media print {
+            body { width: 80mm; }
+            @page { size: 80mm auto; margin: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="store-name">KETAN GENERAL STORES</div>
+    <div class="store-addr">
+        63, G4, Vasant Dhanber, Gupte Road,<br>
+        Dombivali (West) - 421202
+    </div>
+    <div class="store-meta">Phone: 8879485171 &nbsp;&nbsp; GSTIN: 27AAAPF9753F2ZP</div>
+    <hr class="sep-dash"/>
+
+    <div class="title">TAX INVOICE</div>
+
+    <hr class="sep-dash"/>
+    <div class="meta-row"><span><span class="meta-label">Date</span> : ${dateStr}</span><span><span class="meta-label">Time</span> : ${timeStr}</span></div>
+    <div class="meta-row"><span class="meta-label">Bill No</span> &nbsp;: ${billNo}</div>
+    <div class="meta-row"><span class="meta-label">Billed By</span> : Ketan Furia</div>
+    <hr class="sep-dash"/>
+
+    <table>
+        <thead>
+            <tr>
+                <th>S.NO</th>
+                <th>HSN CODE/ITEM NAME</th>
+                <th>MRP</th>
+                <th>RATE</th>
+                <th>QTY</th>
+                <th>TOTAL</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${rows}
+            ${deliveryRow}
+        </tbody>
+    </table>
+
+    <hr class="sep-dash"/>
+    <div class="total-row"><span>Total :</span><span>${subtotal.toFixed(2)}</span></div>
+    ${deliveryFee > 0 ? `<div class="total-row"><span>Delivery :</span><span>${deliveryFee.toFixed(2)}</span></div>` : ''}
+    <div class="total-row"><span>Round Off :</span><span>0.00</span></div>
+    <hr class="sep-eq"/>
+    <div class="net-row"><span>Net Payable :</span><span>₹${Number(order.total).toFixed(2)}</span></div>
+    <hr class="sep-eq"/>
+
+    <div class="footer-meta">ITEM(S)/QTY: ${items.length}/${totalQty.toFixed(3)}</div>
+    <hr class="sep-dash"/>
+    <div class="footer-row"><span>PAYMENT MODE</span><span>${deliveryType === 'delivery' ? 'COD' : 'CASH'}</span></div>
+    <hr class="sep-dash"/>
+    <div class="thank">Thank you, Visit again!!!</div>
+</body>
+</html>`
+
+        const win = window.open('', '_blank', 'width=400,height=700')
+        win.document.write(html)
+        win.document.close()
+        win.focus()
+        setTimeout(() => win.print(), 400)
     }
 
     return (
         <motion.div className="card admin-order-card" style={{ padding: 0, overflow: 'hidden', borderLeft: `5px solid ${isProcessing ? '#f59e0b' : isReady ? '#3b82f6' : '#10b981'}` }}>
             <div style={{ padding: 16, cursor: 'pointer' }} onClick={() => onExpand(order.token)}>
-                <div style={{ display: 'flex', justify: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                         <div style={{ fontWeight: 800, color: '#1e3a8a', fontSize: 16 }}>#{order.token}</div>
                         <div style={{ fontSize: 13, color: '#64748b' }}>📱 +91 ****{order.phone.slice(-4)}</div>
@@ -412,7 +580,7 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error }
                     <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} style={{ overflow: 'hidden', background: '#f8fafc', padding: '0 16px' }}>
                         <div style={{ padding: '12px 0', borderTop: '1px solid #e2e8f0' }}>
                             {items.map((it, i) => (
-                                <div key={i} style={{ display: 'flex', justify: 'space-between', fontSize: 13, marginBottom: 4 }}>
+                                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
                                     <span>{it.name} x {it.quantity}</span>
                                     <span>₹{it.subtotal || it.price * it.quantity}</span>
                                 </div>
@@ -422,9 +590,33 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error }
                 )}
             </AnimatePresence>
 
+            {/* Generate Bill button — always visible */}
+            <div style={{ padding: '8px 12px 0', borderTop: '1px solid #e2e8f0' }}>
+                <button
+                    onClick={generateBill}
+                    style={{
+                        width: '100%',
+                        padding: '7px',
+                        fontSize: 12,
+                        fontWeight: 700,
+                        background: 'linear-gradient(135deg, #1e3a8a, #3b82f6)',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: 8,
+                        cursor: 'pointer',
+                        letterSpacing: '0.5px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 6,
+                    }}
+                >
+                    🖨️ Generate Bill
+                </button>
+            </div>
+
             {!isDelivered && (
                 <div style={{ padding: 12, borderTop: '1px solid #e2e8f0' }}>
-                    {/* OTP Input Panel — appears when delivery person clicks Mark Delivered */}
                     <AnimatePresence>
                         {showOtpInput && isReady && deliveryType === 'delivery' && (
                             <motion.div
