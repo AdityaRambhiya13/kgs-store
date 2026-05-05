@@ -813,6 +813,7 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
                         </div>
                     )}
 
+                    <AnimatePresence>
                         {showOtpInput && isReady && deliveryType === 'delivery' && (
                             <motion.div
                                 initial={{ opacity: 0, height: 0 }}
