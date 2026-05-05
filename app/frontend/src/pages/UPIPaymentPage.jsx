@@ -33,7 +33,7 @@ export default function UPIPaymentPage() {
     const isExpired = timeLeft === 0
 
     const upiDeepLink = total
-        ? `upi://pay?pa=7710888765@ibl&pn=KGS%20Store&am=${total.toFixed(2)}&cu=INR&tn=Order%20${orderToken}`
+        ? `upi://pay?pa=paytmqr6iswg6@ptys&pn=KGS%20Store&am=${total.toFixed(2)}&cu=INR&tn=Order%20${orderToken}`
         : null
 
     const handleIPaid = () => {
@@ -129,7 +129,7 @@ export default function UPIPaymentPage() {
                             {/* UPI ID Text */}
                             <div style={{ background: '#f8fafc', borderRadius: 12, padding: '12px', textAlign: 'center', marginBottom: 20, border: '1px solid #e2e8f0' }}>
                                 <div style={{ fontSize: 12, color: '#64748b', marginBottom: 4 }}>UPI ID (manual entry)</div>
-                                <div style={{ fontWeight: 800, fontSize: 16, color: '#1c1c1c', letterSpacing: '0.5px' }}>7710888765@ibl</div>
+                                <div style={{ fontWeight: 800, fontSize: 16, color: '#1c1c1c', letterSpacing: '0.5px' }}>paytmqr6iswg6@ptys</div>
                                 <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 3 }}>KGS Store</div>
                             </div>
 
