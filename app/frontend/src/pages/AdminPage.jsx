@@ -581,66 +581,66 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
             font-size: 13px;
             color: #000;
             background: #fff;
-            width: 80mm;
+            width: 76mm; /* Slightly smaller to prevent clipping on 80mm paper */
             margin: 0 auto;
-            padding: 15px 10px 30px;
+            padding: 10px 5px 20px;
         }
         .store-name {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 900;
             text-align: center;
             letter-spacing: 1.5px;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         .store-addr {
             text-align: center;
-            font-size: 11px;
-            line-height: 1.6;
-            margin-bottom: 10px;
+            font-size: 10px;
+            line-height: 1.4;
+            margin-bottom: 8px;
         }
         .store-meta {
             text-align: center;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: bold;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
-        .sep-dash { border: none; border-top: 1px dashed #000; margin: 10px 0; }
-        .sep-eq   { border: none; border-top: 2px solid #000;   margin: 10px 0; }
+        .sep-dash { border: none; border-top: 1px dashed #000; margin: 8px 0; }
+        .sep-eq   { border: none; border-top: 2px solid #000;   margin: 8px 0; }
         .title {
             text-align: center;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 900;
-            letter-spacing: 4px;
-            margin: 14px 0;
+            letter-spacing: 3px;
+            margin: 10px 0;
             text-decoration: underline;
         }
-        .meta-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; }
+        .meta-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 11px; }
         .meta-label { font-weight: bold; }
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 10.5px;
-            margin: 12px 0;
+            font-size: 10px;
+            margin: 10px 0;
             table-layout: fixed;
         }
-        th:nth-child(1) { width: 32px; }
+        th:nth-child(1) { width: 28px; }
         th:nth-child(2) { width: auto; }
-        th:nth-child(3) { width: 55px; }
-        th:nth-child(4) { width: 55px; }
-        th:nth-child(5) { width: 45px; }
-        th:nth-child(6) { width: 65px; }
+        th:nth-child(3) { width: 45px; }
+        th:nth-child(4) { width: 45px; }
+        th:nth-child(5) { width: 40px; }
+        th:nth-child(6) { width: 55px; }
         
         thead tr th {
             font-weight: 900;
             text-align: left;
-            padding: 10px 2px;
-            border-bottom: 1.5px dashed #000;
-            border-top: 1.5px dashed #000;
+            padding: 8px 1px;
+            border-bottom: 1px dashed #000;
+            border-top: 1px dashed #000;
             white-space: nowrap;
             overflow: hidden;
         }
         td { 
-            padding: 8px 2px; 
+            padding: 6px 1px; 
             vertical-align: top; 
             word-wrap: break-word;
             overflow: hidden;
@@ -649,14 +649,14 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
         th:nth-child(3), th:nth-child(4), th:nth-child(5), th:nth-child(6) { text-align: right; }
         .divider-row td { padding: 0; }
         .divider-row hr { border: none; border-top: 1px dashed #000; }
-        .total-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; font-weight: bold; }
-        .net-row   { display: flex; justify-content: space-between; padding: 12px 0; font-size: 20px; font-weight: 900; }
-        .footer-meta { font-size: 12px; margin: 12px 0; font-weight: bold; }
-        .footer-row { display: flex; justify-content: space-between; font-size: 13px; padding: 10px 0; font-weight: 900; border-top: 1px dashed #000; border-bottom: 1px dashed #000; }
-        .thank { text-align: center; font-size: 14px; margin-top: 32px; font-weight: 900; letter-spacing: 1px; }
+        .total-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 12px; font-weight: bold; }
+        .net-row   { display: flex; justify-content: space-between; padding: 10px 0; font-size: 18px; font-weight: 900; }
+        .footer-meta { font-size: 11px; margin: 10px 0; font-weight: bold; }
+        .footer-row { display: flex; justify-content: space-between; font-size: 12px; padding: 8px 0; font-weight: 900; border-top: 1px dashed #000; border-bottom: 1px dashed #000; }
+        .thank { text-align: center; font-size: 13px; margin-top: 25px; font-weight: 900; letter-spacing: 1px; }
         @media print {
-            body { width: 80mm; }
-            @page { size: 80mm auto; margin: 0; }
+            body { width: 100%; margin: 0; padding: 0; }
+            @page { size: auto; margin: 0; }
         }
     </style>
 </head>
@@ -704,17 +704,34 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
 
     <div class="footer-meta">ITEM(S)/QTY: ${items.length}/${totalQty.toFixed(3)}</div>
     <hr class="sep-dash"/>
-    <div class="footer-row"><span>PAYMENT MODE</span><span>${deliveryType === 'delivery' ? 'COD' : 'CASH'}</span></div>
+    <div class="footer-row"><span>PAYMENT MODE</span><span>${order.payment_method === 'upi' ? 'UPI' : 'CASH'}</span></div>
     <hr class="sep-dash"/>
     <div class="thank">Thank you, Visit again!!!</div>
 </body>
 </html>`
 
-        const win = window.open('', '_blank', 'width=400,height=700')
-        win.document.write(html)
-        win.document.close()
-        win.focus()
-        setTimeout(() => win.print(), 400)
+        // Use a hidden iframe for more reliable printing (prevents popup blocks)
+        const frame = document.createElement('iframe')
+        frame.style.position = 'fixed'
+        frame.style.right = '0'
+        frame.style.bottom = '0'
+        frame.style.width = '0'
+        frame.style.height = '0'
+        frame.style.border = '0'
+        document.body.appendChild(frame)
+        
+        const doc = frame.contentWindow.document
+        doc.open()
+        doc.write(html)
+        doc.close()
+        
+        frame.contentWindow.focus()
+        // Wait for styles/content to be ready before printing
+        setTimeout(() => {
+            frame.contentWindow.print()
+            // Clean up after the print dialog is closed
+            setTimeout(() => document.body.removeChild(frame), 1000)
+        }, 500)
     }
 
     return (
