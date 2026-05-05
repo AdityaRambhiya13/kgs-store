@@ -39,7 +39,9 @@ export default function AdminPage() {
                     const data = await getAdminProducts(adminToken)
                     setProducts(Array.isArray(data) ? data : [])
                 }
-            } catch (err) { }
+            } catch (err) { 
+                console.error("Admin fetch error:", err)
+            }
         }
         fetchData()
         intervalRef.current = setInterval(fetchData, 8000)
