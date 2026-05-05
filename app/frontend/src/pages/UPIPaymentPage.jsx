@@ -33,7 +33,7 @@ export default function UPIPaymentPage() {
     const isExpired = timeLeft === 0
 
     const upiDeepLink = total
-        ? `upi://pay?pa=7710888765@ibl&pn=KGS+Store&am=${total.toFixed(2)}&tr=${orderToken}&cu=INR&tn=KGS+Order+${orderToken}`
+        ? `upi://pay?pa=7710888765@ibl&pn=KGS%20Store&am=${total.toFixed(2)}&cu=INR&tn=Order%20${orderToken}`
         : null
 
     const handleIPaid = () => {
@@ -81,16 +81,8 @@ export default function UPIPaymentPage() {
                                     <QRCodeCanvas
                                         value={upiDeepLink}
                                         size={220}
-                                        level="H"
+                                        level="M"
                                         includeMargin={false}
-                                        imageSettings={{
-                                            src: "/kgs-qr.jpeg",
-                                            x: undefined,
-                                            y: undefined,
-                                            height: 40,
-                                            width: 40,
-                                            excavate: true,
-                                        }}
                                         style={{ display: 'block', borderRadius: 8 }}
                                     />
                                     {isExpired && (
