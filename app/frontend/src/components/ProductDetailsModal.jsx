@@ -159,8 +159,13 @@ export default function ProductDetailsModal({ product, onClose, mrp }) {
                         <button className="pc-step-btn" onClick={() => addToCart(activeVariant, 1)}>+</button>
                       </div>
                     ) : (
-                      <button className="btn btn-primary" onClick={() => addToCart(activeVariant, 1)} style={{ padding: '8px 32px' }}>
-                        ADD
+                      <button 
+                        className={`btn btn-primary ${activeVariant.in_stock === false ? 'disabled' : ''}`} 
+                        onClick={() => activeVariant.in_stock !== false && addToCart(activeVariant, 1)} 
+                        style={{ padding: '8px 32px' }}
+                        disabled={activeVariant.in_stock === false}
+                      >
+                        {activeVariant.in_stock === false ? 'OUT OF STOCK' : 'ADD'}
                       </button>
                     )}
                   </div>
@@ -208,8 +213,12 @@ export default function ProductDetailsModal({ product, onClose, mrp }) {
                             <button className="pc-step-btn" onClick={() => addToCart(variant, 1)}>+</button>
                           </div>
                         ) : (
-                          <button className="pdm-vr-add-btn" onClick={() => addToCart(variant, 1)}>
-                            ADD
+                          <button 
+                            className={`pdm-vr-add-btn ${variant.in_stock === false ? 'disabled' : ''}`} 
+                            onClick={() => variant.in_stock !== false && addToCart(variant, 1)}
+                            disabled={variant.in_stock === false}
+                          >
+                            {variant.in_stock === false ? 'NA' : 'ADD'}
                           </button>
                         )}
                       </div>

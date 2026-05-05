@@ -23,9 +23,11 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
   const mrp = getMRP(minPrice, product.id || 1)
   const discount = getDiscount(minPrice, mrp)
   const fav = isFavorite(product.id)
+  const isOutOfStock = product.in_stock === false
 
   const handleAddClick = (e) => {
     e.stopPropagation()
+    if (isOutOfStock) return
     if (variantCount === 1) {
       addToCart(variants[0])
     } else {
@@ -91,7 +93,9 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
         {variantCount > 1 && (
           <div className="pc-variants-badge">{variantCount} options</div>
         )}
-
+        {isOutOfStock && (
+          <div className="pc-out-of-stock-label">Item Unavailable</div>
+        )}
       </div>
 
       {/* Card Body */}
@@ -130,15 +134,16 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
               ) : (
                 <motion.button
                   key="add"
-                  className="pc-add-btn"
+                  className={`pc-add-btn ${isOutOfStock ? 'disabled' : ''}`}
                   onClick={handleAddClick}
-                  whileTap={{ scale: 0.88 }}
+                  whileTap={isOutOfStock ? {} : { scale: 0.88 }}
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
                   transition={{ duration: 0.18 }}
+                  disabled={isOutOfStock}
                 >
-                  ADD
+                  {isOutOfStock ? 'NA' : 'ADD'}
                 </motion.button>
               )}
             </AnimatePresence>

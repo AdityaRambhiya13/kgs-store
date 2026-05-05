@@ -102,7 +102,9 @@ def init_db():
                 category TEXT NOT NULL,
                 sub_category TEXT NOT NULL DEFAULT '',
                 base_name TEXT NOT NULL DEFAULT '',
-                unit TEXT NOT NULL DEFAULT 'kg'
+                unit TEXT NOT NULL DEFAULT 'kg',
+                is_visible BOOLEAN NOT NULL DEFAULT TRUE,
+                in_stock BOOLEAN NOT NULL DEFAULT TRUE
             );
 
             -- Migrations for products
@@ -112,6 +114,12 @@ def init_db():
                 END IF;
                 IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='sub_category') THEN
                     ALTER TABLE products ADD COLUMN sub_category TEXT NOT NULL DEFAULT '';
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='is_visible') THEN
+                    ALTER TABLE products ADD COLUMN is_visible BOOLEAN NOT NULL DEFAULT TRUE;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='in_stock') THEN
+                    ALTER TABLE products ADD COLUMN in_stock BOOLEAN NOT NULL DEFAULT TRUE;
                 END IF;
             END $$;
 
@@ -317,7 +325,7 @@ def _seed_products(cursor):
     if final_products:
         try:
             cursor.executemany(
-                "INSERT INTO products (name, price, mrp, description, image_url, category, sub_category, base_name, unit) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                "INSERT INTO products (name, price, mrp, description, image_url, category, sub_category, base_name, unit, is_visible, in_stock) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s, TRUE, TRUE)",
                 final_products,
             )
             print(f"Successfully seeded {len(final_products)} products into database.")
@@ -548,8 +556,8 @@ def add_product(name: str, price: float, description: str, image_url: str, categ
     try:
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO products (name, price, description, image_url, category, sub_category, base_name, unit) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
-            (name, price, description, image_url, category, sub_category, base_name, unit)
+            "INSERT INTO products (name, price, description, image_url, category, sub_category, base_name, unit, is_visible, in_stock) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            (name, price, description, image_url, category, sub_category, base_name, unit, True, True)
         )
         product_id = cursor.fetchone()['id']
         conn.commit()

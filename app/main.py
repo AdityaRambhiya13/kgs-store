@@ -421,11 +421,21 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 
 @app.get("/api/products", response_model=List[ProductOut])
-def list_products(request: Request):
+def list_products(request: Request, include_hidden: bool = False):
     check_rate_limit(request, limit=120, window=60, scope="products")
     products = get_all_products()
-    print(f"DEBUG: Serving {len(products)} products to public endpoint")
+    
+    # If not explicitly requested to include hidden, filter them out
+    if not include_hidden:
+        products = [p for p in products if p.get("is_visible", True)]
+    
+    print(f"DEBUG: Serving {len(products)} products to endpoint (include_hidden={include_hidden})")
     return products
+
+@app.get("/api/admin/products", response_model=List[ProductOut])
+def admin_list_products(request: Request, admin: dict = Depends(get_current_admin)):
+    check_rate_limit(request, limit=120, window=60, scope="admin-products")
+    return get_all_products()
 
 
 
@@ -488,10 +498,14 @@ def place_order(order: OrderCreate, request: Request, customer_token: dict = Dep
     for item in order.items:
 
         if item.product_id not in products:
-
             raise HTTPException(status_code=400, detail="Product not found")
 
         product = products[item.product_id]
+
+        if not product.get("is_visible", True):
+            raise HTTPException(status_code=400, detail=f"Product '{product['name']}' is no longer available.")
+        if not product.get("in_stock", True):
+            raise HTTPException(status_code=400, detail=f"Product '{product['name']}' is out of stock.")
 
         subtotal = product["price"] * item.quantity
 

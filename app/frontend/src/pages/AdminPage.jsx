@@ -12,7 +12,7 @@ export default function AdminPage() {
     const [password, setPassword] = useState('')
     const [adminToken, setAdminToken] = useState(null)
     const [authed, setAuthed] = useState(false)
-    const [activeTab, setActiveTab] = useState('orders') // 'orders' | 'customers' | 'products'
+    const [activeTab, setActiveTab] = useState('orders') // 'orders' | 'customers' | 'products' | 'visibility' | 'inventory'
     const [orders, setOrders] = useState([])
     const [customers, setCustomers] = useState([])
     const [products, setProducts] = useState([])
@@ -35,8 +35,8 @@ export default function AdminPage() {
                 } else if (activeTab === 'customers') {
                     const data = await listCustomers(adminToken)
                     setCustomers(Array.isArray(data) ? data : [])
-                } else if (activeTab === 'products') {
-                    const data = await getProducts()
+                } else if (activeTab === 'products' || activeTab === 'visibility' || activeTab === 'inventory') {
+                    const data = await getAdminProducts(adminToken)
                     setProducts(Array.isArray(data) ? data : [])
                 }
             } catch (err) { }
@@ -147,13 +147,13 @@ export default function AdminPage() {
                     <p>Store Management System</p>
                 </div>
                 <div className="admin-nav-tabs">
-                    {['orders', 'products', 'customers'].map(tab => (
+                    {['orders', 'products', 'visibility', 'inventory', 'customers'].map(tab => (
                         <button
                             key={tab}
                             className={`nav-tab ${activeTab === tab ? 'active' : ''}`}
                             onClick={() => setActiveTab(tab)}
                         >
-                            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                            {tab === 'visibility' ? 'Displayer' : tab === 'inventory' ? 'Stock' : tab.charAt(0).toUpperCase() + tab.slice(1)}
                         </button>
                     ))}
                 </div>
@@ -200,7 +200,7 @@ export default function AdminPage() {
                     <div className="products-view">
                         <div className="section-header">
                             <h3>Catalog Management ({products.length})</h3>
-                            <button className="btn btn-primary" onClick={() => setProductForm({ name: '', price: 0, description: '', category: '', image_url: '', unit: 'kg' })}>
+                            <button className="btn btn-primary" onClick={() => setProductForm({ name: '', price: 0, description: '', category: '', image_url: '', unit: 'kg', is_visible: true, in_stock: true })}>
                                 + Add New Product
                             </button>
                         </div>
@@ -213,10 +213,99 @@ export default function AdminPage() {
                                         <div className="p-cat">{p.category}</div>
                                         <div className="p-name">{p.name}</div>
                                         <div className="p-price">₹{p.price} / {p.unit}</div>
+                                        <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                                            <span className={`badge ${p.is_visible ? 'success' : 'danger'}`} style={{ fontSize: 9 }}>{p.is_visible ? 'Visible' : 'Hidden'}</span>
+                                            <span className={`badge ${p.in_stock ? 'success' : 'danger'}`} style={{ fontSize: 9 }}>{p.in_stock ? 'In Stock' : 'Out of Stock'}</span>
+                                        </div>
                                     </div>
                                     <div className="p-actions">
                                         <button className="btn-icon" onClick={() => setProductForm(p)}>✏️</button>
                                         <button className="btn-icon" onClick={() => handleDeleteProduct(p.id)} style={{ color: 'var(--danger)' }}>🗑️</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'visibility' && (
+                    <div className="products-view">
+                        <div className="section-header">
+                            <h3>Product Displayer (Visibility)</h3>
+                            <p style={{ fontSize: 13, color: '#64748b' }}>Choose which products are shown to customers</p>
+                        </div>
+                        <div className="products-grid">
+                            {products.map(p => (
+                                <div key={p.id} className="product-admin-card card">
+                                    <img src={p.image_url} alt="" className="p-img" />
+                                    <div className="p-info">
+                                        <div className="p-name">{p.name}</div>
+                                        <div className="p-cat">{p.category}</div>
+                                    </div>
+                                    <div className="p-actions">
+                                        <div className="toggle-container" onClick={async () => {
+                                            try {
+                                                await updateProduct(p.id, { is_visible: !p.is_visible }, adminToken);
+                                                setProducts(prev => prev.map(item => item.id === p.id ? { ...item, is_visible: !item.is_visible } : item));
+                                            } catch (err) { alert(err.message) }
+                                        }}>
+                                            <div className={`toggle-switch ${p.is_visible ? 'on' : 'off'}`}>
+                                                <div className="toggle-handle"></div>
+                                            </div>
+                                            <span style={{ fontSize: 11, fontWeight: 700, color: p.is_visible ? 'var(--secondary)' : 'var(--danger)' }}>
+                                                {p.is_visible ? 'VISIBLE' : 'HIDDEN'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'inventory' && (
+                    <div className="products-view">
+                        <div className="section-header">
+                            <h3>Stock Inventory</h3>
+                            <p style={{ fontSize: 13, color: '#64748b' }}>Manage product availability</p>
+                        </div>
+                        <div className="products-grid">
+                            {products.map(p => (
+                                <div key={p.id} className="product-admin-card card">
+                                    <img src={p.image_url} alt="" className="p-img" />
+                                    <div className="p-info">
+                                        <div className="p-name">{p.name}</div>
+                                        <div className="p-cat">{p.category}</div>
+                                    </div>
+                                    <div className="p-actions" style={{ minWidth: 120 }}>
+                                        <div className="stock-radio-group">
+                                            <label className="stock-label">
+                                                <input 
+                                                    type="radio" 
+                                                    checked={p.in_stock} 
+                                                    onChange={async () => {
+                                                        try {
+                                                            await updateProduct(p.id, { in_stock: true }, adminToken);
+                                                            setProducts(prev => prev.map(item => item.id === p.id ? { ...item, in_stock: true } : item));
+                                                        } catch (err) { alert(err.message) }
+                                                    }}
+                                                />
+                                                <span className="stock-text">In Stock</span>
+                                            </label>
+                                            <label className="stock-label">
+                                                <input 
+                                                    type="radio" 
+                                                    checked={!p.in_stock} 
+                                                    onChange={async () => {
+                                                        try {
+                                                            await updateProduct(p.id, { in_stock: false }, adminToken);
+                                                            setProducts(prev => prev.map(item => item.id === p.id ? { ...item, in_stock: false } : item));
+                                                        } catch (err) { alert(err.message) }
+                                                    }}
+                                                />
+                                                <span className="stock-text out">Out of Stock</span>
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -254,6 +343,17 @@ export default function AdminPage() {
 
                                 <label>Image URL</label>
                                 <input value={productForm.image_url} onChange={e => setProductForm({ ...productForm, image_url: e.target.value })} />
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
+                                    <div className="form-check">
+                                        <input type="checkbox" id="is_visible" checked={productForm.is_visible} onChange={e => setProductForm({ ...productForm, is_visible: e.target.checked })} />
+                                        <label htmlFor="is_visible" style={{ marginTop: 0, marginLeft: 8, display: 'inline' }}>Visible in Store</label>
+                                    </div>
+                                    <div className="form-check">
+                                        <input type="checkbox" id="in_stock" checked={productForm.in_stock} onChange={e => setProductForm({ ...productForm, in_stock: e.target.checked })} />
+                                        <label htmlFor="in_stock" style={{ marginTop: 0, marginLeft: 8, display: 'inline' }}>In Stock</label>
+                                    </div>
+                                </div>
 
                                 <div className="modal-btns">
                                     <button type="button" className="btn btn-ghost" onClick={() => setProductForm(null)}>Cancel</button>
@@ -318,6 +418,23 @@ export default function AdminPage() {
                 .admin-login { display: flex; align-items: center; justify-content: center; height: 100vh; }
                 .admin-login-card { background: white; padding: 40px; border-radius: 24px; width: 340px; text-align: center; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
                 .admin-avatar { font-size: 48px; margin-bottom: 16px; }
+
+                .badge { padding: 4px 8px; border-radius: 6px; font-weight: 700; color: white; text-transform: uppercase; }
+                .badge.success { background: #10b981; }
+                .badge.danger { background: #ef4444; }
+
+                .toggle-container { cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+                .toggle-switch { width: 44px; height: 22px; background: #e2e8f0; border-radius: 99px; position: relative; transition: background 0.3s; }
+                .toggle-switch.on { background: #10b981; }
+                .toggle-switch.off { background: #ef4444; }
+                .toggle-handle { width: 18px; height: 18px; background: white; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: left 0.3s; }
+                .toggle-switch.on .toggle-handle { left: 24px; }
+
+                .stock-radio-group { display: flex; flex-direction: column; gap: 8px; }
+                .stock-label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+                .stock-text { font-size: 13px; font-weight: 600; color: #10b981; }
+                .stock-text.out { color: #ef4444; }
+                .form-check { display: flex; align-items: center; }
             `}</style>
         </motion.div>
     )

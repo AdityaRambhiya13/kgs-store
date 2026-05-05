@@ -44,6 +44,8 @@ async function request(method, path, body = null, signal = null, token = null) {
 
 export const getProducts = (signal, token = null) => request('GET', '/api/products', null, signal, token)
 
+export const getAdminProducts = (token, signal) => request('GET', '/api/admin/products', null, signal, token)
+
 export const placeOrder = (data, token) => request('POST', '/api/orders', data, null, token)
 
 export const cancelOrder = (token) => request('POST', `/api/orders/${token}/cancel`)
