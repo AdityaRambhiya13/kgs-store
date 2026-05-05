@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { listOrders, updateStatus, listCustomers, adminLogin, getProducts, addProduct, updateProduct, deleteProduct } from '../api'
+import { listOrders, updateStatus, listCustomers, adminLogin, getProducts, getAdminProducts, addProduct, updateProduct, deleteProduct } from '../api'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function AdminPage() {
