@@ -73,6 +73,10 @@ export const updateProduct = (id, data, adminToken) =>
 export const deleteProduct = (id, adminToken) =>
     request('DELETE', `/api/admin/products/${id}`, null, null, adminToken)
 
+// ── Payment ────────────────────────────────────────────────────
+export const confirmPayment = (orderToken, adminToken) =>
+    request('POST', `/api/admin/orders/${orderToken}/confirm-payment`, null, null, adminToken)
+
 // ── Auth ───────────────────────────────────────────────────────
 // ── Auth ───────────────────────────────────────────────────────
 export const signup = (phone, pin, name) =>

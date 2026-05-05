@@ -71,19 +71,15 @@ export default function StatusPage() {
             try {
                 const data = JSON.parse(event.data)
                 // Filter updates for this specific order
-                if (data.type === 'status_update' && data.token === token) {
-                    setOrder(prev => ({ ...prev, status: data.status }))
-                    if (data.status === 'Ready for Pickup' || data.status === 'Delivered') {
-                        if (!celebratedRef.current) {
-                            celebratedRef.current = true
-                            fireConfetti()
-                        }
-                    }
+                if ((data.type === 'status_update' || data.type === 'payment_confirmed') && data.token === token) {
+                    // Refetch to get fresh OTP and status securely
+                    fetchOrder(controller.signal)
                 }
             } catch (err) {
                 console.error("WS parse error:", err)
             }
         }
+
 
         ws.onclose = () => console.log("WS connection closed")
         ws.onerror = (err) => console.error("WS error:", err)

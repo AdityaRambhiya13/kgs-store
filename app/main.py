@@ -82,7 +82,9 @@ from database import (
 
     get_favorites, add_favorite, remove_favorite,
 
-    get_trending_products, get_personalized_recommendations
+    get_trending_products, get_personalized_recommendations,
+
+    confirm_payment_and_generate_otp
 
 )
 
@@ -553,13 +555,25 @@ def place_order(order: OrderCreate, request: Request, customer_token: dict = Dep
 
 
 
-    token, delivery_otp = create_order(phone, validated_items, calculated_total, order.delivery_type, order.delivery_time, address_str)
-
-    response = {"token": token, "total": calculated_total, "status": "Processing"}
-    # Only return OTP to the customer (never visible to admin)
+    token, delivery_otp = create_order(phone, validated_items, calculated_total, order.delivery_type, order.delivery_time, address_str, order.payment_method)
+    response = {"token": token, "total": calculated_total, "status": "Processing", "payment_method": order.payment_method}
     if delivery_otp:
         response["delivery_otp"] = delivery_otp
     return response
+
+
+@app.post("/api/admin/orders/{order_token}/confirm-payment")
+async def confirm_payment(order_token: str, request: Request, admin_token: dict = Depends(get_current_admin)):
+    """Admin confirms payment received. Generates delivery OTP and moves order to Ready for Pickup."""
+    check_rate_limit(request, limit=30, window=60, scope="admin-confirm-payment")
+    order = get_order_by_token(order_token)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if order.get("payment_status") == "paid":
+        raise HTTPException(status_code=400, detail="Payment already confirmed for this order")
+    plain_otp = confirm_payment_and_generate_otp(order_token)
+    await manager.broadcast_all({"type": "status_update", "token": order_token, "status": "Ready for Pickup"})
+    return {"message": "Payment confirmed. Order moved to Ready for Pickup.", "otp_generated": plain_otp is not None}
 
 
 

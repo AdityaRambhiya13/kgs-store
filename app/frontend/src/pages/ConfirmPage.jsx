@@ -62,6 +62,8 @@ export default function ConfirmPage() {
     const [orderPlaced, setOrderPlaced] = useState(false)
     const [deliveryType, setDeliveryType] = useState('pickup')
     const [deliveryTime, setDeliveryTime] = useState('same_day')
+    const [paymentMethod, setPaymentMethod] = useState('cod')  // 'upi' | 'cod'
+    const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
 
     const FREE_DELIVERY_THRESHOLD = 500
     const DELIVERY_FEE = 150
@@ -103,21 +105,26 @@ export default function ConfirmPage() {
         }
     }, [step])
 
+    // Called after user confirms payment method in dialog
     const handleSubmit = async () => {
         setError('')
         setApiError('')
         setLoading(true)
+        setConfirmDialogOpen(false)
         try {
             const items = cartItems.map(item => ({
                 product_id: item.id, name: item.name, price: item.price,
                 quantity: item.quantity, unit: item.unit || 'kg'
             }))
-            const payload = { 
-                items, 
-                total: finalTotal, 
-                delivery_type: deliveryType, 
+            // Only home delivery gets a payment choice; pickup is always COD
+            const effectivePayment = deliveryType === 'delivery' ? paymentMethod : 'cod'
+            const payload = {
+                items,
+                total: finalTotal,
+                delivery_type: deliveryType,
                 delivery_time: deliveryTime,
-                delivery_fee: activeDeliveryFee 
+                delivery_fee: activeDeliveryFee,
+                payment_method: effectivePayment
             }
 
             if (deliveryType === 'delivery') {
@@ -138,12 +145,35 @@ export default function ConfirmPage() {
             if (result.delivery_otp) setDeliveryOtp(result.delivery_otp)
             setOrderPlaced(true)
             clearCart()
+
+            if (effectivePayment === 'upi') {
+                // Redirect to UPI payment page — do NOT show success here
+                navigate('/pay/upi', { state: { orderToken: result.token, total: finalTotal } })
+                return
+            }
+            // COD: show standard success screen
             setStep('success')
         } catch (err) {
             setApiError(err.message || 'Something went wrong. Please try again.')
         } finally {
             setLoading(false)
         }
+    }
+
+    // Validate form then open confirmation dialog
+    const handleProceedClick = () => {
+        setError('')
+        if (deliveryType === 'delivery') {
+            if (!addressForm.flat_no || !addressForm.building_name || !addressForm.road_name || !addressForm.area_name || !addressForm.pincode) {
+                setError('Please fill in all required address fields.')
+                return
+            }
+            if (addressForm.pincode.length !== 6) {
+                setError('Pincode must be exactly 6 digits.')
+                return
+            }
+        }
+        setConfirmDialogOpen(true)
     }
 
     const handleCancel = async () => {
@@ -242,6 +272,27 @@ export default function ConfirmPage() {
                                 </div>
                             </div>
 
+                            {/* Payment Method — only for home delivery */}
+                            {deliveryType === 'delivery' && (
+                                <div className="delivery-toggle" style={{ marginTop: '16px' }}>
+                                    <label>💳 Payment Method</label>
+                                    <div className="delivery-options">
+                                        <button
+                                            className={`delivery-option ${paymentMethod === 'upi' ? 'active' : ''}`}
+                                            onClick={() => setPaymentMethod('upi')} type="button"
+                                        >
+                                            📲 UPI
+                                        </button>
+                                        <button
+                                            className={`delivery-option ${paymentMethod === 'cod' ? 'active' : ''}`}
+                                            onClick={() => setPaymentMethod('cod')} type="button"
+                                        >
+                                            💵 Cash on Delivery
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="delivery-toggle" style={{ marginTop: '16px' }}>
                                 <label>Schedule Time</label>
                                 <div className="delivery-options">
@@ -307,7 +358,7 @@ export default function ConfirmPage() {
                             <motion.button
                                 className="btn btn-primary"
                                 style={{ width: '100%', justifyContent: 'center', fontSize: 16, padding: '15px', marginBottom: 12, marginTop: 16 }}
-                                onClick={handleSubmit}
+                                onClick={handleProceedClick}
                                 disabled={loading}
                                 whileTap={{ scale: 0.97 }}
                             >
@@ -319,6 +370,62 @@ export default function ConfirmPage() {
                                     ❌ {apiError}
                                 </motion.div>
                             )}
+
+                            {/* Confirmation Dialog */}
+                            <AnimatePresence>
+                                {confirmDialogOpen && (
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        style={{
+                                            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+                                            zIndex: 999, display: 'flex', alignItems: 'flex-end', justifyContent: 'center'
+                                        }}
+                                        onClick={() => setConfirmDialogOpen(false)}
+                                    >
+                                        <motion.div
+                                            initial={{ y: 80, opacity: 0 }}
+                                            animate={{ y: 0, opacity: 1 }}
+                                            exit={{ y: 80, opacity: 0 }}
+                                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                                            onClick={e => e.stopPropagation()}
+                                            style={{
+                                                background: 'white', borderRadius: '24px 24px 0 0',
+                                                padding: '28px 24px 36px', width: '100%', maxWidth: 480
+                                            }}
+                                        >
+                                            <div style={{ width: 40, height: 4, background: '#e2e8f0', borderRadius: 99, margin: '0 auto 20px' }} />
+                                            <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 8, textAlign: 'center' }}>Confirm Your Order</h3>
+                                            <p style={{ textAlign: 'center', color: '#64748b', fontSize: 14, marginBottom: 20 }}>
+                                                You are about to place an order worth <strong style={{ color: '#2563eb' }}>₹{finalTotal.toFixed(0)}</strong> via{' '}
+                                                <strong>{deliveryType === 'delivery' && paymentMethod === 'upi' ? '📲 UPI' : '💵 Cash on Delivery'}</strong>.
+                                            </p>
+                                            {deliveryType === 'delivery' && paymentMethod === 'upi' && (
+                                                <div style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: 12, padding: '12px 16px', marginBottom: 20, fontSize: 13, color: '#1e40af' }}>
+                                                    💡 You'll be taken to a <strong>UPI payment screen</strong> after confirming.
+                                                </div>
+                                            )}
+                                            <div style={{ display: 'flex', gap: 12 }}>
+                                                <button
+                                                    onClick={() => setConfirmDialogOpen(false)}
+                                                    style={{ flex: 1, padding: '14px', borderRadius: 12, border: '2px solid #e2e8f0', background: 'white', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}
+                                                >
+                                                    Go Back
+                                                </button>
+                                                <motion.button
+                                                    whileTap={{ scale: 0.97 }}
+                                                    onClick={handleSubmit}
+                                                    disabled={loading}
+                                                    style={{ flex: 1, padding: '14px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #2563eb, #3b82f6)', color: 'white', fontWeight: 800, fontSize: 15, cursor: 'pointer' }}
+                                                >
+                                                    {loading ? '...' : 'Yes, Confirm!'}
+                                                </motion.button>
+                                            </div>
+                                        </motion.div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </motion.div>
                     )}
 

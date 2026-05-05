@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { listOrders, updateStatus, listCustomers, adminLogin, getProducts, getAdminProducts, addProduct, updateProduct, deleteProduct } from '../api'
+import { listOrders, updateStatus, listCustomers, adminLogin, getProducts, getAdminProducts, addProduct, updateProduct, deleteProduct, confirmPayment } from '../api'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function AdminPage() {
@@ -172,9 +172,9 @@ export default function AdminPage() {
                         </div>
 
                         <div className="admin-lanes">
-                            <OrderLane title="⏳ Processing" orders={processing} onAction={handleStatusAction} onExpand={toggleExpand} expanded={expanded} togglingToken={togglingToken} cardError={cardError} />
-                            <OrderLane title="🟡 Ready for Pickup" orders={ready} onAction={handleStatusAction} onExpand={toggleExpand} expanded={expanded} togglingToken={togglingToken} cardError={cardError} />
-                            <OrderLane title="✅ Delivered" orders={orders.filter(o => o.status === 'Delivered')} onAction={handleStatusAction} onExpand={toggleExpand} expanded={expanded} togglingToken={togglingToken} cardError={cardError} />
+                            <OrderLane title="⏳ Processing" orders={processing} onAction={handleStatusAction} onExpand={toggleExpand} expanded={expanded} togglingToken={togglingToken} cardError={cardError} adminToken={adminToken} />
+                            <OrderLane title="🟡 Ready for Pickup" orders={ready} onAction={handleStatusAction} onExpand={toggleExpand} expanded={expanded} togglingToken={togglingToken} cardError={cardError} adminToken={adminToken} />
+                            <OrderLane title="✅ Delivered" orders={orders.filter(o => o.status === 'Delivered')} onAction={handleStatusAction} onExpand={toggleExpand} expanded={expanded} togglingToken={togglingToken} cardError={cardError} adminToken={adminToken} />
                         </div>
                     </>
                 )}
@@ -468,6 +468,7 @@ function OrderLane({ title, orders, onAction, onExpand, expanded, togglingToken,
                         expanded={expanded[o.token]} 
                         toggling={togglingToken === o.token}
                         error={cardError[o.token]}
+                        adminToken={adminToken}
                     />
                 ))}
             </div>
@@ -475,11 +476,14 @@ function OrderLane({ title, orders, onAction, onExpand, expanded, togglingToken,
     )
 }
 
-function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error }) {
+function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, adminToken }) {
     const isProcessing = order.status === 'Processing'
     const isReady = order.status === 'Ready for Pickup'
     const isDelivered = order.status === 'Delivered'
     const deliveryType = order.delivery_type || 'pickup'
+    const paymentMethod = order.payment_method || 'cod'
+    const paymentStatus = order.payment_status || 'cod'
+    const isUpiPending = paymentMethod === 'upi' && paymentStatus !== 'paid'
     
     let items = []
     try { items = JSON.parse(order.items_json) } catch { }
@@ -487,6 +491,24 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error }
     const [otpInput, setOtpInput] = useState('')
     const [showOtpInput, setShowOtpInput] = useState(false)
     const [otpError, setOtpError] = useState('')
+    const [confirmingPayment, setConfirmingPayment] = useState(false)
+    const [paymentConfirmMsg, setPaymentConfirmMsg] = useState('')
+
+    const adminToken_unused = null  // received as prop
+
+    const handleConfirmPayment = async () => {
+        setConfirmingPayment(true)
+        setPaymentConfirmMsg('')
+        try {
+            await confirmPayment(order.token, adminToken)
+            setPaymentConfirmMsg('✅ Payment confirmed!')
+            setTimeout(() => window.location.reload(), 1200)
+        } catch (e) {
+            setPaymentConfirmMsg('❌ ' + (e.message || 'Failed'))
+        } finally {
+            setConfirmingPayment(false)
+        }
+    }
 
     const handleAction = () => {
         if (isProcessing) {
@@ -705,7 +727,19 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error }
                     </div>
                     <div style={{ textAlign: 'right' }}>
                         <div style={{ fontWeight: 800, color: '#10b981' }}>₹{order.total}</div>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>{deliveryType.toUpperCase()}</div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>
+                            {deliveryType.toUpperCase()}
+                            {paymentMethod === 'upi' && (
+                                <span style={{
+                                    marginLeft: 6, padding: '2px 6px', borderRadius: 6,
+                                    background: isUpiPending ? '#fef3c7' : '#dcfce7',
+                                    color: isUpiPending ? '#b45309' : '#15803d',
+                                    fontSize: 10, fontWeight: 800
+                                }}>
+                                    {isUpiPending ? '⏳ UPI Pending' : '✅ UPI Paid'}
+                                </span>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -752,7 +786,33 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error }
 
             {!isDelivered && (
                 <div style={{ padding: 12, borderTop: '1px solid #e2e8f0' }}>
-                    <AnimatePresence>
+
+                    {/* Payment Received button for UPI orders */}
+                    {isProcessing && isUpiPending && (
+                        <div style={{ marginBottom: 10 }}>
+                            {paymentConfirmMsg && (
+                                <div style={{ padding: '8px 12px', borderRadius: 8, background: paymentConfirmMsg.startsWith('✅') ? '#dcfce7' : '#fee2e2', color: paymentConfirmMsg.startsWith('✅') ? '#15803d' : '#dc2626', fontSize: 13, fontWeight: 600, marginBottom: 8, textAlign: 'center' }}>
+                                    {paymentConfirmMsg}
+                                </div>
+                            )}
+                            <button
+                                onClick={handleConfirmPayment}
+                                disabled={confirmingPayment}
+                                style={{
+                                    width: '100%', padding: '10px', borderRadius: 10, border: 'none',
+                                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                                    color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer',
+                                    marginBottom: 8, boxShadow: '0 4px 12px rgba(16,185,129,0.3)'
+                                }}
+                            >
+                                {confirmingPayment ? '⏳ Confirming...' : '💰 Payment Received'}
+                            </button>
+                            <div style={{ fontSize: 11, color: '#64748b', textAlign: 'center' }}>
+                                Verify UPI receipt before clicking. This will generate customer's delivery OTP.
+                            </div>
+                        </div>
+                    )}
+
                         {showOtpInput && isReady && deliveryType === 'delivery' && (
                             <motion.div
                                 initial={{ opacity: 0, height: 0 }}

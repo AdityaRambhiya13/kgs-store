@@ -136,8 +136,20 @@ def init_db():
                 delivery_type TEXT NOT NULL DEFAULT 'pickup',
                 delivery_time TEXT NOT NULL DEFAULT 'same_day',
                 delivered_at TEXT,
-                delivery_otp TEXT
+                delivery_otp TEXT,
+                payment_method TEXT NOT NULL DEFAULT 'cod',
+                payment_status TEXT NOT NULL DEFAULT 'pending'
             );
+
+            -- Migrations for orders payment columns
+            DO $$ BEGIN
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='payment_method') THEN
+                    ALTER TABLE orders ADD COLUMN payment_method TEXT NOT NULL DEFAULT 'cod';
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='payment_status') THEN
+                    ALTER TABLE orders ADD COLUMN payment_status TEXT NOT NULL DEFAULT 'pending';
+                END IF;
+            END $$;
 
             -- Customers table
             CREATE TABLE IF NOT EXISTS customers (
@@ -437,7 +449,7 @@ def get_all_customers():
 
 # ── Orders ────────────────────────────────────────────────
 
-def create_order(phone: str, items: list, total: float, delivery_type: str = "pickup", delivery_time: str = "same_day", address: "Optional[str]" = None) -> str:
+def create_order(phone: str, items: list, total: float, delivery_type: str = "pickup", delivery_time: str = "same_day", address: "Optional[str]" = None, payment_method: str = "cod") -> str:
     """Create a new order and return the generated token."""
     conn = get_connection()
     try:
@@ -457,19 +469,57 @@ def create_order(phone: str, items: list, total: float, delivery_type: str = "pi
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         items_json = json.dumps(items)
         
+        # Payment status: UPI orders start as 'pending', COD orders as 'cod'
+        payment_status = "pending" if payment_method == "upi" else "cod"
+        
+        # Delivery OTP: for UPI it's generated later by admin. For COD it's generated now.
         import random
-        delivery_otp = str(random.randint(1000, 9999)) if delivery_type == "delivery" else None
+        delivery_otp = None
+        if delivery_type == "delivery" and payment_method == "cod":
+            delivery_otp = str(random.randint(1000, 9999))
 
         cursor.execute(
-            "INSERT INTO orders (token, phone, items_json, status, total, timestamp, delivery_type, delivery_time, address, delivery_otp) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-            (token, phone, items_json, "Processing", total, timestamp, delivery_type, delivery_time, address, delivery_otp),
+            "INSERT INTO orders (token, phone, items_json, status, total, timestamp, delivery_type, delivery_time, address, delivery_otp, payment_method, payment_status) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            (token, phone, items_json, "Processing", total, timestamp, delivery_type, delivery_time, address, delivery_otp, payment_method, payment_status),
         )
 
         conn.commit()
         return token, delivery_otp
     finally:
         release_connection(conn)
-    return "", None
+
+def confirm_payment_and_generate_otp(order_token: str) -> "Optional[str]":
+    """Admin action: mark payment as received, generate secure delivery OTP.
+    Returns the plain-text OTP for delivery orders, or None for pickup."""
+    import secrets
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        # Fetch order to check delivery_type
+        cursor.execute("SELECT delivery_type, payment_status FROM orders WHERE token = %s", (order_token,))
+        row = cursor.fetchone()
+        if not row:
+            return None
+
+        delivery_type = row['delivery_type']
+        # Generate a 4-digit OTP only for delivery orders
+        plain_otp = None
+        if delivery_type == 'delivery':
+            plain_otp = str(secrets.randbelow(9000) + 1000)  # Crypto-secure 1000–9999
+
+        cursor.execute(
+            "UPDATE orders SET payment_status = 'paid', delivery_otp = %s, status = 'Ready for Pickup' WHERE token = %s",
+            (plain_otp, order_token)
+        )
+        conn.commit()
+        _invalidate_products_cache()
+        return plain_otp
+    except Exception as e:
+        print(f"Error confirming payment for {order_token}: {e}")
+        if conn: conn.rollback()
+        return None
+    finally:
+        release_connection(conn)
 
 def get_all_orders():
     """Fetch all orders (newest first) with customer names."""

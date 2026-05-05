@@ -51,6 +51,7 @@ class OrderCreate(BaseModel):
     delivery_time: Literal["same_day", "next_day"] = "same_day"
     address: Optional[AddressDetail] = None
     save_as_home: bool = False
+    payment_method: Literal["upi", "cod"] = "cod"
 
 class OrderOut(BaseModel):
     id: int
