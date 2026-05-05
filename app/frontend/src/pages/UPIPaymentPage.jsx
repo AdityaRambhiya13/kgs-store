@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { QRCodeCanvas } from 'qrcode.react'
 
 export default function UPIPaymentPage() {
     const navigate = useNavigate()
@@ -69,17 +70,28 @@ export default function UPIPaymentPage() {
                             {/* QR Code */}
                             <div style={{ position: 'relative', textAlign: 'center', marginBottom: 16 }}>
                                 <div style={{
-                                    background: '#f8fafc',
+                                    background: 'white',
                                     border: isExpired ? '3px solid #ef4444' : '3px solid #2563eb',
                                     borderRadius: 20,
                                     padding: '12px',
                                     display: 'inline-block',
-                                    position: 'relative'
+                                    position: 'relative',
+                                    boxShadow: '0 10px 25px rgba(0,0,0,0.05)'
                                 }}>
-                                    <img
-                                        src="/kgs-qr.jpeg"
-                                        alt="KGS UPI QR Code"
-                                        style={{ width: 220, height: 220, objectFit: 'contain', display: 'block', borderRadius: 12 }}
+                                    <QRCodeCanvas
+                                        value={upiDeepLink}
+                                        size={220}
+                                        level="H"
+                                        includeMargin={false}
+                                        imageSettings={{
+                                            src: "/kgs-qr.jpeg",
+                                            x: undefined,
+                                            y: undefined,
+                                            height: 40,
+                                            width: 40,
+                                            excavate: true,
+                                        }}
+                                        style={{ display: 'block', borderRadius: 8 }}
                                     />
                                     {isExpired && (
                                         <div style={{
