@@ -590,75 +590,75 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
         const html = `<!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <title>Tax Invoice - ${billNo}</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
+         body {
             font-family: 'Courier New', Courier, monospace;
-            font-size: 12px;
+            font-size: 11px;
             color: #000;
             background: #fff;
-            width: 72mm; /* Narrower to ensure it fits 80mm printers perfectly */
+            width: 65mm; /* Drastically narrower for maximum compatibility */
             margin: 0 auto;
-            padding: 5px 2px 20px;
+            padding: 5px 4px 20px;
+            overflow-x: hidden;
         }
         .store-name {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 900;
             text-align: center;
-            letter-spacing: 1.2px;
-            margin-bottom: 6px;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
         }
         .store-addr {
             text-align: center;
-            font-size: 9px;
-            line-height: 1.3;
-            margin-bottom: 6px;
+            font-size: 8.5px;
+            line-height: 1.2;
+            margin-bottom: 5px;
         }
         .store-meta {
             text-align: center;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: bold;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
-        .sep-dash { border: none; border-top: 1px dashed #000; margin: 8px 0; }
-        .sep-eq   { border: none; border-top: 2px solid #000;   margin: 8px 0; }
+        .sep-dash { border: none; border-top: 1px dashed #000; margin: 6px 0; }
+        .sep-eq   { border: none; border-top: 2px solid #000;   margin: 6px 0; }
         .title {
             text-align: center;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 900;
-            letter-spacing: 3px;
-            margin: 10px 0;
+            letter-spacing: 2px;
+            margin: 8px 0;
             text-decoration: underline;
+        }
+        .meta-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 10px; }
+ext-decoration: underline;
         }
         .meta-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 11px; }
         .meta-label { font-weight: bold; }
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 10px;
-            margin: 10px 0;
+            font-size: 9px;
+            margin: 6px 0;
             table-layout: fixed;
         }
-        th:nth-child(1) { width: 22px; }
+        th:nth-child(1) { width: 18px; }
         th:nth-child(2) { width: auto; }
-        th:nth-child(3) { width: 42px; }
-        th:nth-child(4) { width: 42px; }
-        th:nth-child(5) { width: 38px; }
-        th:nth-child(6) { width: 50px; }
+        th:nth-child(3) { width: 38px; }
+        th:nth-child(4) { width: 38px; }
+        th:nth-child(5) { width: 32px; }
+        th:nth-child(6) { width: 45px; }
         
         thead tr th {
             font-weight: 900;
             text-align: left;
-            padding: 8px 1px;
+            padding: 6px 1px;
             border-bottom: 1px dashed #000;
             border-top: 1px dashed #000;
             white-space: nowrap;
             overflow: hidden;
         }
         td { 
-            padding: 6px 1px; 
+            padding: 4px 1px; 
             vertical-align: top; 
             word-wrap: break-word;
             overflow: hidden;
