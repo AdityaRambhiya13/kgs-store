@@ -11,7 +11,7 @@ const PrivacyPolicy = () => {
       fontFamily: "'Inter', sans-serif",
       lineHeight: '1.6'
     }}>
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         style={{
@@ -69,7 +69,7 @@ const PrivacyPolicy = () => {
 
         <footer style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
           <p>If you have any questions, please contact Ketan Grain Store directly in-store.</p>
-          <button 
+          <button
             onClick={() => window.history.back()}
             style={{
               marginTop: '20px',
