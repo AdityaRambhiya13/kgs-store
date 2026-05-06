@@ -194,16 +194,25 @@ export default function StatusPage() {
                                     style={{ 
                                         marginTop: 20, 
                                         padding: '12px 16px', 
-                                        background: 'rgba(245, 158, 11, 0.1)', 
+                                        background: order.payment_status === 'rejected' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)', 
                                         borderRadius: 12,
-                                        border: '1px solid rgba(245, 158, 11, 0.2)',
+                                        border: order.payment_status === 'rejected' ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(245, 158, 11, 0.2)',
                                         fontSize: 14,
-                                        color: '#b45309',
+                                        color: order.payment_status === 'rejected' ? '#b91c1c' : '#b45309',
                                         lineHeight: 1.4
                                     }}
                                 >
-                                    <strong>✨ Payment Verification in Progress</strong><br/>
-                                    We're confirming your payment. Your delivery OTP will appear here shortly. Thank you for your patience!
+                                    {order.payment_status === 'rejected' ? (
+                                        <>
+                                            <strong>⚠️ Payment Verification Issue</strong><br/>
+                                            We're having trouble finding your payment in our records. Banks sometimes take a while! Could you please help us by sharing a screenshot of your payment on WhatsApp <strong>8879485171</strong>? This will help us confirm and get your order ready immediately! 🙏
+                                        </>
+                                    ) : (
+                                        <>
+                                            <strong>✨ Payment Verification in Progress</strong><br/>
+                                            We're confirming your payment. Your delivery OTP will appear here shortly. Thank you for your patience!
+                                        </>
+                                    )}
                                 </motion.div>
                             )}
                         </motion.div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { listOrders, updateStatus, listCustomers, adminLogin, getProducts, getAdminProducts, addProduct, updateProduct, deleteProduct, confirmPayment } from '../api'
+import { listOrders, updateStatus, listCustomers, adminLogin, getProducts, getAdminProducts, addProduct, updateProduct, deleteProduct, confirmPayment, rejectPayment } from '../api'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function AdminPage() {
@@ -512,6 +512,21 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
         }
     }
 
+    const handleRejectPayment = async () => {
+        if (!window.confirm('Mark this payment as NOT RECEIVED?')) return
+        setConfirmingPayment(true)
+        setPaymentConfirmMsg('')
+        try {
+            await rejectPayment(order.token, adminToken)
+            setPaymentConfirmMsg('⚠️ Marked as NOT RECEIVED')
+            setOrders(prev => prev.map(o => o.token === order.token ? { ...o, payment_status: 'rejected' } : o))
+        } catch (e) {
+            setPaymentConfirmMsg('❌ ' + (e.message || 'Failed'))
+        } finally {
+            setConfirmingPayment(false)
+        }
+    }
+
     const handleAction = () => {
         if (isProcessing) {
             onAction(order.token, 'Ready for Pickup', null)
@@ -814,20 +829,33 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
                                     {paymentConfirmMsg}
                                 </div>
                             )}
-                            <button
-                                onClick={handleConfirmPayment}
-                                disabled={confirmingPayment}
-                                style={{
-                                    width: '100%', padding: '10px', borderRadius: 10, border: 'none',
-                                    background: 'linear-gradient(135deg, #10b981, #059669)',
-                                    color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer',
-                                    marginBottom: 8, boxShadow: '0 4px 12px rgba(16,185,129,0.3)'
-                                }}
-                            >
-                                {confirmingPayment ? '⏳ Confirming...' : '💰 Payment Received'}
-                            </button>
-                            <div style={{ fontSize: 11, color: '#64748b', textAlign: 'center' }}>
-                                Verify UPI receipt before clicking. This will generate customer's delivery OTP.
+                            <div style={{ display: 'flex', gap: 8 }}>
+                                <button
+                                    onClick={handleConfirmPayment}
+                                    disabled={confirmingPayment}
+                                    style={{
+                                        flex: 2, padding: '10px', borderRadius: 10, border: 'none',
+                                        background: 'linear-gradient(135deg, #10b981, #059669)',
+                                        color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer',
+                                        boxShadow: '0 4px 12px rgba(16,185,129,0.3)'
+                                    }}
+                                >
+                                    {confirmingPayment ? '⏳ ...' : '💰 Payment Received'}
+                                </button>
+                                <button
+                                    onClick={handleRejectPayment}
+                                    disabled={confirmingPayment}
+                                    style={{
+                                        flex: 1, padding: '10px', borderRadius: 10, border: '1px solid #ef4444',
+                                        background: '#fff',
+                                        color: '#ef4444', fontWeight: 700, fontSize: 11, cursor: 'pointer'
+                                    }}
+                                >
+                                    Not Received
+                                </button>
+                            </div>
+                            <div style={{ fontSize: 10, color: '#64748b', textAlign: 'center', marginTop: 8 }}>
+                                Verify UPI receipt before clicking.
                             </div>
                         </div>
                     )}

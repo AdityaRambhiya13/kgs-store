@@ -581,6 +581,22 @@ def update_order_status(token: str, status: str) -> bool:
         release_connection(conn)
     return False
 
+def reject_order_payment(token: str) -> bool:
+    """Explicitly mark a payment as rejected/unverified."""
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE orders SET payment_status = 'rejected' WHERE token = %s",
+            (token,)
+        )
+        updated = cursor.rowcount > 0
+        conn.commit()
+        return updated
+    finally:
+        release_connection(conn)
+    return False
+
 def mark_delivered(token: str) -> bool:
     """Mark an order as Delivered with timestamp."""
     conn = get_connection()

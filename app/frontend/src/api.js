@@ -77,6 +77,9 @@ export const deleteProduct = (id, adminToken) =>
 export const confirmPayment = (orderToken, adminToken) =>
     request('POST', `/api/admin/orders/${orderToken}/confirm-payment`, null, null, adminToken)
 
+export const rejectPayment = (orderToken, adminToken) =>
+    request('POST', `/api/admin/orders/${orderToken}/reject-payment`, null, null, adminToken)
+
 // ── Auth ───────────────────────────────────────────────────────
 // ── Auth ───────────────────────────────────────────────────────
 export const signup = (phone, pin, name) =>

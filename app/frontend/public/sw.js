@@ -1,5 +1,5 @@
-// Service Worker v13 — Aggressive cache busting for Ketan Stores
-const CACHE_NAME = 'ketan-cache-v13';
+// Service Worker v14 — Aggressive cache busting for Ketan Stores
+const CACHE_NAME = 'ketan-cache-v14';
 
 self.addEventListener('install', (event) => {
   // Skip waiting so new SW activates immediately — no waiting for old tabs to close

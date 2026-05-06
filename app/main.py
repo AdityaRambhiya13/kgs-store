@@ -85,7 +85,7 @@ from database import (
 
     get_trending_products, get_personalized_recommendations,
 
-    confirm_payment_and_generate_otp
+    confirm_payment_and_generate_otp, reject_order_payment
 
 )
 
@@ -596,6 +596,22 @@ async def confirm_payment(order_token: str, request: Request, admin_token: dict 
     await manager.broadcast_all({"type": "status_update", "token": order_token, "status": "Ready for Pickup"})
     return {"message": "Payment confirmed. Order moved to Ready for Pickup.", "otp_generated": plain_otp is not None}
 
+
+
+@app.post("/api/admin/orders/{order_token}/reject-payment")
+async def reject_payment(order_token: str, request: Request, admin: dict = Depends(get_current_admin)):
+    check_rate_limit(request, limit=30, window=60, scope="admin-payment")
+    order = get_order_by_token(order_token)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    updated = reject_order_payment(order_token)
+    if not updated:
+        raise HTTPException(status_code=500, detail="Failed to update payment status")
+    
+    logging.warning(f"ADMIN_ACTION: Payment REJECTED for order {order_token} by admin")
+    await manager.broadcast_all({"type": "payment_rejected", "token": order_token})
+    return {"message": "Payment marked as rejected. Customer will be notified."}
 
 
 @app.get("/api/orders")
