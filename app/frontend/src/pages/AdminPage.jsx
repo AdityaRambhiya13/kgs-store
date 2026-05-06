@@ -454,7 +454,7 @@ function StatCard({ icon, label, value, color }) {
     )
 }
 
-function OrderLane({ title, orders, onAction, onExpand, expanded, togglingToken, cardError }) {
+function OrderLane({ title, orders, onAction, onExpand, expanded, togglingToken, cardError, adminToken }) {
     return (
         <div className="order-lane-col">
             <h3>{title} ({orders.length})</h3>
