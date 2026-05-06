@@ -84,7 +84,7 @@ export default function CartPanel() {
               <div className="cart-empty">
                 <span className="emoji">🛍️</span>
                 <p>Your cart is empty</p>
-                <button className="btn btn-ghost" onClick={() => setCartOpen(false)}>Browse Products</button>
+                <button className="btn btn-ghost" onClick={() => { setCartOpen(false); navigate('/'); }}>Browse Products</button>
               </div>
             ) : (
               <>
