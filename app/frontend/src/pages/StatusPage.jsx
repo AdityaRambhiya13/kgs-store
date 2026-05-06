@@ -185,6 +185,27 @@ export default function StatusPage() {
                                             : '⚡ Est. ready for pickup in ~60–90 mins'}
                                 </motion.div>
                             )}
+
+                            {/* Payment Verification Note for UPI */}
+                            {order.payment_method === 'upi' && order.payment_status !== 'paid' && !isDelivered && (
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    style={{ 
+                                        marginTop: 20, 
+                                        padding: '12px 16px', 
+                                        background: 'rgba(245, 158, 11, 0.1)', 
+                                        borderRadius: 12,
+                                        border: '1px solid rgba(245, 158, 11, 0.2)',
+                                        fontSize: 14,
+                                        color: '#b45309',
+                                        lineHeight: 1.4
+                                    }}
+                                >
+                                    <strong>✨ Payment Verification in Progress</strong><br/>
+                                    We're confirming your payment. Your delivery OTP will appear here shortly. Thank you for your patience!
+                                </motion.div>
+                            )}
                         </motion.div>
                     </div>
 

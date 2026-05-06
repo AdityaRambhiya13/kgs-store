@@ -10,8 +10,8 @@ export default function AdminPage() {
         return '****'
     }
     const [password, setPassword] = useState('')
-    const [adminToken, setAdminToken] = useState(null)
-    const [authed, setAuthed] = useState(false)
+    const [adminToken, setAdminToken] = useState(localStorage.getItem('adminToken'))
+    const [authed, setAuthed] = useState(!!localStorage.getItem('adminToken'))
     const [activeTab, setActiveTab] = useState('orders') // 'orders' | 'customers' | 'products' | 'visibility' | 'inventory'
     const [orders, setOrders] = useState([])
     const [customers, setCustomers] = useState([])
@@ -55,6 +55,7 @@ export default function AdminPage() {
             const res = await adminLogin(password.trim())
             const token = res.access_token
             setAdminToken(token)
+            localStorage.setItem('adminToken', token)
             setAuthed(true)
             // Load initial view
             const data = await listOrders(token)
@@ -159,7 +160,7 @@ export default function AdminPage() {
                         </button>
                     ))}
                 </div>
-                <button className="btn btn-ghost" onClick={() => setAuthed(false)} style={{ color: '#fff' }}>Sign Out</button>
+                <button className="btn btn-ghost" onClick={() => { setAuthed(false); setAdminToken(null); localStorage.removeItem('adminToken'); }} style={{ color: '#fff' }}>Sign Out</button>
             </div>
 
             <div className="admin-container">
@@ -502,7 +503,8 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
         try {
             await confirmPayment(order.token, adminToken)
             setPaymentConfirmMsg('✅ Payment confirmed!')
-            setTimeout(() => window.location.reload(), 1200)
+            // Instead of reload, update orders state in parent
+            setOrders(prev => prev.map(o => o.token === order.token ? { ...o, payment_status: 'paid', status: 'Ready for Pickup' } : o))
         } catch (e) {
             setPaymentConfirmMsg('❌ ' + (e.message || 'Failed'))
         } finally {
