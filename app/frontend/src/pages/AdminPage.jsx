@@ -551,127 +551,62 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
 
     // ── Bill Generator ─────────────────────────────────────────────
     const generateBill = () => {
-        const now = new Date()
-        const pad = (n) => String(n).padStart(2, '0')
-        const dateStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`
-        const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`
-
+        const billNo = order.token.replace(/-/g, '').slice(0, 10).toUpperCase()
         const subtotal = items.reduce((s, it) => s + (it.price * it.quantity), 0)
         const deliveryFee = order.total - subtotal
         const totalQty = items.reduce((s, it) => s + it.quantity, 0)
-
-        const rows = items.map((it, i) => `
-            <tr>
-                <td>${i + 1}</td>
-                <td>${it.name}</td>
-                <td>${Number(it.price).toFixed(2)}</td>
-                <td>${Number(it.price).toFixed(2)}</td>
-                <td>${Number(it.quantity).toFixed(3)}</td>
-                <td>${(it.price * it.quantity).toFixed(2)}</td>
-            </tr>
-            <tr class="divider-row"><td colspan="6"><hr/></td></tr>
-        `).join('')
-
-        const deliveryRow = deliveryFee > 0 ? `
-            <tr>
-                <td>${items.length + 1}</td>
-                <td>Delivery Charges</td>
-                <td>${deliveryFee.toFixed(2)}</td>
-                <td>${deliveryFee.toFixed(2)}</td>
-                <td>1.000</td>
-                <td>${deliveryFee.toFixed(2)}</td>
-            </tr>
-            <tr class="divider-row"><td colspan="6"><hr/></td></tr>
-        ` : ''
-
-        const billNo = order.token.replace(/-/g, '').slice(0, 10).toUpperCase()
-        const customerName = order.customer_name || order.name || 'Customer'
+        const dateStr = new Date().toLocaleDateString('en-GB')
+        const timeStr = new Date().toLocaleTimeString('en-GB', { hour12: false })
 
         const html = `<!DOCTYPE html>
 <html>
 <head>
-         body {
+    <meta charset="UTF-8">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
             font-family: 'Courier New', Courier, monospace;
-            font-size: 11px;
+            font-size: 12px;
             color: #000;
             background: #fff;
-            width: 65mm; /* Drastically narrower for maximum compatibility */
+            width: 72mm;
             margin: 0 auto;
-            padding: 5px 4px 20px;
-            overflow-x: hidden;
+            padding: 5px 2mm 20px;
         }
-        .store-name {
-            font-size: 14px;
-            font-weight: 900;
-            text-align: center;
-            letter-spacing: 1px;
-            margin-bottom: 5px;
-        }
-        .store-addr {
-            text-align: center;
-            font-size: 8.5px;
-            line-height: 1.2;
-            margin-bottom: 5px;
-        }
-        .store-meta {
-            text-align: center;
-            font-size: 9px;
-            font-weight: bold;
-            margin-bottom: 8px;
-        }
-        .sep-dash { border: none; border-top: 1px dashed #000; margin: 6px 0; }
-        .sep-eq   { border: none; border-top: 2px solid #000;   margin: 6px 0; }
-        .title {
-            text-align: center;
-            font-size: 14px;
-            font-weight: 900;
-            letter-spacing: 2px;
-            margin: 8px 0;
-            text-decoration: underline;
-        }
-        .meta-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 10px; }
-ext-decoration: underline;
-        }
-        .meta-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 11px; }
-        .meta-label { font-weight: bold; }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 9px;
-            margin: 6px 0;
-            table-layout: fixed;
-        }
-        th:nth-child(1) { width: 18px; }
-        th:nth-child(2) { width: auto; }
-        th:nth-child(3) { width: 38px; }
-        th:nth-child(4) { width: 38px; }
-        th:nth-child(5) { width: 32px; }
-        th:nth-child(6) { width: 45px; }
+        .text-center { text-align: center; }
+        .bold { font-weight: 900; }
         
-        thead tr th {
-            font-weight: 900;
-            text-align: left;
-            padding: 6px 1px;
-            border-bottom: 1px dashed #000;
-            border-top: 1px dashed #000;
-            white-space: nowrap;
-            overflow: hidden;
-        }
-        td { 
-            padding: 4px 1px; 
-            vertical-align: top; 
-            word-wrap: break-word;
-            overflow: hidden;
-        }
-        td:nth-child(3), td:nth-child(4), td:nth-child(5), td:nth-child(6) { text-align: right; }
-        th:nth-child(3), th:nth-child(4), th:nth-child(5), th:nth-child(6) { text-align: right; }
-        .divider-row td { padding: 0; }
-        .divider-row hr { border: none; border-top: 1px dashed #000; }
-        .total-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 12px; font-weight: bold; }
-        .net-row   { display: flex; justify-content: space-between; padding: 10px 0; font-size: 18px; font-weight: 900; }
-        .footer-meta { font-size: 11px; margin: 10px 0; font-weight: bold; }
-        .footer-row { display: flex; justify-content: space-between; font-size: 12px; padding: 8px 0; font-weight: 900; border-top: 1px dashed #000; border-bottom: 1px dashed #000; }
-        .thank { text-align: center; font-size: 13px; margin-top: 25px; font-weight: 900; letter-spacing: 1px; }
+        .store-name { font-size: 16px; margin-bottom: 4px; letter-spacing: 0.5px; }
+        .store-addr { font-size: 10px; line-height: 1.3; margin-bottom: 4px; }
+        .store-meta { font-size: 10px; margin-bottom: 6px; }
+        
+        .sep { border-top: 1px dashed #000; margin: 6px 0; }
+        .sep-star { border-top: 1px dotted #000; margin: 6px 0; position: relative; height: 1px; }
+        .sep-star::after { content: "******************************************"; font-size: 10px; position: absolute; top: -7px; left: 0; width: 100%; overflow: hidden; height: 14px; background: #fff; }
+
+        .title { font-size: 15px; margin: 8px 0; text-decoration: underline; letter-spacing: 2px; }
+        
+        .meta-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px; }
+        .meta-line { margin-bottom: 4px; font-size: 11px; }
+
+        .table-head { font-size: 11px; font-weight: 900; margin-top: 8px; }
+        .table-nums-row { display: flex; font-size: 10px; font-weight: 900; padding: 4px 0; }
+        
+        .item-block { margin-bottom: 8px; }
+        .item-name { font-size: 11px; margin-bottom: 2px; }
+        .item-nums { display: flex; font-size: 11px; }
+        
+        .col-mrp   { width: 22%; text-align: left; }
+        .col-rate  { width: 22%; text-align: right; }
+        .col-qty   { width: 22%; text-align: right; }
+        .col-total { width: 34%; text-align: right; }
+
+        .summary-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px; }
+        .net-payable { display: flex; justify-content: space-between; margin: 10px 0; font-size: 18px; font-weight: 900; }
+        
+        .footer-info { font-size: 11px; margin: 8px 0; }
+        .thank-you { font-size: 13px; margin-top: 20px; font-weight: 900; letter-spacing: 1px; }
+
         @media print {
             body { width: 100%; margin: 0; padding: 0; }
             @page { size: auto; margin: 0; }
@@ -679,56 +614,101 @@ ext-decoration: underline;
     </style>
 </head>
 <body>
-    <div class="store-name">KETAN GENERAL STORES</div>
-    <div class="store-addr">
-        G3, G4, Vasant Chamber, Gupte Road,<br>
-        Dombivali (West) - 421202
+    <div class="text-center bold store-name">KETAN GENERAL STORES</div>
+    <div class="text-center store-addr">G3, G4, Vasant Chamber, Gupte Road,<br/>Dombivali (West) - 421202</div>
+    <div class="text-center store-meta">Phone: 8879485171 &nbsp; GSTIN: 27AAAPF9753F2ZP</div>
+    
+    <div class="sep"></div>
+    <div class="text-center bold title">TAX INVOICE</div>
+    
+    <div class="meta-row">
+        <span>Date : \${dateStr}</span>
+        <span>Time : \${timeStr}</span>
     </div>
-    <div class="store-meta">Phone: 8879485171 &nbsp;&nbsp; GSTIN: 27AAAPF9753F2ZP</div>
-    <hr class="sep-dash"/>
+    <div class="meta-line">Bill No : \${billNo}</div>
+    <div class="meta-line">Billed By : Ketan Furia</div>
+    
+    <div class="sep"></div>
+    
+    <div class="table-head">SNO HSN CODE/ITEM NAME</div>
+    <div class="table-nums-row">
+        <div class="col-mrp">MRP</div>
+        <div class="col-rate">RATE</div>
+        <div class="col-qty">QTY</div>
+        <div class="col-total">TOTAL</div>
+    </div>
+    
+    <div class="sep"></div>
 
-    <div class="title">TAX INVOICE</div>
+    \${items.map((item, index) => {
+        const mrp = (item.price * 1.1).toFixed(2) 
+        return \`
+        <div class="item-block">
+            <div class="item-name">\${index + 1} &nbsp; \${item.name}</div>
+            <div class="item-nums">
+                <div class="col-mrp">\${mrp}</div>
+                <div class="col-rate">\${item.price.toFixed(2)}</div>
+                <div class="col-qty">\${item.quantity.toFixed(3)}</div>
+                <div class="col-total">\${(item.price * item.quantity).toFixed(2)}</div>
+            </div>
+        </div>
+        \`
+    }).join('')}
 
-    <hr class="sep-dash"/>
-    <div class="meta-row"><span><span class="meta-label">Date</span> : ${dateStr}</span><span><span class="meta-label">Time</span> : ${timeStr}</span></div>
-    <div class="meta-row"><span class="meta-label">Bill No</span> &nbsp;: ${billNo}</div>
-    <div class="meta-row"><span class="meta-label">Billed By</span> : Ketan Furia</div>
-    <hr class="sep-dash"/>
+    \${deliveryFee > 0 ? \`
+        <div class="item-block">
+            <div class="item-name">\${items.length + 1} &nbsp; Delivery Charges</div>
+            <div class="item-nums">
+                <div class="col-mrp">\${deliveryFee.toFixed(2)}</div>
+                <div class="col-rate">\${deliveryFee.toFixed(2)}</div>
+                <div class="col-qty">1.000</div>
+                <div class="col-total">\${deliveryFee.toFixed(2)}</div>
+            </div>
+        </div>
+    \` : ''}
 
-    <table>
-        <thead>
-            <tr>
-                <th>S.NO</th>
-                <th>HSN CODE/ITEM NAME</th>
-                <th>MRP</th>
-                <th>RATE</th>
-                <th>QTY</th>
-                <th>TOTAL</th>
-            </tr>
-        </thead>
-        <tbody>
-            ${rows}
-            ${deliveryRow}
-        </tbody>
-    </table>
+    <div class="sep"></div>
+    
+    <div class="summary-row">
+        <span>Total :</span>
+        <span class="bold">\${order.total.toFixed(2)}</span>
+    </div>
+    <div class="summary-row">
+        <span>Round Off :</span>
+        <span>0.00</span>
+    </div>
+    
+    <div class="sep-star"></div>
+    
+    <div class="net-payable">
+        <span>Net Payable :</span>
+        <span>₹\${order.total.toFixed(2)}</span>
+    </div>
+    
+    <div class="sep-star"></div>
+    
+    <div class="footer-info">ITEM(S)/QTY: \${items.length}/\${totalQty.toFixed(3)}</div>
+    
+    <div class="sep"></div>
+    
+    <div class="summary-row">
+        <span>PAYMENT MODE</span>
+        <span class="bold">\${order.payment_method?.toUpperCase() || 'CASH'}</span>
+    </div>
+    
+    <div class="sep"></div>
+    
+    <div class="text-center thank-you">Thank you, Visit again!!!</div>
 
-    <hr class="sep-dash"/>
-    <div class="total-row"><span>Total :</span><span>${subtotal.toFixed(2)}</span></div>
-    ${deliveryFee > 0 ? `<div class="total-row"><span>Delivery :</span><span>${deliveryFee.toFixed(2)}</span></div>` : ''}
-    <div class="total-row"><span>Round Off :</span><span>0.00</span></div>
-    <hr class="sep-eq"/>
-    <div class="net-row"><span>Net Payable :</span><span>₹${Number(order.total).toFixed(2)}</span></div>
-    <hr class="sep-eq"/>
-
-    <div class="footer-meta">ITEM(S)/QTY: ${items.length}/${totalQty.toFixed(3)}</div>
-    <hr class="sep-dash"/>
-    <div class="footer-row"><span>PAYMENT MODE</span><span>${order.payment_method === 'upi' ? 'UPI' : 'CASH'}</span></div>
-    <hr class="sep-dash"/>
-    <div class="thank">Thank you, Visit again!!!</div>
+    <script>
+        window.onload = () => {
+            window.print();
+            setTimeout(() => window.close(), 500);
+        };
+    </script>
 </body>
 </html>`
 
-        // Use a hidden iframe for more reliable printing (prevents popup blocks)
         const frame = document.createElement('iframe')
         frame.style.position = 'fixed'
         frame.style.right = '0'
@@ -744,10 +724,8 @@ ext-decoration: underline;
         doc.close()
         
         frame.contentWindow.focus()
-        // Wait for styles/content to be ready before printing
         setTimeout(() => {
             frame.contentWindow.print()
-            // Clean up after the print dialog is closed
             setTimeout(() => document.body.removeChild(frame), 1000)
         }, 500)
     }
