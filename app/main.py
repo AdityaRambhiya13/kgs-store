@@ -41,6 +41,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import logging
 
 from pydantic import BaseModel
 
@@ -376,6 +377,25 @@ app.add_middleware(
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
+# Security Headers Middleware
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    # Content-Security-Policy: Allow self, firebase, and Supabase
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.firebaseapp.com https://*.googleapis.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "img-src 'self' data: https://*.supabase.co https://*.googleusercontent.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "connect-src 'self' https://*.supabase.co https://*.googleapis.com wss://*;"
+    )
+    return response
+
 
 
 from fastapi.exceptions import RequestValidationError
@@ -572,6 +592,7 @@ async def confirm_payment(order_token: str, request: Request, admin_token: dict 
     if order.get("payment_status") == "paid":
         raise HTTPException(status_code=400, detail="Payment already confirmed for this order")
     plain_otp = confirm_payment_and_generate_otp(order_token)
+    logging.info(f"ADMIN_ACTION: Payment confirmed for order {order_token} by admin")
     await manager.broadcast_all({"type": "status_update", "token": order_token, "status": "Ready for Pickup"})
     return {"message": "Payment confirmed. Order moved to Ready for Pickup.", "otp_generated": plain_otp is not None}
 
@@ -724,10 +745,10 @@ async def update_status(token: str, body: OrderStatusUpdate, request: Request, a
             raise HTTPException(status_code=400, detail="Invalid Delivery OTP")
 
         updated = mark_delivered(token)
-
+        logging.info(f"ADMIN_ACTION: Order {token} marked DELIVERED by admin")
     else:
-
         updated = update_order_status(token, body.status)
+        logging.info(f"ADMIN_ACTION: Order {token} status changed to {body.status} by admin")
 
 
 
@@ -1000,7 +1021,7 @@ def login(body: LoginRequest, request: Request):
         
 
     if not verify_pin(body.pin, customer["pin_hash"]):
-
+        logging.warning(f"FAILED_LOGIN: Attempt on phone {customer['phone'][-4:].rjust(10, '*')}")
         raise HTTPException(status_code=401, detail="Incorrect PIN")
 
         

@@ -19,6 +19,7 @@ import CategoryMapper from './pages/CategoryMapper'
 import TestPage from './pages/TestPage'
 import ProductRenamer from './pages/ProductRenamer'
 import UPIPaymentPage from './pages/UPIPaymentPage'
+import PrivacyPolicy from './pages/PrivacyPolicy'
 import CartPanel from './components/CartPanel'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
@@ -86,6 +87,7 @@ export default function App() {
           <Route path="/admin/category-mapper" element={<CategoryMapper />} />
           <Route path="/admin/renamer" element={<ProductRenamer />} />
           <Route path="/pay/upi" element={<ProtectedRoute><UPIPaymentPage /></ProtectedRoute>} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/test" element={<TestPage />} />
         </Routes>
 
