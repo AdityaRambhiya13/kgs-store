@@ -578,25 +578,25 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Courier New', Courier, monospace;
-            font-size: 13px;
+            font-size: 12px;
             color: #000;
             background: #fff;
-            width: 76mm; /* Slightly smaller to prevent clipping on 80mm paper */
+            width: 72mm; /* Narrower to ensure it fits 80mm printers perfectly */
             margin: 0 auto;
-            padding: 10px 5px 20px;
+            padding: 5px 2px 20px;
         }
         .store-name {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 900;
             text-align: center;
-            letter-spacing: 1.5px;
-            margin-bottom: 8px;
+            letter-spacing: 1.2px;
+            margin-bottom: 6px;
         }
         .store-addr {
             text-align: center;
-            font-size: 10px;
-            line-height: 1.4;
-            margin-bottom: 8px;
+            font-size: 9px;
+            line-height: 1.3;
+            margin-bottom: 6px;
         }
         .store-meta {
             text-align: center;
@@ -623,12 +623,12 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
             margin: 10px 0;
             table-layout: fixed;
         }
-        th:nth-child(1) { width: 28px; }
+        th:nth-child(1) { width: 22px; }
         th:nth-child(2) { width: auto; }
-        th:nth-child(3) { width: 45px; }
-        th:nth-child(4) { width: 45px; }
-        th:nth-child(5) { width: 40px; }
-        th:nth-child(6) { width: 55px; }
+        th:nth-child(3) { width: 42px; }
+        th:nth-child(4) { width: 42px; }
+        th:nth-child(5) { width: 38px; }
+        th:nth-child(6) { width: 50px; }
         
         thead tr th {
             font-weight: 900;
