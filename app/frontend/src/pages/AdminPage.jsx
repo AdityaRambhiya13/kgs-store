@@ -173,9 +173,9 @@ export default function AdminPage() {
                         </div>
 
                         <div className="admin-lanes">
-                            <OrderLane title="⏳ Processing" orders={processing} onAction={handleStatusAction} onExpand={toggleExpand} expanded={expanded} togglingToken={togglingToken} cardError={cardError} adminToken={adminToken} />
-                            <OrderLane title="🟡 Ready for Pickup" orders={ready} onAction={handleStatusAction} onExpand={toggleExpand} expanded={expanded} togglingToken={togglingToken} cardError={cardError} adminToken={adminToken} />
-                            <OrderLane title="✅ Delivered" orders={orders.filter(o => o.status === 'Delivered')} onAction={handleStatusAction} onExpand={toggleExpand} expanded={expanded} togglingToken={togglingToken} cardError={cardError} adminToken={adminToken} />
+                            <OrderLane title="⏳ Processing" orders={processing} onAction={handleStatusAction} onExpand={toggleExpand} expanded={expanded} togglingToken={togglingToken} cardError={cardError} adminToken={adminToken} setOrders={setOrders} />
+                            <OrderLane title="🟡 Ready for Pickup" orders={ready} onAction={handleStatusAction} onExpand={toggleExpand} expanded={expanded} togglingToken={togglingToken} cardError={cardError} adminToken={adminToken} setOrders={setOrders} />
+                            <OrderLane title="✅ Delivered" orders={orders.filter(o => o.status === 'Delivered')} onAction={handleStatusAction} onExpand={toggleExpand} expanded={expanded} togglingToken={togglingToken} cardError={cardError} adminToken={adminToken} setOrders={setOrders} />
                         </div>
                     </>
                 )}
@@ -455,7 +455,7 @@ function StatCard({ icon, label, value, color }) {
     )
 }
 
-function OrderLane({ title, orders, onAction, onExpand, expanded, togglingToken, cardError, adminToken }) {
+function OrderLane({ title, orders, onAction, onExpand, expanded, togglingToken, cardError, adminToken, setOrders }) {
     return (
         <div className="order-lane-col">
             <h3>{title} ({orders.length})</h3>
@@ -470,6 +470,7 @@ function OrderLane({ title, orders, onAction, onExpand, expanded, togglingToken,
                         toggling={togglingToken === o.token}
                         error={cardError[o.token]}
                         adminToken={adminToken}
+                        setOrders={setOrders}
                     />
                 ))}
             </div>
@@ -477,7 +478,7 @@ function OrderLane({ title, orders, onAction, onExpand, expanded, togglingToken,
     )
 }
 
-function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, adminToken }) {
+function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, adminToken, setOrders }) {
     const isProcessing = order.status === 'Processing'
     const isReady = order.status === 'Ready for Pickup'
     const isDelivered = order.status === 'Delivered'
