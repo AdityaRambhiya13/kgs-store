@@ -616,14 +616,14 @@ def mark_delivered(token: str) -> bool:
 
 # ── Admin Product Management ─────────────────────────────
 
-def add_product(name: str, price: float, description: str, image_url: str, category: str, sub_category: str = "", base_name: str = "", unit: str = "kg") -> Optional[int]:
+def add_product(name: str, price: float, mrp: float, description: str, image_url: str, category: str, sub_category: str = "", base_name: str = "", unit: str = "kg") -> Optional[int]:
     """Add a new product to the database."""
     conn = get_connection()
     try:
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO products (name, price, description, image_url, category, sub_category, base_name, unit, is_visible, in_stock) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
-            (name, price, description, image_url, category, sub_category, base_name, unit, True, True)
+            "INSERT INTO products (name, price, mrp, description, image_url, category, sub_category, base_name, unit, is_visible, in_stock) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE, TRUE) RETURNING id",
+            (name, price, mrp, description, image_url, category, sub_category, base_name, unit)
         )
         product_id = cursor.fetchone()['id']
         conn.commit()
