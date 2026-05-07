@@ -558,176 +558,181 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
         const dateStr = new Date().toLocaleDateString('en-GB')
         const timeStr = new Date().toLocaleTimeString('en-GB', { hour12: false })
 
-        const html = `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 12px;
-            color: #000;
-            background: #fff;
-            width: 72mm;
-            margin: 0 auto;
-            padding: 5px 2mm 20px;
-        }
-        .text-center { text-align: center; }
-        .bold { font-weight: 900; }
-        
-        .store-name { font-size: 16px; margin-bottom: 4px; letter-spacing: 0.5px; }
-        .store-addr { font-size: 10px; line-height: 1.3; margin-bottom: 4px; }
-        .store-meta { font-size: 10px; margin-bottom: 6px; }
-        
-        .sep { border-top: 1px dashed #000; margin: 6px 0; }
-        .sep-star { border-top: 1px dotted #000; margin: 6px 0; position: relative; height: 1px; }
-        .sep-star::after { content: "******************************************"; font-size: 10px; position: absolute; top: -7px; left: 0; width: 100%; overflow: hidden; height: 14px; background: #fff; }
-
-        .title { font-size: 15px; margin: 8px 0; text-decoration: underline; letter-spacing: 2px; }
-        
-        .meta-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px; }
-        .meta-line { margin-bottom: 4px; font-size: 11px; }
-
-        .table-head { font-size: 11px; font-weight: 900; margin-top: 8px; }
-        .table-nums-row { display: flex; font-size: 10px; font-weight: 900; padding: 4px 0; }
-        
-        .item-block { margin-bottom: 8px; }
-        .item-name { font-size: 11px; margin-bottom: 2px; }
-        .item-nums { display: flex; font-size: 11px; }
-        
-        .col-mrp   { width: 22%; text-align: left; }
-        .col-rate  { width: 22%; text-align: right; }
-        .col-qty   { width: 22%; text-align: right; }
-        .col-total { width: 34%; text-align: right; }
-
-        .summary-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px; }
-        .net-payable { display: flex; justify-content: space-between; margin: 10px 0; font-size: 18px; font-weight: 900; }
-        
-        .footer-info { font-size: 11px; margin: 8px 0; }
-        .thank-you { font-size: 13px; margin-top: 20px; font-weight: 900; letter-spacing: 1px; }
-
-        @media print {
-            body { width: 100%; margin: 0; padding: 0; }
-            @page { size: auto; margin: 0; }
-        }
-    </style>
-</head>
-<body>
-    <div class="text-center bold store-name">KETAN GENERAL STORES</div>
-    <div class="text-center store-addr">G3, G4, Vasant Chamber, Gupte Road,<br/>Dombivali (West) - 421202</div>
-    <div class="text-center store-meta">Phone: 8879485171 &nbsp; GSTIN: 27AAAPF9753F2ZP</div>
-    
-    <div class="sep"></div>
-    <div class="text-center bold title">TAX INVOICE</div>
-    
-    <div class="meta-row">
-        <span>Date : ${dateStr}</span>
-        <span>Time : ${timeStr}</span>
-    </div>
-    <div class="meta-line">Bill No : ${billNo}</div>
-    <div class="meta-line">Billed By : Ketan Furia</div>
-    
-    <div class="sep"></div>
-    
-    <div class="table-head">SNO HSN CODE/ITEM NAME</div>
-    <div class="table-nums-row">
-        <div class="col-mrp">MRP</div>
-        <div class="col-rate">RATE</div>
-        <div class="col-qty">QTY</div>
-        <div class="col-total">TOTAL</div>
-    </div>
-    
-    <div class="sep"></div>
-
-    ${items.map((item, index) => {
-        const mrp = (item.price * 1.1).toFixed(2) 
-        return `
-        <div class="item-block">
-            <div class="item-name">${index + 1} &nbsp; ${item.name}</div>
-            <div class="item-nums">
-                <div class="col-mrp">${mrp}</div>
-                <div class="col-rate">${item.price.toFixed(2)}</div>
-                <div class="col-qty">${item.quantity.toFixed(3)}</div>
-                <div class="col-total">${(item.price * item.quantity).toFixed(2)}</div>
+        const html = `
+        <style>
+            @media screen {
+                #print-bill-container { display: none !important; }
+            }
+            @media print {
+                body > :not(#print-bill-container) { display: none !important; }
+                #print-bill-container { display: block !important; position: absolute; left: 0; top: 0; width: 100%; background: white; margin: 0; padding: 0; }
+                @page { size: auto; margin: 0; }
+            }
+            #print-bill-content {
+                font-family: 'Courier New', Courier, monospace;
+                font-size: 12px;
+                color: #000;
+                background: #fff;
+                width: 72mm;
+                margin: 0 auto;
+                padding: 5px 2mm 20px;
+            }
+            #print-bill-content .text-center { text-align: center; }
+            #print-bill-content .bold { font-weight: 900; }
+            #print-bill-content .store-name { font-size: 16px; margin-bottom: 4px; letter-spacing: 0.5px; }
+            #print-bill-content .store-addr { font-size: 10px; line-height: 1.3; margin-bottom: 4px; }
+            #print-bill-content .store-meta { font-size: 10px; margin-bottom: 6px; }
+            #print-bill-content .sep { border-top: 1px dashed #000; margin: 6px 0; }
+            #print-bill-content .sep-star { border-top: 1px dotted #000; margin: 6px 0; position: relative; height: 1px; }
+            #print-bill-content .sep-star::after { content: "******************************************"; font-size: 10px; position: absolute; top: -7px; left: 0; width: 100%; overflow: hidden; height: 14px; background: #fff; }
+            #print-bill-content .title { font-size: 15px; margin: 8px 0; text-decoration: underline; letter-spacing: 2px; }
+            #print-bill-content .meta-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px; }
+            #print-bill-content .meta-line { margin-bottom: 4px; font-size: 11px; }
+            #print-bill-content .table-head { font-size: 11px; font-weight: 900; margin-top: 8px; }
+            #print-bill-content .table-nums-row { display: flex; font-size: 10px; font-weight: 900; padding: 4px 0; }
+            #print-bill-content .item-block { margin-bottom: 8px; }
+            #print-bill-content .item-name { font-size: 11px; margin-bottom: 2px; }
+            #print-bill-content .item-nums { display: flex; font-size: 11px; }
+            #print-bill-content .col-mrp   { width: 22%; text-align: left; }
+            #print-bill-content .col-rate  { width: 22%; text-align: right; }
+            #print-bill-content .col-qty   { width: 22%; text-align: right; }
+            #print-bill-content .col-total { width: 34%; text-align: right; }
+            #print-bill-content .summary-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px; }
+            #print-bill-content .net-payable { display: flex; justify-content: space-between; margin: 10px 0; font-size: 18px; font-weight: 900; }
+            #print-bill-content .footer-info { font-size: 11px; margin: 8px 0; }
+            #print-bill-content .thank-you { font-size: 13px; margin-top: 20px; font-weight: 900; letter-spacing: 1px; }
+        </style>
+        <div id="print-bill-content">
+            <div class="text-center bold store-name">KETAN GENERAL STORES</div>
+            <div class="text-center store-addr">G3, G4, Vasant Chamber, Gupte Road,<br/>Dombivali (West) - 421202</div>
+            <div class="text-center store-meta">Phone: 8879485171 &nbsp; GSTIN: 27AAAPF9753F2ZP</div>
+            
+            <div class="sep"></div>
+            <div class="text-center bold title">TAX INVOICE</div>
+            
+            <div class="meta-row">
+                <span>Date : ${dateStr}</span>
+                <span>Time : ${timeStr}</span>
             </div>
+            <div class="meta-line">Bill No : ${billNo}</div>
+            <div class="meta-line">Billed By : Ketan Furia</div>
+            
+            <div class="sep"></div>
+            
+            <div class="table-head">SNO HSN CODE/ITEM NAME</div>
+            <div class="table-nums-row">
+                <div class="col-mrp">MRP</div>
+                <div class="col-rate">RATE</div>
+                <div class="col-qty">QTY</div>
+                <div class="col-total">TOTAL</div>
+            </div>
+            
+            <div class="sep"></div>
+
+            ${items.map((item, index) => {
+                const mrp = (item.price * 1.1).toFixed(2) 
+                return \`
+                <div class="item-block">
+                    <div class="item-name">\${index + 1} &nbsp; \${item.name}</div>
+                    <div class="item-nums">
+                        <div class="col-mrp">\${mrp}</div>
+                        <div class="col-rate">\${item.price.toFixed(2)}</div>
+                        <div class="col-qty">\${item.quantity.toFixed(3)}</div>
+                        <div class="col-total">\${(item.price * item.quantity).toFixed(2)}</div>
+                    </div>
+                </div>
+                \`
+            }).join('')}
+
+            ${deliveryFee > 0 ? \`
+                <div class="item-block">
+                    <div class="item-name">\${items.length + 1} &nbsp; Delivery Charges</div>
+                    <div class="item-nums">
+                        <div class="col-mrp">\${deliveryFee.toFixed(2)}</div>
+                        <div class="col-rate">\${deliveryFee.toFixed(2)}</div>
+                        <div class="col-qty">1.000</div>
+                        <div class="col-total">\${deliveryFee.toFixed(2)}</div>
+                    </div>
+                </div>
+            \` : ''}
+
+            <div class="sep"></div>
+            
+            <div class="summary-row">
+                <span>Total :</span>
+                <span class="bold">\${order.total.toFixed(2)}</span>
+            </div>
+            <div class="summary-row">
+                <span>Round Off :</span>
+                <span>0.00</span>
+            </div>
+            
+            <div class="sep-star"></div>
+            
+            <div class="net-payable">
+                <span>Net Payable :</span>
+                <span>₹\${order.total.toFixed(2)}</span>
+            </div>
+            
+            <div class="sep-star"></div>
+            
+            <div class="footer-info">ITEM(S)/QTY: \${items.length}/\${totalQty.toFixed(3)}</div>
+            
+            <div class="sep"></div>
+            
+            <div class="summary-row">
+                <span>PAYMENT MODE</span>
+                <span class="bold">\${order.payment_method?.toUpperCase() || 'CASH'}</span>
+            </div>
+            
+            <div class="sep"></div>
+            
+            <div class="text-center thank-you">Thank you, Visit again!!!</div>
         </div>
         `
-    }).join('')}
 
-    ${deliveryFee > 0 ? `
-        <div class="item-block">
-            <div class="item-name">${items.length + 1} &nbsp; Delivery Charges</div>
-            <div class="item-nums">
-                <div class="col-mrp">${deliveryFee.toFixed(2)}</div>
-                <div class="col-rate">${deliveryFee.toFixed(2)}</div>
-                <div class="col-qty">1.000</div>
-                <div class="col-total">${deliveryFee.toFixed(2)}</div>
-            </div>
-        </div>
-    ` : ''}
+        // Check if there's already a print container or styles
+        const existingContainer = document.getElementById('print-bill-container')
+        if (existingContainer) existingContainer.remove()
+        const existingStyle = document.getElementById('print-bill-style')
+        if (existingStyle) existingStyle.remove()
 
-    <div class="sep"></div>
-    
-    <div class="summary-row">
-        <span>Total :</span>
-        <span class="bold">${order.total.toFixed(2)}</span>
-    </div>
-    <div class="summary-row">
-        <span>Round Off :</span>
-        <span>0.00</span>
-    </div>
-    
-    <div class="sep-star"></div>
-    
-    <div class="net-payable">
-        <span>Net Payable :</span>
-        <span>₹${order.total.toFixed(2)}</span>
-    </div>
-    
-    <div class="sep-star"></div>
-    
-    <div class="footer-info">ITEM(S)/QTY: ${items.length}/${totalQty.toFixed(3)}</div>
-    
-    <div class="sep"></div>
-    
-    <div class="summary-row">
-        <span>PAYMENT MODE</span>
-        <span class="bold">${order.payment_method?.toUpperCase() || 'CASH'}</span>
-    </div>
-    
-    <div class="sep"></div>
-    
-    <div class="text-center thank-you">Thank you, Visit again!!!</div>
+        // We extract the CSS into a style block in the head so mobile browsers don't ignore it
+        const styleEl = document.createElement('style')
+        styleEl.id = 'print-bill-style'
+        styleEl.innerHTML = `
+            @media screen {
+                #print-bill-container { display: none !important; }
+            }
+            @media print {
+                body > :not(#print-bill-container) { display: none !important; }
+                #print-bill-container { display: block !important; position: absolute; left: 0; top: 0; width: 100%; background: white; margin: 0; padding: 0; }
+                @page { size: auto; margin: 0; }
+            }
+        `
+        document.head.appendChild(styleEl)
 
-    <script>
-        window.onload = () => {
-            window.print();
-            setTimeout(() => window.close(), 500);
-        };
-    </script>
-</body>
-</html>`
+        const container = document.createElement('div')
+        container.id = 'print-bill-container'
+        container.innerHTML = html
+        document.body.appendChild(container)
 
-        const frame = document.createElement('iframe')
-        frame.style.position = 'fixed'
-        frame.style.right = '0'
-        frame.style.bottom = '0'
-        frame.style.width = '0'
-        frame.style.height = '0'
-        frame.style.border = '0'
-        document.body.appendChild(frame)
-        
-        const doc = frame.contentWindow.document
-        doc.open()
-        doc.write(html)
-        doc.close()
-        
-        frame.contentWindow.focus()
+        // After print cleanup listener
+        const afterPrint = () => {
+            if (document.body.contains(container)) document.body.removeChild(container)
+            if (document.head.contains(styleEl)) document.head.removeChild(styleEl)
+            window.removeEventListener('afterprint', afterPrint)
+            window.removeEventListener('focus', afterPrint)
+        }
+        window.addEventListener('afterprint', afterPrint)
+        window.addEventListener('focus', () => setTimeout(afterPrint, 500))
+
+        // Short timeout to ensure DOM update before printing
         setTimeout(() => {
-            frame.contentWindow.print()
-            setTimeout(() => document.body.removeChild(frame), 1000)
-        }, 500)
+            window.print()
+            // Fallback cleanup
+            setTimeout(afterPrint, 60000)
+        }, 100)
     }
 
     return (
