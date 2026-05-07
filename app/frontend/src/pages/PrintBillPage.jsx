@@ -14,18 +14,10 @@ export default function PrintBillPage() {
         // Wait a tiny bit for the DOM to settle, then open print dialog
         const timer = setTimeout(() => {
             window.print()
-        }, 500)
+        }, 800)
 
-        // After returning from print dialog, go back to admin page
-        const handleAfterPrint = () => {
-            navigate('/manage-store-99')
-        }
-        
-        window.addEventListener('afterprint', handleAfterPrint)
-        
         return () => {
             clearTimeout(timer)
-            window.removeEventListener('afterprint', handleAfterPrint)
         }
     }, [billHtml, navigate])
 

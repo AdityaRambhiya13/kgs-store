@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { listOrders, updateStatus, listCustomers, adminLogin, getProducts, getAdminProducts, addProduct, updateProduct, deleteProduct, confirmPayment, rejectPayment } from '../api'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function AdminPage() {
+    const navigate = useNavigate()
     // Privacy helper: show only last 4 digits
     const maskPhone = (phone = '') => {
         const digits = phone.replace(/\D/g, '')
@@ -146,7 +148,7 @@ export default function AdminPage() {
             {/* Nav Header */}
             <div className="admin-header">
                 <div>
-                    <h1>🌾 KGS Admin <span style={{fontSize: '12px', opacity: 0.5, fontWeight: 400}}>v26</span></h1>
+                    <h1>🌾 KGS Admin <span style={{fontSize: '12px', opacity: 0.5, fontWeight: 400}}>v27</span></h1>
                     <p>Store Management System</p>
                 </div>
                 <div className="admin-nav-tabs">
@@ -703,7 +705,7 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
         
         // Navigate to the dedicated route
         // This defeats Android's headless print spooler by ensuring the URL natively serves the bill
-        window.location.href = '/admin/print-bill'
+        navigate('/admin/print-bill')
     }
 
     return (
