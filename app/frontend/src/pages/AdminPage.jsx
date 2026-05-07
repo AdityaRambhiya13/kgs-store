@@ -148,7 +148,7 @@ export default function AdminPage() {
             {/* Nav Header */}
             <div className="admin-header">
                 <div>
-                    <h1>🌾 KGS Admin <span style={{fontSize: '12px', opacity: 0.5, fontWeight: 400}}>v28</span></h1>
+                    <h1>🌾 KGS Admin <span style={{fontSize: '12px', opacity: 0.5, fontWeight: 400}}>v29</span></h1>
                     <p>Store Management System</p>
                 </div>
                 <div className="admin-nav-tabs">
@@ -694,19 +694,81 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
         </div>
         `
 
-        // Check if there's already a print container or styles
-        const existingContainer = document.getElementById('print-bill-container')
-        if (existingContainer) existingContainer.remove()
-        const existingStyle = document.getElementById('print-bill-style')
-        if (existingStyle) existingStyle.remove()
+        const fullHtml = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Bill - ${billNo}</title>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <style>
+                    body { margin: 0; padding: 0; background: white; font-family: 'Courier New', Courier, monospace; }
+                    #print-bill-content {
+                        font-family: 'Courier New', Courier, monospace;
+                        font-size: 12px;
+                        color: #000;
+                        background: #fff;
+                        width: 72mm;
+                        margin: 0 auto;
+                        padding: 5px 2mm 20px;
+                    }
+                    #print-bill-content .text-center { text-align: center; }
+                    #print-bill-content .bold { font-weight: 900; }
+                    #print-bill-content .store-name { font-size: 16px; margin-bottom: 4px; letter-spacing: 0.5px; }
+                    #print-bill-content .store-addr { font-size: 10px; line-height: 1.3; margin-bottom: 4px; }
+                    #print-bill-content .store-meta { font-size: 10px; margin-bottom: 6px; }
+                    #print-bill-content .sep { border-top: 1px dashed #000; margin: 6px 0; }
+                    #print-bill-content .sep-star { border-top: 1px dotted #000; margin: 6px 0; position: relative; height: 1px; }
+                    #print-bill-content .sep-star::after { content: "******************************************"; font-size: 10px; position: absolute; top: -7px; left: 0; width: 100%; overflow: hidden; height: 14px; background: #fff; }
+                    #print-bill-content .title { font-size: 15px; margin: 8px 0; text-decoration: underline; letter-spacing: 2px; }
+                    #print-bill-content .meta-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px; }
+                    #print-bill-content .meta-line { margin-bottom: 4px; font-size: 11px; }
+                    #print-bill-content .table-head { font-size: 11px; font-weight: 900; margin-top: 8px; }
+                    #print-bill-content .table-nums-row { display: flex; font-size: 10px; font-weight: 900; padding: 4px 0; }
+                    #print-bill-content .item-block { margin-bottom: 8px; }
+                    #print-bill-content .item-name { font-size: 11px; margin-bottom: 2px; }
+                    #print-bill-content .item-nums { display: flex; font-size: 11px; }
+                    #print-bill-content .col-mrp   { width: 22%; text-align: left; }
+                    #print-bill-content .col-rate  { width: 22%; text-align: right; }
+                    #print-bill-content .col-qty   { width: 22%; text-align: right; }
+                    #print-bill-content .col-total { width: 34%; text-align: right; }
+                    #print-bill-content .summary-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px; }
+                    #print-bill-content .net-payable { display: flex; justify-content: space-between; margin: 10px 0; font-size: 18px; font-weight: 900; }
+                    #print-bill-content .footer-info { font-size: 11px; margin: 8px 0; }
+                    #print-bill-content .thank-you { font-size: 13px; margin-top: 20px; font-weight: 900; letter-spacing: 1px; }
+                    @media print {
+                        @page { size: auto; margin: 0mm; }
+                        .no-print { display: none !important; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="no-print" style="text-align: center; padding: 15px; background: #1e3a8a; color: white; font-family: sans-serif;">
+                    <p style="margin: 0 0 10px 0; font-weight: bold;">Print Preview Mode</p>
+                    <button onclick="window.print()" style="padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;">Print Now</button>
+                    <button onclick="window.close()" style="padding: 10px 20px; background: #ef4444; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-left: 10px;">Close</button>
+                </div>
+                ${html}
+                <script>
+                    window.onload = function() {
+                        setTimeout(function() {
+                            window.print();
+                        }, 500);
+                    };
+                </script>
+            </body>
+            </html>
+        `;
 
-        // We extract the CSS into a style block in the head so mobile browsers don't ignore it
-        // Save the raw HTML to localStorage so the dedicated print route can pick it up
-        localStorage.setItem('print_bill_html', html)
+        // The absolute bulletproof way to print on Android PWA:
+        // Use a Blob URL. The print spooler does not need to fetch the page or access localStorage.
+        // The HTML document is entirely contained in memory and served natively.
+        const blob = new Blob([fullHtml], { type: 'text/html' });
+        const blobUrl = URL.createObjectURL(blob);
         
-        // Navigate to the dedicated route
-        // This defeats Android's headless print spooler by ensuring the URL natively serves the bill
-        navigate('/admin/print-bill')
+        const printWindow = window.open(blobUrl, '_blank');
+        if (!printWindow) {
+            alert("Popup blocked! Please allow popups for this site to print bills.");
+        }
     }
 
     return (
