@@ -50,7 +50,7 @@ export const placeOrder = (data, token) => request('POST', '/api/orders', data, 
 
 export const cancelOrder = (token) => request('POST', `/api/orders/${token}/cancel`)
 
-export const getOrder = (token, signal) => request('GET', `/api/orders/${token}`, null, signal)
+export const getOrder = (token, signal, authToken = null) => request('GET', `/api/orders/${token}`, null, signal, authToken)
 
 export const adminLogin = (password) => request('POST', '/api/auth/admin-login', { password })
 

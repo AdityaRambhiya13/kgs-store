@@ -148,7 +148,7 @@ export default function AdminPage() {
             {/* Nav Header */}
             <div className="admin-header">
                 <div>
-                    <h1>🌾 KGS Admin <span style={{fontSize: '12px', opacity: 0.5, fontWeight: 400}}>v32</span></h1>
+                    <h1>🌾 KGS Admin <span style={{fontSize: '12px', opacity: 0.5, fontWeight: 400}}>v33</span></h1>
                     <p>Store Management System</p>
                 </div>
                 <div className="admin-nav-tabs">

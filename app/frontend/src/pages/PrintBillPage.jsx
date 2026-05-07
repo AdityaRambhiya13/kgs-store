@@ -12,7 +12,9 @@ export default function PrintBillPage() {
     useEffect(() => {
         const fetchOrder = async () => {
             try {
-                const data = await getOrder(token)
+                const adminToken = localStorage.getItem('adminToken')
+                const kgsToken = localStorage.getItem('kgsToken')
+                const data = await getOrder(token, null, adminToken || kgsToken)
                 setOrder(data)
             } catch (err) {
                 setError(err.message)
