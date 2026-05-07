@@ -650,13 +650,19 @@ def get_customer_orders(request: Request, customer_token: dict = Depends(get_cur
 
 @app.get("/api/orders/{token}")
 
-def get_order_details(token: str, request: Request, customer: dict = Depends(get_current_customer)):
+def get_order_details(token: str, request: Request, user: dict = Depends(get_current_user)):
 
     check_rate_limit(request, limit=60, window=60, scope="order-status")
 
     order = get_order_by_token(token)
 
-    if not order or order["phone"] != customer.get("phone"):
+    if not order:
+
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    # If customer, verify ownership. If admin, allow all.
+
+    if user.get("role") == "customer" and order["phone"] != user.get("phone"):
 
         raise HTTPException(status_code=404, detail="Order not found")
 
