@@ -146,7 +146,7 @@ export default function AdminPage() {
             {/* Nav Header */}
             <div className="admin-header">
                 <div>
-                    <h1>🌾 KGS Admin <span style={{fontSize: '12px', opacity: 0.5, fontWeight: 400}}>v22</span></h1>
+                    <h1>🌾 KGS Admin <span style={{fontSize: '12px', opacity: 0.5, fontWeight: 400}}>v24</span></h1>
                     <p>Store Management System</p>
                 </div>
                 <div className="admin-nav-tabs">
@@ -705,63 +705,61 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
                 #print-bill-container { display: none !important; }
             }
             @media print {
-                /* Ultra-aggressive hiding of the main application */
-                html, body { 
-                    height: auto !important; 
-                    overflow: visible !important; 
-                    margin: 0 !important; 
-                    padding: 0 !important; 
-                    background: white !important; 
-                }
-                #root, .admin-page, [class*="admin-"], .modal-overlay, .modal-content { 
-                    display: none !important; 
-                    visibility: hidden !important;
-                    height: 0 !important;
-                    width: 0 !important;
-                    overflow: hidden !important;
-                }
-                #print-bill-container { 
-                    display: block !important; 
-                    visibility: visible !important;
-                    position: absolute !important; 
-                    left: 0 !important; 
-                    top: 0 !important; 
-                    width: 100% !important; 
-                    margin: 0 !important; 
-                    padding: 0 !important; 
-                    z-index: 9999999 !important; 
-                    background: white !important; 
-                }
-                #print-bill-content { 
-                    margin: 0 auto !important; 
-                    display: block !important;
-                    visibility: visible !important;
-                }
+                /* Ultra-aggressive hiding of everything except the bill */
+                html, body { height: auto !important; overflow: visible !important; margin: 0 !important; padding: 0 !important; background: white !important; }
+                .no-print { display: none !important; visibility: hidden !important; }
+                #print-bill-container { display: block !important; position: static !important; }
                 @page { size: auto; margin: 0mm; }
             }
         `
         document.head.appendChild(styleEl)
 
+        // Manual DOM manipulation for bulletproof mobile printing
+        const originalDisplays = new Map();
+        Array.from(document.body.children).forEach(child => {
+            if (child.tagName !== 'SCRIPT' && child.tagName !== 'STYLE' && child.id !== 'print-bill-container') {
+                originalDisplays.set(child, child.style.display);
+                child.style.display = 'none';
+            }
+        });
+
         const container = document.createElement('div')
         container.id = 'print-bill-container'
-        container.innerHTML = html
+        
+        container.innerHTML = `
+            <div class="no-print" style="padding: 24px; background: #f8fafc; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; height: 100vh; position: fixed; top: 0; left: 0; width: 100%; z-index: 999999;">
+                <h2 style="font-family: 'Inter', sans-serif; font-size: 22px; font-weight: 800; color: #1e293b; margin: 0;">Generating Print View...</h2>
+                <p style="font-family: 'Inter', sans-serif; font-size: 15px; color: #64748b; margin: 0; max-width: 80%;">The print dialog should open automatically. If it doesn't, or once you are done, click below to return.</p>
+                <button id="close-print-btn" style="padding: 16px 32px; background: #1e3a8a; color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 16px; font-family: 'Inter', sans-serif; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); cursor: pointer; transition: background 0.2s;">
+                    ⬅ Return to Dashboard
+                </button>
+            </div>
+            <div id="actual-bill-content">
+                ${html}
+            </div>
+        `
         document.body.appendChild(container)
 
-        // After print cleanup listener
-        const afterPrint = () => {
+        // After print cleanup
+        const closePrintView = () => {
+            // Restore hidden elements
+            Array.from(document.body.children).forEach(child => {
+                if (originalDisplays.has(child)) {
+                    child.style.display = originalDisplays.get(child);
+                }
+            });
             if (document.body.contains(container)) document.body.removeChild(container)
             if (document.head.contains(styleEl)) document.head.removeChild(styleEl)
-            window.removeEventListener('afterprint', afterPrint)
-            window.removeEventListener('focus', afterPrint)
+            window.removeEventListener('afterprint', closePrintView)
         }
-        window.addEventListener('afterprint', afterPrint)
-        window.addEventListener('focus', () => setTimeout(afterPrint, 1000))
+        
+        document.getElementById('close-print-btn').addEventListener('click', closePrintView);
+        window.addEventListener('afterprint', closePrintView);
 
-        // Increased timeout to 500ms to allow mobile browsers to layout the new content
+        // Wait for DOM to completely settle, then open print dialog
         setTimeout(() => {
             window.print()
-            setTimeout(afterPrint, 60000)
-        }, 500)
+        }, 600)
     }
 
     return (
