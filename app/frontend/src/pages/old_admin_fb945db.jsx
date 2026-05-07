@@ -1,10 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
+﻿import { useState, useEffect, useRef } from 'react'
 import { listOrders, updateStatus, listCustomers, adminLogin, getProducts, getAdminProducts, addProduct, updateProduct, deleteProduct, confirmPayment, rejectPayment } from '../api'
-import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function AdminPage() {
-    const navigate = useNavigate()
     // Privacy helper: show only last 4 digits
     const maskPhone = (phone = '') => {
         const digits = phone.replace(/\D/g, '')
@@ -119,7 +117,7 @@ export default function AdminPage() {
             <motion.div className="admin-page" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <div className="admin-login">
                     <motion.div className="admin-login-card" initial={{ y: 20 }} animate={{ y: 0 }}>
-                        <div className="admin-avatar">🔐</div>
+                        <div className="admin-avatar">≡ƒöÉ</div>
                         <h2>Admin Portal</h2>
                         <input
                             className="input"
@@ -129,7 +127,7 @@ export default function AdminPage() {
                             onChange={e => setPassword(e.target.value)}
                             onKeyDown={e => e.key === 'Enter' && handleLogin()}
                         />
-                        {loginError && <p className="error-msg">⚠️ {loginError}</p>}
+                        {loginError && <p className="error-msg">ΓÜá∩╕Å {loginError}</p>}
                         <button className="btn btn-primary" onClick={handleLogin} disabled={loading} style={{ width: '100%', marginTop: 12 }}>
                             {loading ? 'Verifying...' : 'Login'}
                         </button>
@@ -148,7 +146,7 @@ export default function AdminPage() {
             {/* Nav Header */}
             <div className="admin-header">
                 <div>
-                    <h1>🌾 KGS Admin <span style={{fontSize: '12px', opacity: 0.5, fontWeight: 400}}>v30</span></h1>
+                    <h1>≡ƒî╛ KGS Admin</h1>
                     <p>Store Management System</p>
                 </div>
                 <div className="admin-nav-tabs">
@@ -169,15 +167,15 @@ export default function AdminPage() {
                 {activeTab === 'orders' && (
                     <>
                         <div className="admin-stats-grid">
-                            <StatCard icon="📦" label="Total Orders" value={orders.length} color="var(--primary)" />
-                            <StatCard icon="⏳" label="Processing" value={processing.length} color="var(--accent)" />
-                            <StatCard icon="✅" label="Revenue" value={`₹${revenue.toFixed(0)}`} color="var(--secondary)" />
+                            <StatCard icon="≡ƒôª" label="Total Orders" value={orders.length} color="var(--primary)" />
+                            <StatCard icon="ΓÅ│" label="Processing" value={processing.length} color="var(--accent)" />
+                            <StatCard icon="Γ£à" label="Revenue" value={`Γé╣${revenue.toFixed(0)}`} color="var(--secondary)" />
                         </div>
 
                         <div className="admin-lanes">
-                            <OrderLane title="⏳ Processing" orders={processing} onAction={handleStatusAction} onExpand={toggleExpand} expanded={expanded} togglingToken={togglingToken} cardError={cardError} adminToken={adminToken} setOrders={setOrders} />
-                            <OrderLane title="🟡 Ready for Pickup" orders={ready} onAction={handleStatusAction} onExpand={toggleExpand} expanded={expanded} togglingToken={togglingToken} cardError={cardError} adminToken={adminToken} setOrders={setOrders} />
-                            <OrderLane title="✅ Delivered" orders={orders.filter(o => o.status === 'Delivered')} onAction={handleStatusAction} onExpand={toggleExpand} expanded={expanded} togglingToken={togglingToken} cardError={cardError} adminToken={adminToken} setOrders={setOrders} />
+                            <OrderLane title="ΓÅ│ Processing" orders={processing} onAction={handleStatusAction} onExpand={toggleExpand} expanded={expanded} togglingToken={togglingToken} cardError={cardError} adminToken={adminToken} setOrders={setOrders} />
+                            <OrderLane title="≡ƒƒí Ready for Pickup" orders={ready} onAction={handleStatusAction} onExpand={toggleExpand} expanded={expanded} togglingToken={togglingToken} cardError={cardError} adminToken={adminToken} setOrders={setOrders} />
+                            <OrderLane title="Γ£à Delivered" orders={orders.filter(o => o.status === 'Delivered')} onAction={handleStatusAction} onExpand={toggleExpand} expanded={expanded} togglingToken={togglingToken} cardError={cardError} adminToken={adminToken} setOrders={setOrders} />
                         </div>
                     </>
                 )}
@@ -191,7 +189,7 @@ export default function AdminPage() {
                             {customers.map(c => (
                                 <div key={c.phone} className="customer-row card">
                                     <div className="customer-info">
-                                        <span className="cust-phone">📱 {maskPhone(c.phone)}</span>
+                                        <span className="cust-phone">≡ƒô▒ {maskPhone(c.phone)}</span>
                                         <span className="cust-name">{c.name || 'Anonymous User'}</span>
                                     </div>
                                     <div className="cust-meta">Joined: {c.created_at}</div>
@@ -217,15 +215,15 @@ export default function AdminPage() {
                                     <div className="p-info">
                                         <div className="p-cat">{p.category}</div>
                                         <div className="p-name">{p.name}</div>
-                                        <div className="p-price">₹{p.price} / {p.unit}</div>
+                                        <div className="p-price">Γé╣{p.price} / {p.unit}</div>
                                         <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
                                             <span className={`badge ${p.is_visible ? 'success' : 'danger'}`} style={{ fontSize: 9 }}>{p.is_visible ? 'Visible' : 'Hidden'}</span>
                                             <span className={`badge ${p.in_stock ? 'success' : 'danger'}`} style={{ fontSize: 9 }}>{p.in_stock ? 'In Stock' : 'Out of Stock'}</span>
                                         </div>
                                     </div>
                                     <div className="p-actions">
-                                        <button className="btn-icon" onClick={() => setProductForm(p)}>✏️</button>
-                                        <button className="btn-icon" onClick={() => handleDeleteProduct(p.id)} style={{ color: 'var(--danger)' }}>🗑️</button>
+                                        <button className="btn-icon" onClick={() => setProductForm(p)}>Γ£Å∩╕Å</button>
+                                        <button className="btn-icon" onClick={() => handleDeleteProduct(p.id)} style={{ color: 'var(--danger)' }}>≡ƒùæ∩╕Å</button>
                                     </div>
                                 </div>
                             ))}
@@ -331,7 +329,7 @@ export default function AdminPage() {
                                 
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                                     <div>
-                                        <label>Price (₹)</label>
+                                        <label>Price (Γé╣)</label>
                                         <input type="number" step="0.01" required value={productForm.price} onChange={e => setProductForm({ ...productForm, price: parseFloat(e.target.value) })} />
                                     </div>
                                     <div>
@@ -481,7 +479,6 @@ function OrderLane({ title, orders, onAction, onExpand, expanded, togglingToken,
 }
 
 function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, adminToken, setOrders }) {
-    const navigate = useNavigate()
     const isProcessing = order.status === 'Processing'
     const isReady = order.status === 'Ready for Pickup'
     const isDelivered = order.status === 'Delivered'
@@ -506,11 +503,11 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
         setPaymentConfirmMsg('')
         try {
             await confirmPayment(order.token, adminToken)
-            setPaymentConfirmMsg('✅ Payment confirmed!')
+            setPaymentConfirmMsg('Γ£à Payment confirmed!')
             // Instead of reload, update orders state in parent
             setOrders(prev => prev.map(o => o.token === order.token ? { ...o, payment_status: 'paid', status: 'Ready for Pickup' } : o))
         } catch (e) {
-            setPaymentConfirmMsg('❌ ' + (e.message || 'Failed'))
+            setPaymentConfirmMsg('Γ¥î ' + (e.message || 'Failed'))
         } finally {
             setConfirmingPayment(false)
         }
@@ -522,10 +519,10 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
         setPaymentConfirmMsg('')
         try {
             await rejectPayment(order.token, adminToken)
-            setPaymentConfirmMsg('⚠️ Marked as NOT RECEIVED')
+            setPaymentConfirmMsg('ΓÜá∩╕Å Marked as NOT RECEIVED')
             setOrders(prev => prev.map(o => o.token === order.token ? { ...o, payment_status: 'rejected' } : o))
         } catch (e) {
-            setPaymentConfirmMsg('❌ ' + (e.message || 'Failed'))
+            setPaymentConfirmMsg('Γ¥î ' + (e.message || 'Failed'))
         } finally {
             setConfirmingPayment(false)
         }
@@ -552,7 +549,7 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
         }
     }
 
-    // ── Bill Generator ─────────────────────────────────────────────
+    // ΓöÇΓöÇ Bill Generator ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
     const generateBill = () => {
         const billNo = order.token.replace(/-/g, '').slice(0, 10).toUpperCase()
         const subtotal = items.reduce((s, it) => s + (it.price * it.quantity), 0)
@@ -561,140 +558,7 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
         const dateStr = new Date().toLocaleDateString('en-GB')
         const timeStr = new Date().toLocaleTimeString('en-GB', { hour12: false })
 
-        const html = `
-        <style>
-            @media screen {
-                #print-bill-container { display: none !important; }
-            }
-            @media print {
-                body > :not(#print-bill-container) { display: none !important; }
-                #print-bill-container { display: block !important; position: absolute; left: 0; top: 0; width: 100%; background: white; margin: 0; padding: 0; }
-                @page { size: auto; margin: 0; }
-            }
-            #print-bill-content {
-                font-family: 'Courier New', Courier, monospace;
-                font-size: 12px;
-                color: #000;
-                background: #fff;
-                width: 72mm;
-                margin: 0 auto;
-                padding: 5px 2mm 20px;
-            }
-            #print-bill-content .text-center { text-align: center; }
-            #print-bill-content .bold { font-weight: 900; }
-            #print-bill-content .store-name { font-size: 16px; margin-bottom: 4px; letter-spacing: 0.5px; }
-            #print-bill-content .store-addr { font-size: 10px; line-height: 1.3; margin-bottom: 4px; }
-            #print-bill-content .store-meta { font-size: 10px; margin-bottom: 6px; }
-            #print-bill-content .sep { border-top: 1px dashed #000; margin: 6px 0; }
-            #print-bill-content .sep-star { border-top: 1px dotted #000; margin: 6px 0; position: relative; height: 1px; }
-            #print-bill-content .sep-star::after { content: "******************************************"; font-size: 10px; position: absolute; top: -7px; left: 0; width: 100%; overflow: hidden; height: 14px; background: #fff; }
-            #print-bill-content .title { font-size: 15px; margin: 8px 0; text-decoration: underline; letter-spacing: 2px; }
-            #print-bill-content .meta-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px; }
-            #print-bill-content .meta-line { margin-bottom: 4px; font-size: 11px; }
-            #print-bill-content .table-head { font-size: 11px; font-weight: 900; margin-top: 8px; }
-            #print-bill-content .table-nums-row { display: flex; font-size: 10px; font-weight: 900; padding: 4px 0; }
-            #print-bill-content .item-block { margin-bottom: 8px; }
-            #print-bill-content .item-name { font-size: 11px; margin-bottom: 2px; }
-            #print-bill-content .item-nums { display: flex; font-size: 11px; }
-            #print-bill-content .col-mrp   { width: 22%; text-align: left; }
-            #print-bill-content .col-rate  { width: 22%; text-align: right; }
-            #print-bill-content .col-qty   { width: 22%; text-align: right; }
-            #print-bill-content .col-total { width: 34%; text-align: right; }
-            #print-bill-content .summary-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px; }
-            #print-bill-content .net-payable { display: flex; justify-content: space-between; margin: 10px 0; font-size: 18px; font-weight: 900; }
-            #print-bill-content .footer-info { font-size: 11px; margin: 8px 0; }
-            #print-bill-content .thank-you { font-size: 13px; margin-top: 20px; font-weight: 900; letter-spacing: 1px; }
-        </style>
-        <div id="print-bill-content">
-            <div class="text-center bold store-name">KETAN GENERAL STORES</div>
-            <div class="text-center store-addr">G3, G4, Vasant Chamber, Gupte Road,<br/>Dombivali (West) - 421202</div>
-            <div class="text-center store-meta">Phone: 8879485171 &nbsp; GSTIN: 27AAAPF9753F2ZP</div>
-            
-            <div class="sep"></div>
-            <div class="text-center bold title">TAX INVOICE</div>
-            
-            <div class="meta-row">
-                <span>Date : ${dateStr}</span>
-                <span>Time : ${timeStr}</span>
-            </div>
-            <div class="meta-line">Bill No : ${billNo}</div>
-            <div class="meta-line">Billed By : Ketan Furia</div>
-            
-            <div class="sep"></div>
-            
-            <div class="table-head">SNO HSN CODE/ITEM NAME</div>
-            <div class="table-nums-row">
-                <div class="col-mrp">MRP</div>
-                <div class="col-rate">RATE</div>
-                <div class="col-qty">QTY</div>
-                <div class="col-total">TOTAL</div>
-            </div>
-            
-            <div class="sep"></div>
-
-            ${items.map((item, index) => {
-                const mrp = (item.price * 1.1).toFixed(2) 
-                return `
-                <div class="item-block">
-                    <div class="item-name">${index + 1} &nbsp; ${item.name}</div>
-                    <div class="item-nums">
-                        <div class="col-mrp">${mrp}</div>
-                        <div class="col-rate">${item.price.toFixed(2)}</div>
-                        <div class="col-qty">${item.quantity.toFixed(3)}</div>
-                        <div class="col-total">${(item.price * item.quantity).toFixed(2)}</div>
-                    </div>
-                </div>
-                `
-            }).join('')}
-
-            ${deliveryFee > 0 ? `
-                <div class="item-block">
-                    <div class="item-name">${items.length + 1} &nbsp; Delivery Charges</div>
-                    <div class="item-nums">
-                        <div class="col-mrp">${deliveryFee.toFixed(2)}</div>
-                        <div class="col-rate">${deliveryFee.toFixed(2)}</div>
-                        <div class="col-qty">1.000</div>
-                        <div class="col-total">${deliveryFee.toFixed(2)}</div>
-                    </div>
-                </div>
-            ` : ''}
-
-            <div class="sep"></div>
-            
-            <div class="summary-row">
-                <span>Total :</span>
-                <span class="bold">${order.total.toFixed(2)}</span>
-            </div>
-            <div class="summary-row">
-                <span>Round Off :</span>
-                <span>0.00</span>
-            </div>
-            
-            <div class="sep-star"></div>
-            
-            <div class="net-payable">
-                <span>Net Payable :</span>
-                <span>₹${order.total.toFixed(2)}</span>
-            </div>
-            
-            <div class="sep-star"></div>
-            
-            <div class="footer-info">ITEM(S)/QTY: ${items.length}/${totalQty.toFixed(3)}</div>
-            
-            <div class="sep"></div>
-            
-            <div class="summary-row">
-                <span>PAYMENT MODE</span>
-                <span class="bold">${order.payment_method?.toUpperCase() || 'CASH'}</span>
-            </div>
-            
-            <div class="sep"></div>
-            
-            <div class="text-center thank-you">Thank you, Visit again!!!</div>
-        </div>
-        `
-
-        const fullHtml = `<!DOCTYPE html>
+        const html = `<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -750,7 +614,98 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
     </style>
 </head>
 <body>
-    ${html}
+    <div class="text-center bold store-name">KETAN GENERAL STORES</div>
+    <div class="text-center store-addr">G3, G4, Vasant Chamber, Gupte Road,<br/>Dombivali (West) - 421202</div>
+    <div class="text-center store-meta">Phone: 8879485171 &nbsp; GSTIN: 27AAAPF9753F2ZP</div>
+    
+    <div class="sep"></div>
+    <div class="text-center bold title">TAX INVOICE</div>
+    
+    <div class="meta-row">
+        <span>Date : \${dateStr}</span>
+        <span>Time : \${timeStr}</span>
+    </div>
+    <div class="meta-line">Bill No : \${billNo}</div>
+    <div class="meta-line">Billed By : Ketan Furia</div>
+    
+    <div class="sep"></div>
+    
+    <div class="table-head">SNO HSN CODE/ITEM NAME</div>
+    <div class="table-nums-row">
+        <div class="col-mrp">MRP</div>
+        <div class="col-rate">RATE</div>
+        <div class="col-qty">QTY</div>
+        <div class="col-total">TOTAL</div>
+    </div>
+    
+    <div class="sep"></div>
+
+    \${items.map((item, index) => {
+        const mrp = (item.price * 1.1).toFixed(2) 
+        return \`
+        <div class="item-block">
+            <div class="item-name">\${index + 1} &nbsp; \${item.name}</div>
+            <div class="item-nums">
+                <div class="col-mrp">\${mrp}</div>
+                <div class="col-rate">\${item.price.toFixed(2)}</div>
+                <div class="col-qty">\${item.quantity.toFixed(3)}</div>
+                <div class="col-total">\${(item.price * item.quantity).toFixed(2)}</div>
+            </div>
+        </div>
+        \`
+    }).join('')}
+
+    \${deliveryFee > 0 ? \`
+        <div class="item-block">
+            <div class="item-name">\${items.length + 1} &nbsp; Delivery Charges</div>
+            <div class="item-nums">
+                <div class="col-mrp">\${deliveryFee.toFixed(2)}</div>
+                <div class="col-rate">\${deliveryFee.toFixed(2)}</div>
+                <div class="col-qty">1.000</div>
+                <div class="col-total">\${deliveryFee.toFixed(2)}</div>
+            </div>
+        </div>
+    \` : ''}
+
+    <div class="sep"></div>
+    
+    <div class="summary-row">
+        <span>Total :</span>
+        <span class="bold">\${order.total.toFixed(2)}</span>
+    </div>
+    <div class="summary-row">
+        <span>Round Off :</span>
+        <span>0.00</span>
+    </div>
+    
+    <div class="sep-star"></div>
+    
+    <div class="net-payable">
+        <span>Net Payable :</span>
+        <span>Γé╣\${order.total.toFixed(2)}</span>
+    </div>
+    
+    <div class="sep-star"></div>
+    
+    <div class="footer-info">ITEM(S)/QTY: \${items.length}/\${totalQty.toFixed(3)}</div>
+    
+    <div class="sep"></div>
+    
+    <div class="summary-row">
+        <span>PAYMENT MODE</span>
+        <span class="bold">\${order.payment_method?.toUpperCase() || 'CASH'}</span>
+    </div>
+    
+    <div class="sep"></div>
+    
+    <div class="text-center thank-you">Thank you, Visit again!!!</div>
+
+    <script>
+        window.onload = () => {
+            window.print();
+            setTimeout(() => window.close(), 500);
+        };
+    </script>
 </body>
 </html>`
 
@@ -765,17 +720,13 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
         
         const doc = frame.contentWindow.document
         doc.open()
-        doc.write(fullHtml)
+        doc.write(html)
         doc.close()
         
         frame.contentWindow.focus()
         setTimeout(() => {
             frame.contentWindow.print()
-            setTimeout(() => {
-                if (document.body.contains(frame)) {
-                    document.body.removeChild(frame)
-                }
-            }, 1000)
+            setTimeout(() => document.body.removeChild(frame), 1000)
         }, 500)
     }
 
@@ -785,10 +736,10 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                         <div style={{ fontWeight: 800, color: '#1e3a8a', fontSize: 16 }}>#{order.token}</div>
-                        <div style={{ fontSize: 13, color: '#64748b' }}>📱 +91 ****{order.phone.slice(-4)}</div>
+                        <div style={{ fontSize: 13, color: '#64748b' }}>≡ƒô▒ +91 ****{order.phone.slice(-4)}</div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontWeight: 800, color: '#10b981' }}>₹{order.total}</div>
+                        <div style={{ fontWeight: 800, color: '#10b981' }}>Γé╣{order.total}</div>
                         <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>
                             {deliveryType.toUpperCase()}
                             {paymentMethod === 'upi' && (
@@ -798,7 +749,7 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
                                     color: isUpiPending ? '#b45309' : '#15803d',
                                     fontSize: 10, fontWeight: 800
                                 }}>
-                                    {isUpiPending ? '⏳ UPI Pending' : '✅ UPI Paid'}
+                                    {isUpiPending ? 'ΓÅ│ UPI Pending' : 'Γ£à UPI Paid'}
                                 </span>
                             )}
                         </div>
@@ -813,7 +764,7 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
                             {items.map((it, i) => (
                                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
                                     <span>{it.name} x {it.quantity}</span>
-                                    <span>₹{it.subtotal || it.price * it.quantity}</span>
+                                    <span>Γé╣{it.subtotal || it.price * it.quantity}</span>
                                 </div>
                             ))}
                         </div>
@@ -821,7 +772,7 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
                 )}
             </AnimatePresence>
 
-            {/* Generate Bill button — always visible */}
+            {/* Generate Bill button ΓÇö always visible */}
             <div style={{ padding: '8px 12px 0', borderTop: '1px solid #e2e8f0' }}>
                 <button
                     onClick={generateBill}
@@ -842,7 +793,7 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
                         gap: 6,
                     }}
                 >
-                    🖨️ Generate Bill
+                    ≡ƒû¿∩╕Å Generate Bill
                 </button>
             </div>
 
@@ -853,7 +804,7 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
                     {isProcessing && isUpiPending && (
                         <div style={{ marginBottom: 10 }}>
                             {paymentConfirmMsg && (
-                                <div style={{ padding: '8px 12px', borderRadius: 8, background: paymentConfirmMsg.startsWith('✅') ? '#dcfce7' : '#fee2e2', color: paymentConfirmMsg.startsWith('✅') ? '#15803d' : '#dc2626', fontSize: 13, fontWeight: 600, marginBottom: 8, textAlign: 'center' }}>
+                                <div style={{ padding: '8px 12px', borderRadius: 8, background: paymentConfirmMsg.startsWith('Γ£à') ? '#dcfce7' : '#fee2e2', color: paymentConfirmMsg.startsWith('Γ£à') ? '#15803d' : '#dc2626', fontSize: 13, fontWeight: 600, marginBottom: 8, textAlign: 'center' }}>
                                     {paymentConfirmMsg}
                                 </div>
                             )}
@@ -868,7 +819,7 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
                                         boxShadow: '0 4px 12px rgba(16,185,129,0.3)'
                                     }}
                                 >
-                                    {confirmingPayment ? '⏳ ...' : '💰 Payment Received'}
+                                    {confirmingPayment ? 'ΓÅ│ ...' : '≡ƒÆ░ Payment Received'}
                                 </button>
                                 <button
                                     onClick={handleRejectPayment}
@@ -897,13 +848,13 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
                                 style={{ marginBottom: 10, background: 'rgba(30,58,138,0.05)', border: '1.5px solid #1e3a8a', borderRadius: 10, padding: '12px' }}
                             >
                                 <div style={{ fontSize: 12, fontWeight: 700, color: '#1e3a8a', marginBottom: 8, textAlign: 'center' }}>
-                                    🔐 Enter OTP from Customer
+                                    ≡ƒöÉ Enter OTP from Customer
                                 </div>
                                 <input
                                     className="input"
                                     type="tel"
                                     inputMode="numeric"
-                                    placeholder="• • • •"
+                                    placeholder="ΓÇó ΓÇó ΓÇó ΓÇó"
                                     maxLength={4}
                                     value={otpInput}
                                     onChange={e => { setOtpInput(e.target.value.replace(/\D/g, '')); setOtpError('') }}
@@ -925,13 +876,13 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
                             onClick={handleAction}
                             disabled={toggling}
                         >
-                            {toggling ? '⏳ Updating...' : isProcessing ? '✅ Mark Ready' : showOtpInput ? '🎯 Confirm Delivery' : '🚀 Mark Delivered'}
+                            {toggling ? 'ΓÅ│ Updating...' : isProcessing ? 'Γ£à Mark Ready' : showOtpInput ? '≡ƒÄ» Confirm Delivery' : '≡ƒÜÇ Mark Delivered'}
                         </button>
-                        {isReady && <button className="btn-icon" onClick={() => onAction(order.token, 'Processing')}>↩️</button>}
+                        {isReady && <button className="btn-icon" onClick={() => onAction(order.token, 'Processing')}>Γå⌐∩╕Å</button>}
                     </div>
                 </div>
             )}
-            {error && <div style={{ padding: '4px 16px 8px', color: 'var(--danger)', fontSize: 12 }}>⚠️ {error}</div>}
+            {error && <div style={{ padding: '4px 16px 8px', color: 'var(--danger)', fontSize: 12 }}>ΓÜá∩╕Å {error}</div>}
         </motion.div>
     )
 }
