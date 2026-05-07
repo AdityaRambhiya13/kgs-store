@@ -631,36 +631,36 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
 
             ${items.map((item, index) => {
                 const mrp = (item.price * 1.1).toFixed(2) 
-                return \`
+                return `
                 <div class="item-block">
-                    <div class="item-name">\${index + 1} &nbsp; \${item.name}</div>
+                    <div class="item-name">${index + 1} &nbsp; ${item.name}</div>
                     <div class="item-nums">
-                        <div class="col-mrp">\${mrp}</div>
-                        <div class="col-rate">\${item.price.toFixed(2)}</div>
-                        <div class="col-qty">\${item.quantity.toFixed(3)}</div>
-                        <div class="col-total">\${(item.price * item.quantity).toFixed(2)}</div>
+                        <div class="col-mrp">${mrp}</div>
+                        <div class="col-rate">${item.price.toFixed(2)}</div>
+                        <div class="col-qty">${item.quantity.toFixed(3)}</div>
+                        <div class="col-total">${(item.price * item.quantity).toFixed(2)}</div>
                     </div>
                 </div>
-                \`
+                `
             }).join('')}
 
-            ${deliveryFee > 0 ? \`
+            ${deliveryFee > 0 ? `
                 <div class="item-block">
-                    <div class="item-name">\${items.length + 1} &nbsp; Delivery Charges</div>
+                    <div class="item-name">${items.length + 1} &nbsp; Delivery Charges</div>
                     <div class="item-nums">
-                        <div class="col-mrp">\${deliveryFee.toFixed(2)}</div>
-                        <div class="col-rate">\${deliveryFee.toFixed(2)}</div>
+                        <div class="col-mrp">${deliveryFee.toFixed(2)}</div>
+                        <div class="col-rate">${deliveryFee.toFixed(2)}</div>
                         <div class="col-qty">1.000</div>
-                        <div class="col-total">\${deliveryFee.toFixed(2)}</div>
+                        <div class="col-total">${deliveryFee.toFixed(2)}</div>
                     </div>
                 </div>
-            \` : ''}
+            ` : ''}
 
             <div class="sep"></div>
             
             <div class="summary-row">
                 <span>Total :</span>
-                <span class="bold">\${order.total.toFixed(2)}</span>
+                <span class="bold">${order.total.toFixed(2)}</span>
             </div>
             <div class="summary-row">
                 <span>Round Off :</span>
@@ -671,18 +671,18 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
             
             <div class="net-payable">
                 <span>Net Payable :</span>
-                <span>₹\${order.total.toFixed(2)}</span>
+                <span>₹${order.total.toFixed(2)}</span>
             </div>
             
             <div class="sep-star"></div>
             
-            <div class="footer-info">ITEM(S)/QTY: \${items.length}/\${totalQty.toFixed(3)}</div>
+            <div class="footer-info">ITEM(S)/QTY: ${items.length}/${totalQty.toFixed(3)}</div>
             
             <div class="sep"></div>
             
             <div class="summary-row">
                 <span>PAYMENT MODE</span>
-                <span class="bold">\${order.payment_method?.toUpperCase() || 'CASH'}</span>
+                <span class="bold">${order.payment_method?.toUpperCase() || 'CASH'}</span>
             </div>
             
             <div class="sep"></div>
