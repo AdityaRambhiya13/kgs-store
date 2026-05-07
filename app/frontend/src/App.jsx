@@ -18,6 +18,7 @@ import ImageMapper from './pages/ImageMapper'
 import CategoryMapper from './pages/CategoryMapper'
 import TestPage from './pages/TestPage'
 import ProductRenamer from './pages/ProductRenamer'
+import PrintBillPage from './pages/PrintBillPage'
 import UPIPaymentPage from './pages/UPIPaymentPage'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import CartPanel from './components/CartPanel'
@@ -46,6 +47,7 @@ export default function App() {
                      location.pathname === '/admin/mapper' ||
                      location.pathname === '/admin/category-mapper' ||
                      location.pathname === '/admin/renamer' ||
+                     location.pathname.startsWith('/admin/print/') ||
                      location.pathname.startsWith('/pay/')
   const showSearch = location.pathname === '/'
 
@@ -86,6 +88,7 @@ export default function App() {
           <Route path="/admin/mapper" element={<ImageMapper />} />
           <Route path="/admin/category-mapper" element={<CategoryMapper />} />
           <Route path="/admin/renamer" element={<ProductRenamer />} />
+          <Route path="/admin/print/:token" element={<PrintBillPage />} />
           <Route path="/pay/upi" element={<ProtectedRoute><UPIPaymentPage /></ProtectedRoute>} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/test" element={<TestPage />} />
