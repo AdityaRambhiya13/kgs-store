@@ -146,7 +146,7 @@ export default function AdminPage() {
             {/* Nav Header */}
             <div className="admin-header">
                 <div>
-                    <h1>🌾 KGS Admin <span style={{fontSize: '12px', opacity: 0.5, fontWeight: 400}}>v21</span></h1>
+                    <h1>🌾 KGS Admin <span style={{fontSize: '12px', opacity: 0.5, fontWeight: 400}}>v22</span></h1>
                     <p>Store Management System</p>
                 </div>
                 <div className="admin-nav-tabs">
@@ -705,11 +705,38 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
                 #print-bill-container { display: none !important; }
             }
             @media print {
-                /* Aggressively hide EVERYTHING except the bill container */
-                html, body { height: auto !important; overflow: visible !important; margin: 0 !important; padding: 0 !important; background: white !important; }
-                body > :not(#print-bill-container), #root, .admin-page { display: none !important; }
-                #print-bill-container { display: block !important; position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; margin: 0 !important; padding: 0 !important; z-index: 99999 !important; background: white !important; }
-                #print-bill-content { margin: 0 auto !important; }
+                /* Ultra-aggressive hiding of the main application */
+                html, body { 
+                    height: auto !important; 
+                    overflow: visible !important; 
+                    margin: 0 !important; 
+                    padding: 0 !important; 
+                    background: white !important; 
+                }
+                #root, .admin-page, [class*="admin-"], .modal-overlay, .modal-content { 
+                    display: none !important; 
+                    visibility: hidden !important;
+                    height: 0 !important;
+                    width: 0 !important;
+                    overflow: hidden !important;
+                }
+                #print-bill-container { 
+                    display: block !important; 
+                    visibility: visible !important;
+                    position: absolute !important; 
+                    left: 0 !important; 
+                    top: 0 !important; 
+                    width: 100% !important; 
+                    margin: 0 !important; 
+                    padding: 0 !important; 
+                    z-index: 9999999 !important; 
+                    background: white !important; 
+                }
+                #print-bill-content { 
+                    margin: 0 auto !important; 
+                    display: block !important;
+                    visibility: visible !important;
+                }
                 @page { size: auto; margin: 0mm; }
             }
         `
@@ -728,14 +755,13 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
             window.removeEventListener('focus', afterPrint)
         }
         window.addEventListener('afterprint', afterPrint)
-        window.addEventListener('focus', () => setTimeout(afterPrint, 500))
+        window.addEventListener('focus', () => setTimeout(afterPrint, 1000))
 
-        // Short timeout to ensure DOM update before printing
+        // Increased timeout to 500ms to allow mobile browsers to layout the new content
         setTimeout(() => {
             window.print()
-            // Fallback cleanup
             setTimeout(afterPrint, 60000)
-        }, 100)
+        }, 500)
     }
 
     return (
