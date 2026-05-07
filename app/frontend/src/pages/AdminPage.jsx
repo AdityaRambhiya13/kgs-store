@@ -146,7 +146,7 @@ export default function AdminPage() {
             {/* Nav Header */}
             <div className="admin-header">
                 <div>
-                    <h1>🌾 KGS Admin</h1>
+                    <h1>🌾 KGS Admin <span style={{fontSize: '12px', opacity: 0.5, fontWeight: 400}}>v21</span></h1>
                     <p>Store Management System</p>
                 </div>
                 <div className="admin-nav-tabs">
@@ -705,9 +705,12 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
                 #print-bill-container { display: none !important; }
             }
             @media print {
-                body > :not(#print-bill-container) { display: none !important; }
-                #print-bill-container { display: block !important; position: absolute; left: 0; top: 0; width: 100%; background: white; margin: 0; padding: 0; }
-                @page { size: auto; margin: 0; }
+                /* Aggressively hide EVERYTHING except the bill container */
+                html, body { height: auto !important; overflow: visible !important; margin: 0 !important; padding: 0 !important; background: white !important; }
+                body > :not(#print-bill-container), #root, .admin-page { display: none !important; }
+                #print-bill-container { display: block !important; position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; margin: 0 !important; padding: 0 !important; z-index: 99999 !important; background: white !important; }
+                #print-bill-content { margin: 0 auto !important; }
+                @page { size: auto; margin: 0mm; }
             }
         `
         document.head.appendChild(styleEl)
