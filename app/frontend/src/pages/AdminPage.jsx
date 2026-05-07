@@ -148,7 +148,7 @@ export default function AdminPage() {
             {/* Nav Header */}
             <div className="admin-header">
                 <div>
-                    <h1>🌾 KGS Admin <span style={{fontSize: '12px', opacity: 0.5, fontWeight: 400}}>v27</span></h1>
+                    <h1>🌾 KGS Admin <span style={{fontSize: '12px', opacity: 0.5, fontWeight: 400}}>v28</span></h1>
                     <p>Store Management System</p>
                 </div>
                 <div className="admin-nav-tabs">
@@ -481,6 +481,7 @@ function OrderLane({ title, orders, onAction, onExpand, expanded, togglingToken,
 }
 
 function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, adminToken, setOrders }) {
+    const navigate = useNavigate()
     const isProcessing = order.status === 'Processing'
     const isReady = order.status === 'Ready for Pickup'
     const isDelivered = order.status === 'Delivered'
