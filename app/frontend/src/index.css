@@ -104,6 +104,12 @@ p { line-height: 1.6; }
   padding: 0 16px;
 }
 
+.no-print {
+  @media print {
+    display: none !important;
+  }
+}
+
 /* ── Buttons ─────────────────────────────────────────────────── */
 .btn {
   display: inline-flex;

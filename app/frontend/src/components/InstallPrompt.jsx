@@ -95,7 +95,7 @@ export default function InstallPrompt() {
     <AnimatePresence>
       {show && (
         <motion.div 
-          className="pwa-prompt-overlay"
+          className="pwa-prompt-overlay no-print"
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 50 }}
