@@ -74,42 +74,51 @@ export default function PrintBillPage() {
                 
                 <div className="sep"></div>
                 
-                <div className="table-head">SNO HSN CODE/ITEM NAME</div>
-                <div className="table-nums-row">
-                    <div className="col-mrp">MRP</div>
-                    <div className="col-rate">RATE</div>
-                    <div className="col-qty">QTY</div>
-                    <div className="col-total">TOTAL</div>
-                </div>
-                
-                <div className="sep"></div>
+                <table className="items-table">
+                    <thead>
+                        <tr>
+                            <th className="col-sno-name" colSpan="4">SNO ITEM NAME</th>
+                        </tr>
+                        <tr className="table-nums-row">
+                            <th className="col-mrp">MRP</th>
+                            <th className="col-rate">RATE</th>
+                            <th className="col-qty">QTY</th>
+                            <th className="col-total">TOTAL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {items.map((item, index) => {
+                            const mrp = (item.price * 1.1).toFixed(2)
+                            return (
+                                <React.Fragment key={index}>
+                                    <tr>
+                                        <td colSpan="4" className="item-name-cell">{index + 1}. {item.name}</td>
+                                    </tr>
+                                    <tr className="item-nums-row">
+                                        <td className="col-mrp">{mrp}</td>
+                                        <td className="col-rate">{item.price.toFixed(2)}</td>
+                                        <td className="col-qty">{item.quantity.toFixed(3)}</td>
+                                        <td className="col-total">{(item.price * item.quantity).toFixed(2)}</td>
+                                    </tr>
+                                </React.Fragment>
+                            )
+                        })}
 
-                {items.map((item, index) => {
-                    const mrp = (item.price * 1.1).toFixed(2) 
-                    return (
-                        <div key={index} className="item-block">
-                            <div className="item-name">{index + 1} &nbsp; {item.name}</div>
-                            <div className="item-nums">
-                                <div className="col-mrp">{mrp}</div>
-                                <div className="col-rate">{item.price.toFixed(2)}</div>
-                                <div className="col-qty">{item.quantity.toFixed(3)}</div>
-                                <div className="col-total">{(item.price * item.quantity).toFixed(2)}</div>
-                            </div>
-                        </div>
-                    )
-                })}
-
-                {deliveryFee > 0 && (
-                    <div className="item-block">
-                        <div className="item-name">{items.length + 1} &nbsp; Delivery Charges</div>
-                        <div className="item-nums">
-                            <div className="col-mrp">{deliveryFee.toFixed(2)}</div>
-                            <div className="col-rate">{deliveryFee.toFixed(2)}</div>
-                            <div className="col-qty">1.000</div>
-                            <div className="col-total">{deliveryFee.toFixed(2)}</div>
-                        </div>
-                    </div>
-                )}
+                        {deliveryFee > 0 && (
+                            <>
+                                <tr>
+                                    <td colSpan="4" className="item-name-cell">{items.length + 1}. Delivery Charges</td>
+                                </tr>
+                                <tr className="item-nums-row">
+                                    <td className="col-mrp">{deliveryFee.toFixed(2)}</td>
+                                    <td className="col-rate">{deliveryFee.toFixed(2)}</td>
+                                    <td className="col-qty">1.000</td>
+                                    <td className="col-total">{deliveryFee.toFixed(2)}</td>
+                                </tr>
+                            </>
+                        )}
+                    </tbody>
+                </table>
 
                 <div className="sep"></div>
                 
@@ -126,7 +135,7 @@ export default function PrintBillPage() {
                 
                 <div className="net-payable">
                     <span>Net Payable :</span>
-                    <span>₹{order.total.toFixed(2)}</span>
+                    <span>Rs. {order.total.toFixed(2)}</span>
                 </div>
                 
                 <div className="sep-star"></div>
@@ -151,14 +160,14 @@ export default function PrintBillPage() {
                     background: #f1f5f9;
                 }
                 #print-bill-content {
-                    font-family: 'Courier New', Courier, monospace;
+                    font-family: monospace;
                     font-size: 12px;
+                    line-height: 1.2;
                     color: #000;
                     background: #fff;
                     width: 72mm;
                     margin: 0 auto;
                     padding: 5px 2mm 20px;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
                 }
                 .text-center { text-align: center; }
                 .bold { font-weight: 900; }
@@ -166,16 +175,15 @@ export default function PrintBillPage() {
                 .store-addr { font-size: 10px; line-height: 1.3; margin-bottom: 4px; }
                 .store-meta { font-size: 10px; margin-bottom: 6px; }
                 .sep { border-top: 1px dashed #000; margin: 6px 0; }
-                .sep-star { border-top: 1px dotted #000; margin: 6px 0; position: relative; height: 1px; }
-                .sep-star::after { content: "******************************************"; font-size: 10px; position: absolute; top: -7px; left: 0; width: 100%; overflow: hidden; height: 14px; background: #fff; }
+                .sep-star { border-top: 1px dotted #000; margin: 6px 0; }
                 .title { font-size: 15px; margin: 8px 0; text-decoration: underline; letter-spacing: 2px; }
                 .meta-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px; }
                 .meta-line { margin-bottom: 4px; font-size: 11px; }
-                .table-head { font-size: 11px; font-weight: 900; margin-top: 8px; }
-                .table-nums-row { display: flex; font-size: 10px; font-weight: 900; padding: 4px 0; }
-                .item-block { margin-bottom: 8px; }
-                .item-name { font-size: 11px; margin-bottom: 2px; }
-                .item-nums { display: flex; font-size: 11px; }
+                .items-table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+                .col-sno-name { text-align: left; font-size: 11px; font-weight: 900; padding-bottom: 2px; }
+                .item-name-cell { font-size: 11px; padding-top: 8px; padding-bottom: 2px; }
+                .table-nums-row th { font-size: 10px; font-weight: 900; padding: 4px 0; border-bottom: 1px dashed #000; }
+                .item-nums-row td { font-size: 11px; padding: 2px 0; }
                 .col-mrp   { width: 22%; text-align: left; }
                 .col-rate  { width: 22%; text-align: right; }
                 .col-qty   { width: 22%; text-align: right; }
