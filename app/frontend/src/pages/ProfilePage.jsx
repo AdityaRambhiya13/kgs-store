@@ -239,9 +239,21 @@ export default function ProfilePage() {
                                 </div>
                                 <div className="profile-order-right">
                                     <div className="profile-order-amount">₹{Math.round(order.total || 0)}</div>
-                                    <div className="profile-order-status" style={{ color: statusColor(order.status) }}>
+                                    <div className="profile-order-status" style={{ color: statusColor(order.status), marginBottom: order.status === 'Delivered' ? 4 : 0 }}>
                                         {statusEmoji(order.status)} {order.status}
                                     </div>
+                                    {order.status === 'Delivered' && (
+                                        <button
+                                            className="btn btn-primary"
+                                            style={{ fontSize: 10, padding: '4px 8px', height: 'auto', background: '#10B981', boxShadow: 'none' }}
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                navigate(`/admin/print/${order.token}`)
+                                            }}
+                                        >
+                                            📄 Bill
+                                        </button>
+                                    )}
                                 </div>
                             </motion.div>
                         ))}

@@ -53,7 +53,7 @@ export default function PrintBillPage() {
                 <p style={{ margin: '0 0 10px 0' }}>Bill Preview for #{order.token}</p>
                 <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
                     <button onClick={() => window.print()} style={{ padding: '8px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: 4, fontWeight: 'bold' }}>Reprint</button>
-                    <button onClick={() => navigate(-1)} style={{ padding: '8px 16px', background: 'white', color: '#1e3a8a', border: 'none', borderRadius: 4, fontWeight: 'bold' }}>Back to Admin</button>
+                    <button onClick={() => navigate(-1)} style={{ padding: '8px 16px', background: 'white', color: '#1e3a8a', border: 'none', borderRadius: 4, fontWeight: 'bold' }}>Back</button>
                 </div>
             </div>
 

@@ -154,6 +154,20 @@ export default function OrderHistoryPage() {
                                                         </button>
                                                     </div>
                                                 )}
+                                                {order.status === 'Delivered' && (
+                                                    <div style={{ marginTop: 12, textAlign: 'right' }}>
+                                                        <button
+                                                            className="btn btn-primary"
+                                                            style={{ fontSize: 12, padding: '6px 12px', background: '#10B981', boxShadow: 'none' }}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                navigate(`/admin/print/${order.token}`)
+                                                            }}
+                                                        >
+                                                            📄 Download Bill
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </motion.div>
                                         ))}
                                     </div>
