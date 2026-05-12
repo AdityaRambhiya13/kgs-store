@@ -1,7 +1,7 @@
 // api.js — All API calls to FastAPI backend
 
 // Uses VITE_API_URL for production (Vercel), or fallback to local Vite proxy ('')
-const BASE = import.meta.env.VITE_API_URL || ''
+const BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
 
 async function request(method, path, body = null, signal = null, token = null) {
     const defaultToken = localStorage.getItem('kgsToken')
