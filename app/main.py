@@ -365,6 +365,8 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "https://ketanstores.in",
+        "https://www.ketanstores.in",
         "https://kgs-store.vercel.app",
         "https://kgs-store-admin.vercel.app",
         "http://localhost:5173",

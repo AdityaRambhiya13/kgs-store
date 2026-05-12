@@ -64,7 +64,20 @@ export default function StatusPage() {
 
         // WebSocket for live updates
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-        const host = window.location.hostname === 'localhost' ? 'localhost:8000' : window.location.host
+        let host = window.location.host
+        
+        const envApiUrl = import.meta.env.VITE_API_URL
+        if (envApiUrl) {
+            try {
+                // Extract host from URL (e.g., https://api.example.com -> api.example.com)
+                host = envApiUrl.replace(/^https?:\/\//, '').split('/')[0]
+            } catch (e) {
+                console.error("Failed to parse VITE_API_URL for WebSocket:", e)
+            }
+        } else if (window.location.hostname === 'localhost') {
+            host = 'localhost:8000'
+        }
+
         const ws = new WebSocket(`${protocol}//${host}/ws/customer`)
 
         ws.onmessage = (event) => {
