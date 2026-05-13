@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCart } from '../CartContext'
 import { useFavorites } from '../FavoritesContext'
@@ -9,9 +10,54 @@ function getRating(id) {
   return (3.8 + seed * 0.12).toFixed(1)
 }
 
+// Pseudo-random review count
+function getReviewCount(id) {
+  return ((id * 13 + 7) % 89) + 8
+}
+
+// 5-star visual component
+function StarRating({ rating }) {
+  const numRating = parseFloat(rating)
+  return (
+    <span className="pc-star-visual" aria-label={`${rating} stars`}>
+      {[1, 2, 3, 4, 5].map(star => {
+        const filled = numRating >= star
+        const half = !filled && numRating >= star - 0.5
+        return (
+          <svg
+            key={star}
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            style={{ display: 'inline', verticalAlign: 'middle' }}
+          >
+            <defs>
+              <linearGradient id={`half-${star}-${Math.round(numRating * 10)}`}>
+                <stop offset="50%" stopColor="#FBBF24" />
+                <stop offset="50%" stopColor="#D1D5DB" />
+              </linearGradient>
+            </defs>
+            <polygon
+              points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"
+              fill={
+                filled
+                  ? '#FBBF24'
+                  : half
+                  ? `url(#half-${star}-${Math.round(numRating * 10)})`
+                  : '#D1D5DB'
+              }
+            />
+          </svg>
+        )
+      })}
+    </span>
+  )
+}
+
 export default function ProductCard({ product, onDetailClick, onVariantClick }) {
   const { cartItems, addToCart, removeFromCart } = useCart()
   const { isFavorite, toggleFavorite } = useFavorites()
+  const [addPulse, setAddPulse] = useState(false)
   const variants = product.variants ?? [product]
   const minPrice = Math.min(...variants.map(v => v.price))
   const variantCount = variants.length
@@ -20,6 +66,7 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
   const qtyInCart = cartItem ? cartItem.quantity : 0
 
   const rating = getRating(product.id || 1)
+  const reviewCount = getReviewCount(product.id || 1)
   const mrp = getMRP(minPrice, product.id || 1)
   const discount = getDiscount(minPrice, mrp)
   const fav = isFavorite(product.id)
@@ -30,6 +77,9 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
     if (isOutOfStock) return
     if (variantCount === 1) {
       addToCart(variants[0])
+      // Trigger pulse animation
+      setAddPulse(true)
+      setTimeout(() => setAddPulse(false), 400)
     } else {
       onVariantClick(product, mrp)
     }
@@ -58,15 +108,13 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
   return (
     <motion.div
       className="product-card"
-      style={{ cursor: 'pointer', position: 'relative' }}
+      style={{ cursor: 'pointer', position: 'relative', borderRadius: 'var(--r-lg)' }}
       whileTap={{ scale: 0.98 }}
       whileHover={{ y: -2 }}
       transition={{ duration: 0.15 }}
       onClick={handleCardClick}
     >
-
-
-      {/* Favorite Button */}
+      {/* Favorite Button — frosted glass pill backdrop */}
       <motion.button
         className={`pc-fav-btn ${fav ? 'active' : ''}`}
         onClick={handleFavClick}
@@ -102,12 +150,11 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
       <div className="pc-body">
         <p className="pc-name">{displayName}</p>
 
-        {/* Rating */}
+        {/* Rating — 5-star visual component with review count */}
         <div className="pc-rating-row">
-          <span className="pc-stars">★</span>
+          <StarRating rating={rating} />
           <span className="pc-rating-val">{rating}</span>
-          <span className="pc-rating-sep">·</span>
-          <span className="pc-category">{product.category}</span>
+          <span className="pc-rating-reviews">({reviewCount})</span>
         </div>
 
         <div className="pc-footer-row">
@@ -134,11 +181,11 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
               ) : (
                 <motion.button
                   key="add"
-                  className={`pc-add-btn ${isOutOfStock ? 'disabled' : ''}`}
+                  className={`pc-add-btn ${isOutOfStock ? 'disabled' : ''} ${addPulse ? 'pulse' : ''}`}
                   onClick={handleAddClick}
                   whileTap={isOutOfStock ? {} : { scale: 0.88 }}
+                  animate={addPulse ? { scale: [1, 1.18, 0.95, 1] } : { scale: 1 }}
                   initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
                   transition={{ duration: 0.18 }}
                   disabled={isOutOfStock}

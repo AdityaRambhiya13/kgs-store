@@ -57,6 +57,7 @@ function RecommendationCard({ product, onDetailClick }) {
         <div className="rec-rating-row">
           <span className="rec-star">★</span>
           <span className="rec-rating">{rating}</span>
+          <span className="rec-rating-count">({((product.id * 13 + 7) % 89) + 8})</span>
         </div>
         <div className="rec-price-row">
           <span className="rec-price">₹{minPrice}</span>
@@ -166,20 +167,22 @@ export default function RecommendationsSection() {
           </div>
         </div>
 
-        <div className="rec-scroll-track">
-          {products.map((product, i) => (
-            <motion.div
-              key={product.id}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.05, duration: 0.3 }}
-            >
-              <RecommendationCard
-                product={product}
-                onDetailClick={(prod, mrp) => setSelectedProductDetails({ product: prod, mrp })}
-              />
-            </motion.div>
-          ))}
+        <div className="rec-scroll-outer">
+          <div className="rec-scroll-track">
+            {products.map((product, i) => (
+              <motion.div
+                key={product.id}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.05, duration: 0.3 }}
+              >
+                <RecommendationCard
+                  product={product}
+                  onDetailClick={(prod, mrp) => setSelectedProductDetails({ product: prod, mrp })}
+                />
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 

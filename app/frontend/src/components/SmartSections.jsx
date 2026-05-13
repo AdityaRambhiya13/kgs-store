@@ -2,22 +2,23 @@ import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import ProductCard from './ProductCard'
 
-const FREE_DELIVERY_THRESHOLD = 299
-
 const SECTIONS = [
   {
     id: 'trending',
-    title: '🔥 Trending Near You',
+    title: 'Trending Near You',
+    badge: { label: 'Hot', color: 'var(--accent)', bg: 'rgba(255,107,53,0.12)' },
     filter: (products) => products.slice().sort((a, b) => (b.id % 7) - (a.id % 7)).slice(0, 8),
   },
   {
     id: 'deals',
-    title: '💥 Deals of the Day',
+    title: 'Deals of the Day',
+    badge: { label: 'Sale', color: '#D97706', bg: 'rgba(245,158,11,0.12)' },
     filter: (products) => products.filter((_, i) => i % 3 === 0).slice(0, 8),
   },
   {
     id: 'under99',
-    title: '💸 Under ₹99',
+    title: 'Under ₹99',
+    badge: { label: 'Value', color: '#059669', bg: 'rgba(5,150,105,0.10)' },
     filter: (products) =>
       products.filter(p => {
         const minPrice = Math.min(...(p.variants ?? [p]).map(v => v.price))
@@ -26,7 +27,8 @@ const SECTIONS = [
   },
   {
     id: 'buyagain',
-    title: '🔁 Buy Again',
+    title: 'Buy Again',
+    badge: { label: 'Recent', color: 'var(--primary)', bg: 'var(--primary-glow)' },
     filter: (products) => products.slice().reverse().slice(0, 8),
   },
 ]
@@ -48,23 +50,38 @@ export default function SmartSections({ products, onDetailClick, onVariantClick,
         <div key={section.id} className="smart-section">
           <div className="smart-section-header">
             <h2 className="smart-section-title">{section.title}</h2>
-          </div>
-          <div className="smart-section-scroll">
-            {section.items.map((product, i) => (
-              <motion.div
-                key={product.base_name || product.name}
-                className="smart-card-wrap"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.04 + si * 0.02 }}
+            {section.badge && (
+              <span
+                className="smart-section-badge"
+                style={{
+                  color: section.badge.color,
+                  background: section.badge.bg,
+                  border: `1px solid ${section.badge.color}33`,
+                }}
               >
-                <ProductCard
-                  product={product}
-                  onDetailClick={onDetailClick}
-                  onVariantClick={onVariantClick}
-                />
-              </motion.div>
-            ))}
+                {section.badge.label}
+              </span>
+            )}
+          </div>
+          {/* Scroll container with right-edge gradient mask for scroll affordance */}
+          <div className="smart-section-scroll-outer">
+            <div className="smart-section-scroll">
+              {section.items.map((product, i) => (
+                <motion.div
+                  key={product.base_name || product.name}
+                  className="smart-card-wrap"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.04 + si * 0.02 }}
+                >
+                  <ProductCard
+                    product={product}
+                    onDetailClick={onDetailClick}
+                    onVariantClick={onVariantClick}
+                  />
+                </motion.div>
+              ))}
+            </div>
           </div>
         </div>
       ))}

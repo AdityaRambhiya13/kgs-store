@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const SLIDES = [
@@ -16,7 +16,7 @@ const SLIDES = [
   {
     id: 2,
     gradient: 'linear-gradient(135deg, #FF6B35 0%, #F7931E 60%, #FFD700 100%)',
-    badge: '🔥 Deals of the Day',
+    badge: 'Deals of the Day',
     heading: 'Staples &\nGrain Goodness',
     sub: 'Best quality rice, wheat, daals — straight from the source',
     cta: 'Explore Deals',
@@ -40,14 +40,48 @@ const SLIDES = [
 export default function HeroBanner() {
   const [current, setCurrent] = useState(0)
   const [paused, setPaused] = useState(false)
+  const [direction, setDirection] = useState(1)
+  const touchStartX = useRef(null)
+  const touchStartY = useRef(null)
 
   useEffect(() => {
     if (paused) return
     const timer = setInterval(() => {
+      setDirection(1)
       setCurrent(c => (c + 1) % SLIDES.length)
     }, 3500)
     return () => clearInterval(timer)
   }, [paused])
+
+  const goTo = (idx) => {
+    setDirection(idx > current ? 1 : -1)
+    setCurrent(idx)
+  }
+
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX
+    touchStartY.current = e.touches[0].clientY
+    setPaused(true)
+  }
+
+  const handleTouchEnd = (e) => {
+    if (touchStartX.current === null) return
+    const dx = e.changedTouches[0].clientX - touchStartX.current
+    const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current)
+    // Only swipe if horizontal movement > 50px and more horizontal than vertical
+    if (Math.abs(dx) > 50 && Math.abs(dx) > dy) {
+      if (dx < 0) {
+        setDirection(1)
+        setCurrent(c => (c + 1) % SLIDES.length)
+      } else {
+        setDirection(-1)
+        setCurrent(c => (c - 1 + SLIDES.length) % SLIDES.length)
+      }
+    }
+    touchStartX.current = null
+    touchStartY.current = null
+    setPaused(false)
+  }
 
   const slide = SLIDES[current]
 
@@ -56,22 +90,30 @@ export default function HeroBanner() {
       className="hero-banner"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="wait" custom={direction}>
         <motion.div
           key={slide.id}
           className="hero-slide"
           style={{ background: slide.gradient }}
-          initial={{ opacity: 0, x: 40 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -40 }}
+          custom={direction}
+          variants={{
+            enter: (d) => ({ opacity: 0, x: d > 0 ? 40 : -40 }),
+            center: { opacity: 1, x: 0 },
+            exit: (d) => ({ opacity: 0, x: d > 0 ? -40 : 40 }),
+          }}
+          initial="enter"
+          animate="center"
+          exit="exit"
           transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
         >
           {/* Glow blob */}
           <div className="hero-blob" />
 
           <div className="hero-content">
-            {/* Badge */}
+            {/* Badge — use a proper badge component, not raw emoji as the only design element */}
             <motion.div
               className="hero-badge"
               initial={{ opacity: 0, y: -10 }}
@@ -126,13 +168,13 @@ export default function HeroBanner() {
         </motion.div>
       </AnimatePresence>
 
-      {/* Dot navigation */}
+      {/* Dot navigation — visible swipe affordance */}
       <div className="hero-dots">
         {SLIDES.map((s, i) => (
           <button
             key={s.id}
             className={`hero-dot${i === current ? ' active' : ''}`}
-            onClick={() => setCurrent(i)}
+            onClick={() => goTo(i)}
             aria-label={`Slide ${i + 1}`}
           />
         ))}

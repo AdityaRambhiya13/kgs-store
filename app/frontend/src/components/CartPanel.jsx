@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import { useCart } from '../CartContext'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { getMRP } from '../utils/pricing'
 
 const FREE_DELIVERY_THRESHOLD = 500
+const MIN_ORDER = 200
 
 export default function CartPanel() {
   const { cartItems, cartOpen, setCartOpen, cartTotal, cartCount, addToCart, removeFromCart } = useCart()
@@ -131,6 +133,16 @@ export default function CartPanel() {
           {/* Footer */}
           {cartItems.length > 0 && (
             <div className="cart-footer">
+              {/* Minimum order banner — persistent, before checkout */}
+              {cartTotal < MIN_ORDER && (
+                <div className="min-order-banner">
+                  <span className="min-order-banner-icon">🛍️</span>
+                  <span className="min-order-banner-text">
+                    Add <strong>₹{Math.ceil(MIN_ORDER - cartTotal)}</strong> more to reach the minimum order of <strong>₹{MIN_ORDER}</strong>
+                  </span>
+                </div>
+              )}
+
               {totalSavings > 0 && (
                 <div className="cart-savings-row">
                   <span>🎉 Total Savings</span>
@@ -141,12 +153,28 @@ export default function CartPanel() {
                 <span className="cart-total-label">To Pay</span>
                 <span className="cart-total-amount">₹{cartTotal.toFixed(0)}</span>
               </div>
+
+              {/* COD trust chip */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                <span className="trust-chip trust-chip-cod">
+                  <span className="trust-chip-cod-dot" />
+                  Cash on Delivery Available
+                </span>
+                <span className="trust-chip trust-chip-secure">
+                  🔒 Secure Checkout
+                </span>
+              </div>
+
               <motion.button
                 className="btn btn-primary cart-checkout-btn"
                 whileTap={{ scale: 0.97 }}
                 onClick={goCheckout}
+                disabled={cartTotal < MIN_ORDER}
+                style={cartTotal < MIN_ORDER ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
               >
-                Proceed to Checkout →
+                {cartTotal < MIN_ORDER
+                  ? `Min. ₹${MIN_ORDER} required`
+                  : 'Proceed to Checkout →'}
               </motion.button>
             </div>
           )}
