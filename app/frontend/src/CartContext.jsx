@@ -17,6 +17,7 @@ function loadCart() {
 export function CartProvider({ children }) {
     const [cart, setCart] = useState(loadCart)
     const [cartOpen, setCartOpen] = useState(false)
+    const [lastAddedAt, setLastAddedAt] = useState(0)
 
     // Persist to localStorage any time cart changes
     useEffect(() => {
@@ -50,7 +51,15 @@ export function CartProvider({ children }) {
                 },
             }
         })
+        // Fire bounce animation on add
+        if (delta > 0) {
+            const ts = Date.now()
+            setLastAddedAt(ts)
+            // Dispatch custom event — used by InstallPrompt to detect first cart add
+            window.dispatchEvent(new CustomEvent('kgs-cart-add', { detail: { ts } }))
+        }
     }
+
 
     const setQuantity = (productId, qty) => {
         if (qty <= 0) {
@@ -81,6 +90,7 @@ export function CartProvider({ children }) {
             cart, cartItems, cartCount, cartTotal,
             addToCart, setQuantity, removeFromCart, clearCart,
             cartOpen, setCartOpen,
+            lastAddedAt,
         }}>
             {children}
         </CartContext.Provider>

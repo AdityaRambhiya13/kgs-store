@@ -6,7 +6,7 @@ import { motion } from 'framer-motion'
 export default function BottomNav() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { cartCount, setCartOpen } = useCart()
+  const { cartCount, setCartOpen, lastAddedAt } = useCart()
   const { user } = useAuth()
 
   const tabs = [
@@ -82,6 +82,14 @@ export default function BottomNav() {
             className={`bottom-nav-tab${active ? ' active' : ''}${tab.isCart ? ' cart-tab' : ''}`}
             onClick={tab.action || (() => navigate(tab.path))}
             whileTap={{ scale: 0.88 }}
+            // Cart tab: bounce/shake on item add using lastAddedAt as re-mount key
+            {...(tab.isCart ? {
+              key: `cart-${lastAddedAt}`,
+              animate: lastAddedAt > 0
+                ? { scale: [1, 1.35, 0.88, 1.14, 1], rotate: [0, -10, 8, -4, 0] }
+                : {},
+              transition: { duration: 0.45, ease: 'easeOut' },
+            } : {})}
             transition={{ duration: 0.15 }}
             aria-label={tab.label}
             aria-current={active ? 'page' : undefined}

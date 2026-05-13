@@ -80,6 +80,20 @@ export default function ProfilePage() {
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="profile-page"
         >
+            {/* ── In-app Back Button ── */}
+            <div className="profile-page-header">
+                <button
+                    className="profile-back-btn"
+                    onClick={() => navigate(-1)}
+                    aria-label="Go back"
+                >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                    Back
+                </button>
+            </div>
+
             {/* ── Header Card ── */}
             <div className="profile-header-card">
                 {/* Avatar */}

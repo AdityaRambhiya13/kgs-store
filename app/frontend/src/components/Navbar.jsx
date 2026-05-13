@@ -22,7 +22,7 @@ const SEARCH_CATEGORIES = [
 ]
 
 export default function Navbar({ searchQuery, onSearchChange, onCategorySelect }) {
-  const { cartCount, setCartOpen } = useCart()
+  const { cartCount, setCartOpen, lastAddedAt } = useCart()
   const { user } = useAuth()
   const navigate = useNavigate()
   const [locationName, setLocationName] = useState('Dombivali (W)')
@@ -129,8 +129,11 @@ export default function Navbar({ searchQuery, onSearchChange, onCategorySelect }
               whileTap={{ scale: 0.92 }}
               onClick={() => setCartOpen(true)}
               title="Open cart"
-              animate={cartCount > 0 ? { scale: [1, 1.12, 1] } : {}}
-              transition={{ duration: 0.3 }}
+              key={lastAddedAt}
+              animate={lastAddedAt > 0
+                ? { scale: [1, 1.32, 0.9, 1.12, 1], rotate: [0, -8, 6, -4, 0] }
+                : {}}
+              transition={{ duration: 0.45, ease: 'easeOut' }}
               style={{ position: 'relative' }}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
