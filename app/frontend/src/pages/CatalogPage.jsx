@@ -34,6 +34,36 @@ const BLOCKED_CATEGORIES = new Set([
   'Pet Supplies', 'Books & Media', 'Stationery', 'Packaging & Carry Bags'
 ])
 
+// ── Fuzzy Search Helper ────────────────────────────────────────
+const fuzzyMatch = (query, text) => {
+  const q = String(query || '').toLowerCase().replace(/\s+/g, '')
+  const t = String(text || '').toLowerCase().replace(/\s+/g, '')
+  if (t.includes(q)) return true
+  
+  // For small queries, be strict
+  if (q.length < 3) return t.includes(q)
+  
+  // Allow one character omission (handles "aata" -> "atta" because "ata" is in both)
+  for (let i = 0; i < q.length; i++) {
+    const sub = q.slice(0, i) + q.slice(i + 1)
+    if (t.includes(sub)) return true
+  }
+  
+  // Also check if text words are almost equal to query
+  const words = text.toLowerCase().split(/\s+/)
+  for (const word of words) {
+    if (word.length < 3) continue
+    // Simple character overlap check
+    let matches = 0
+    for (const char of q) {
+      if (word.includes(char)) matches++
+    }
+    if (matches >= q.length - 1 && Math.abs(word.length - q.length) <= 1) return true
+  }
+
+  return false
+}
+
 export default function CatalogPage({ searchQuery = '', onSearchFocus, navCategory }) {
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -167,42 +197,49 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
 
   // Filtered products by search / category / sub-category
   const filtered = useMemo(() => {
+    if (!products || !Array.isArray(products)) return []
+
     // Search mode: show all individual matching products but keep variant groups for modal
-    if (debouncedSearch && debouncedSearch.trim()) {
-      const lq = debouncedSearch.toLowerCase()
+    if (debouncedSearch && typeof debouncedSearch === 'string' && debouncedSearch.trim()) {
+      const lq = debouncedSearch.toLowerCase().trim()
       
       // Map for easy group lookup to get variants
       const groupMap = {}
-      grouped.forEach(g => {
-        const key = (g.base_name || g.name) + '|' + g.category
-        groupMap[key] = g
-      })
+      if (Array.isArray(grouped)) {
+        grouped.forEach(g => {
+          if (!g) return
+          const key = (g.base_name || g.name || 'unknown') + '|' + (g.category || 'Other')
+          groupMap[key] = g
+        })
+      }
 
       return products
         .filter(p => {
+          if (!p) return false
           if (!p.category || BLOCKED_CATEGORIES.has(p.category)) return false
-          return fuzzyMatch(lq, p.name) || fuzzyMatch(lq, p.base_name)
+          const nameMatch = p.name ? fuzzyMatch(lq, p.name) : false
+          const baseMatch = p.base_name ? fuzzyMatch(lq, p.base_name) : false
+          return nameMatch || baseMatch
         })
         .map(p => {
           // Standardize category name for matching group key
-          let cat = p.category
+          let cat = p.category || 'Other'
           if (cat === 'Dairy, Bread & Eggs') cat = 'Dairy & Bread'
           if (cat === 'Pharma & Wellness' || cat === '& Wellness') cat = 'Wellness'
           
-          const key = (p.base_name || p.name) + '|' + cat
+          const key = (p.base_name || p.name || 'unknown') + '|' + cat
           const group = groupMap[key]
           return {
             ...p,
-            displayName: p.name, // Show specific name (e.g. Moong Dal 500g)
-            displayPrice: p.price, // Show specific price
+            displayName: p.name || p.base_name || 'Product',
+            displayPrice: p.price || 0,
             category: cat,
-            variants: group ? group.variants : [p]
+            variants: (group && group.variants) ? group.variants : [p]
           }
         })
         .sort((a, b) => {
-          // Simple relevance sort: items starting with the query first
-          const aName = (a.name || '').toLowerCase()
-          const bName = (b.name || '').toLowerCase()
+          const aName = String(a.name || a.displayName || '').toLowerCase()
+          const bName = String(b.name || b.displayName || '').toLowerCase()
           const aStarts = aName.startsWith(lq)
           const bStarts = bName.startsWith(lq)
           if (aStarts && !bStarts) return -1
@@ -211,16 +248,15 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
         })
     }
 
-    let result = grouped
+    let result = Array.isArray(grouped) ? [...grouped] : []
 
     // Category filter
     if (activeCategory !== 'All') {
-      result = result.filter(g => g.category === activeCategory)
+      result = result.filter(g => g && g.category === activeCategory)
       // Sub-category filter
       if (activeSubCategory !== 'All') {
-        result = result.filter(g => g.sub_category === activeSubCategory)
+        result = result.filter(g => g && g.sub_category === activeSubCategory)
       }
-      return result
     }
 
     return result
@@ -240,37 +276,6 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
       .map(c => ({ ...c, items: catMap[c.name] }))
   }, [filtered, activeCategory, searchQuery, availableCategories])
 
-  // ── Fuzzy Search Helper ────────────────────────────────────────
-  const fuzzyMatch = (query, text) => {
-    if (!query) return true
-    if (!text) return false
-    const q = query.toLowerCase().replace(/\s+/g, '')
-    const t = text.toLowerCase().replace(/\s+/g, '')
-    if (t.includes(q)) return true
-    
-    // For small queries, be strict
-    if (q.length < 3) return t.includes(q)
-    
-    // Allow one character omission (handles "aata" -> "atta" because "ata" is in both)
-    for (let i = 0; i < q.length; i++) {
-      const sub = q.slice(0, i) + q.slice(i + 1)
-      if (t.includes(sub)) return true
-    }
-    
-    // Also check if text words are almost equal to query
-    const words = text.toLowerCase().split(/\s+/)
-    for (const word of words) {
-      if (word.length < 3) continue
-      // Simple character overlap check
-      let matches = 0
-      for (const char of q) {
-        if (word.includes(char)) matches++
-      }
-      if (matches >= q.length - 1 && Math.abs(word.length - q.length) <= 1) return true
-    }
-
-    return false
-  }
 
   const isSearchMode = !!(debouncedSearch && debouncedSearch.trim())
 
