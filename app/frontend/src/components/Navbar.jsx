@@ -208,7 +208,7 @@ export default function Navbar({ searchQuery, onSearchChange, onCategorySelect }
           Cash on Delivery
         </span>
         <span className="trust-chip trust-chip-delivery">
-          ⚡ 10-Min Delivery
+          ⚡ Express Delivery
         </span>
         <span className="trust-chip trust-chip-secure">
           🔒 Secure Payments

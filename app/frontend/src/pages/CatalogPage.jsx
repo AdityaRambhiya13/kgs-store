@@ -42,6 +42,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
   const [activeSubCategory, setActiveSubCategory] = useState('All')
   const [selectedGroup, setSelectedGroup] = useState(null)
   const [selectedProductDetails, setSelectedProductDetails] = useState(null)
+  const [filterDrawerSection, setFilterDrawerSection] = useState(null)
   const { cartCount } = useCart()
   const { user } = useAuth()
   const [productLimit, setProductLimit] = useState(40)
@@ -180,12 +181,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
       return products
         .filter(p => {
           if (!p.category || BLOCKED_CATEGORIES.has(p.category)) return false
-          // Only match on product name and base_name.
-          // Do NOT match on category/sub_category — many products have
-          // brand names (e.g. "Maggi") set as their sub_category, which
-          // causes completely unrelated products to appear in results.
-          return (p.name && p.name.toLowerCase().includes(lq)) ||
-                 (p.base_name && p.base_name.toLowerCase().includes(lq))
+          return fuzzyMatch(lq, p.name) || fuzzyMatch(lq, p.base_name)
         })
         .map(p => {
           // Standardize category name for matching group key
@@ -244,14 +240,65 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
       .map(c => ({ ...c, items: catMap[c.name] }))
   }, [filtered, activeCategory, searchQuery, availableCategories])
 
+  // ── Fuzzy Search Helper ────────────────────────────────────────
+  const fuzzyMatch = (query, text) => {
+    if (!query) return true
+    if (!text) return false
+    const q = query.toLowerCase().replace(/\s+/g, '')
+    const t = text.toLowerCase().replace(/\s+/g, '')
+    if (t.includes(q)) return true
+    
+    // For small queries, be strict
+    if (q.length < 3) return t.includes(q)
+    
+    // Allow one character omission (handles "aata" -> "atta" because "ata" is in both)
+    for (let i = 0; i < q.length; i++) {
+      const sub = q.slice(0, i) + q.slice(i + 1)
+      if (t.includes(sub)) return true
+    }
+    
+    // Also check if text words are almost equal to query
+    const words = text.toLowerCase().split(/\s+/)
+    for (const word of words) {
+      if (word.length < 3) continue
+      // Simple character overlap check
+      let matches = 0
+      for (const char of q) {
+        if (word.includes(char)) matches++
+      }
+      if (matches >= q.length - 1 && Math.abs(word.length - q.length) <= 1) return true
+    }
+
+    return false
+  }
+
   const isSearchMode = !!(debouncedSearch && debouncedSearch.trim())
+
+  // ── Dynamic Metadata ──────────────────────────────────────────
+  useEffect(() => {
+    let title = 'Ketan Stores — Fresh Groceries in Dombivali'
+    let desc = 'Get fresh groceries, snacks, and essentials delivered fast in Dombivali from Ketan Stores.'
+    
+    if (isSearchMode) {
+      title = `Search: ${debouncedSearch} | Ketan Stores`
+    } else if (activeCategory !== 'All') {
+      title = `${activeCategory} | Best Prices in Dombivali`
+      desc = `Save big on ${activeCategory} at Ketan Stores. Quality products, fast delivery in Dombivali.`
+    }
+
+    document.title = title
+    const metaDesc = document.querySelector('meta[name="description"]')
+    if (metaDesc) metaDesc.setAttribute('content', desc)
+  }, [activeCategory, debouncedSearch, isSearchMode])
 
   const handleCategorySelect = (catName) => {
     setActiveCategory(catName)
     setActiveSubCategory('All')
     setProductLimit(40) // Reset limit on category change
+    
+    // Scroll to top of content
     setTimeout(() => {
-      document.querySelector('.catalog-main-content')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     }, 50)
   }
 
@@ -454,7 +501,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
                     <div style={{ textAlign: 'center', marginTop: '16px' }}>
                       <button
                         className="btn btn-outline"
-                        onClick={() => handleCategorySelect(section.name)}
+                        onClick={() => setFilterDrawerSection(section)}
                         style={{ maxWidth: '300px', padding: '12px 24px', width: '100%', borderRadius: '12px' }}
                       >
                         View {section.items.length - preview.length} more in {section.name}
@@ -466,6 +513,63 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
             })}
           </div>
         )}
+
+        {/* ── Filter Drawer (Task: "See All" Logic) ────────────────── */}
+        <AnimatePresence>
+          {filterDrawerSection && (
+            <motion.div 
+              className="drawer-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setFilterDrawerSection(null)}
+            >
+              <motion.div 
+                className="bottom-drawer"
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="drawer-handle" />
+                <div className="drawer-header">
+                  <div className="drawer-header-left">
+                    <span className="drawer-emoji">{filterDrawerSection.emoji}</span>
+                    <h3>{filterDrawerSection.name}</h3>
+                  </div>
+                  <button className="drawer-close" onClick={() => setFilterDrawerSection(null)}>✕</button>
+                </div>
+                <div className="drawer-content">
+                  <p className="drawer-label">Quick Filter</p>
+                  <div className="drawer-grid">
+                    <button 
+                      className="drawer-tile active-all" 
+                      onClick={() => { handleCategorySelect(filterDrawerSection.name); setFilterDrawerSection(null); }}
+                    >
+                      <div className="drawer-tile-icon">✨</div>
+                      <span>View All</span>
+                    </button>
+                    {[...new Set(filterDrawerSection.items.filter(i => i.sub_category).map(i => i.sub_category))].sort().map(sub => (
+                      <button 
+                        key={sub}
+                        className="drawer-tile"
+                        onClick={() => { 
+                          handleCategorySelect(filterDrawerSection.name); 
+                          setActiveSubCategory(sub);
+                          setFilterDrawerSection(null);
+                        }}
+                      >
+                        <div className="drawer-tile-icon">🎯</div>
+                        <span>{sub}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Single category selected — full grid */}
         {!loading && !error && !isSearchMode && activeCategory !== 'All' && filtered.length > 0 && (
