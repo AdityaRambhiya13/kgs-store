@@ -231,7 +231,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
           const group = groupMap[key]
           return {
             ...p,
-            displayName: p.name || p.base_name || 'Product',
+            displayName: p.base_name ? `${p.base_name}${p.unit ? ' ' + p.unit : ''}` : p.name,
             displayPrice: p.price || 0,
             category: cat,
             variants: (group && group.variants) ? group.variants : [p]

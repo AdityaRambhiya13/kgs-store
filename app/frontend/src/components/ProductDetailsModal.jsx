@@ -138,9 +138,17 @@ export default function ProductDetailsModal({ product, onClose, mrp }) {
                   onError={e => { e.target.src = PLACEHOLDER_IMAGE }}
                 />
               </AnimatePresence>
+              <div className="pc-return-badge" style={{ position: 'absolute', top: 12, left: 12 }}>
+                <span className="pc-return-badge-icon">🔄</span>
+                <span>Easy Return</span>
+              </div>
             </div>
             <div className="pdm-main-info">
-              <h1 className="pdm-title">{activeVariant.name || activeVariant.base_name || product.base_name || product.name}</h1>
+              <h1 className="pdm-title">
+                {activeVariant.base_name 
+                  ? `${activeVariant.base_name}${activeVariant.unit ? ' ' + activeVariant.unit : ''}` 
+                  : activeVariant.name}
+              </h1>
               <p className="pdm-subtitle">{product.category} · {activeVariant.unit}</p>
               
               {/* If single choice, show price prominently. If multiple, it's shown in the list below. */}

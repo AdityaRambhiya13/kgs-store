@@ -101,7 +101,9 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
     toggleFavorite(product)
   }
 
-  const displayName = product.displayName || product.base_name || product.name
+  const displayName = product.base_name 
+    ? `${product.base_name}${product.unit ? ' ' + product.unit : ''}` 
+    : product.name
   const displayPrice = product.displayPrice || minPrice
   const displayMrp = product.displayPrice ? getMRP(product.displayPrice, product.id || 1) : mrp
 
@@ -138,6 +140,10 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
             e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNmM2Y0ZjYiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjgwIiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj4/PC90ZXh0Pjwvc3ZnPg=='
           }}
         />
+        <div className="pc-return-badge">
+          <span className="pc-return-badge-icon">🔄</span>
+          <span>Easy Return</span>
+        </div>
         {variantCount > 1 && (
           <div className="pc-variants-badge">{variantCount} options</div>
         )}
