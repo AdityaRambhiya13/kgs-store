@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { getMRP } from '../utils/pricing'
 
 const FREE_DELIVERY_THRESHOLD = 500
-const MIN_ORDER = 200
+const MIN_ORDER = 0
 
 export default function CartPanel() {
   const { cartItems, cartOpen, setCartOpen, cartTotal, cartCount, addToCart, removeFromCart } = useCart()
@@ -133,15 +133,7 @@ export default function CartPanel() {
           {/* Footer */}
           {cartItems.length > 0 && (
             <div className="cart-footer">
-              {/* Minimum order banner — persistent, before checkout */}
-              {cartTotal < MIN_ORDER && (
-                <div className="min-order-banner">
-                  <span className="min-order-banner-icon">🛍️</span>
-                  <span className="min-order-banner-text">
-                    Add <strong>₹{Math.ceil(MIN_ORDER - cartTotal)}</strong> more to reach the minimum order of <strong>₹{MIN_ORDER}</strong>
-                  </span>
-                </div>
-              )}
+
 
               {totalSavings > 0 && (
                 <div className="cart-savings-row">
@@ -169,12 +161,8 @@ export default function CartPanel() {
                 className="btn btn-primary cart-checkout-btn"
                 whileTap={{ scale: 0.97 }}
                 onClick={goCheckout}
-                disabled={cartTotal < MIN_ORDER}
-                style={cartTotal < MIN_ORDER ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
               >
-                {cartTotal < MIN_ORDER
-                  ? `Min. ₹${MIN_ORDER} required`
-                  : 'Proceed to Checkout →'}
+                Proceed to Checkout →
               </motion.button>
             </div>
           )}

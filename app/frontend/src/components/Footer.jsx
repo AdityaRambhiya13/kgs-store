@@ -23,8 +23,7 @@ export default function Footer() {
 
                     <div className="footer-col">
                         <h4>🚚 Delivery Area</h4>
-                        <p>Kalyan, Dombivali, Ulhasnagar &amp; nearby areas.<br />
-                            Min order ₹200 for home delivery.</p>
+                        <p>Kalyan, Dombivali, Ulhasnagar &amp; nearby areas.</p>
                     </div>
                 </div>
 
