@@ -34,31 +34,40 @@ const BLOCKED_CATEGORIES = new Set([
   'Pet Supplies', 'Books & Media', 'Stationery', 'Packaging & Carry Bags'
 ])
 
-// ── Fuzzy Search Helper ────────────────────────────────────────
+// ── Hybrid Search Helper ────────────────────────────────────────
 const fuzzyMatch = (query, text) => {
-  const q = String(query || '').toLowerCase().replace(/\s+/g, '')
-  const t = String(text || '').toLowerCase().replace(/\s+/g, '')
+  if (!query) return true
+  if (!text) return false
+  
+  const q = String(query).toLowerCase().trim()
+  const t = String(text).toLowerCase().trim()
+  
+  // 1. Exact substring match (Highest precision)
   if (t.includes(q)) return true
   
-  // For small queries, be strict
-  if (q.length < 3) return t.includes(q)
+  // 2. Word-start match (High precision: e.g. "mag" matches "Maggi")
+  const words = t.split(/\s+/)
+  const queryWords = q.split(/\s+/)
   
-  // Allow one character omission (handles "aata" -> "atta" because "ata" is in both)
-  for (let i = 0; i < q.length; i++) {
-    const sub = q.slice(0, i) + q.slice(i + 1)
-    if (t.includes(sub)) return true
+  // If query is multiple words, check if they all exist in text
+  if (queryWords.length > 1) {
+    return queryWords.every(qw => words.some(w => w.startsWith(qw) || w.includes(qw)))
   }
   
-  // Also check if text words are almost equal to query
-  const words = text.toLowerCase().split(/\s+/)
-  for (const word of words) {
-    if (word.length < 3) continue
-    // Simple character overlap check
-    let matches = 0
-    for (const char of q) {
-      if (word.includes(char)) matches++
-    }
-    if (matches >= q.length - 1 && Math.abs(word.length - q.length) <= 1) return true
+  // Single word query: check if any word starts with query
+  if (words.some(w => w.startsWith(q))) return true
+  
+  // 3. Typo tolerance (Only for queries >= 3 chars, and with strict rules)
+  if (q.length < 3) return false // No fuzzy for tiny queries
+  
+  // Allow 1 char omission/typo ONLY if it's a long enough word
+  // This prevents "maggi" matching "mataki" because "magi" vs "mataki" is too different
+  const qNoSpaces = q.replace(/\s+/g, '')
+  const tNoSpaces = t.replace(/\s+/g, '')
+  
+  for (let i = 0; i < qNoSpaces.length; i++) {
+    const sub = qNoSpaces.slice(0, i) + qNoSpaces.slice(i + 1)
+    if (tNoSpaces.includes(sub)) return true
   }
 
   return false
@@ -229,9 +238,22 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
           
           const key = (p.base_name || p.name || 'unknown') + '|' + cat
           const group = groupMap[key]
+          // Title Standardization with cleaning
+          let base = p.base_name || p.name
+          let unit = p.unit || ''
+          
+          // Clean redundant unit mentions (e.g. "Gulab Oil 1L" + "1L" -> "Gulab Oil 1L")
+          if (unit && base.toLowerCase().endsWith(unit.toLowerCase().trim())) {
+            unit = ''
+          }
+          // Handle common overlaps like "1Lit" vs "1L"
+          if (unit && unit.toLowerCase() === '1l' && base.toLowerCase().endsWith('1lit')) {
+            unit = ''
+          }
+
           return {
             ...p,
-            displayName: p.base_name ? `${p.base_name}${p.unit ? ' ' + p.unit : ''}` : p.name,
+            displayName: unit ? `${base} ${unit}` : base,
             displayPrice: p.price || 0,
             category: cat,
             variants: (group && group.variants) ? group.variants : [p]

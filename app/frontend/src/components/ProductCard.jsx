@@ -101,9 +101,17 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
     toggleFavorite(product)
   }
 
-  const displayName = product.base_name 
-    ? `${product.base_name}${product.unit ? ' ' + product.unit : ''}` 
-    : product.name
+  let base = product.base_name || product.name
+  let unit = product.unit || ''
+  
+  if (unit && base.toLowerCase().endsWith(unit.toLowerCase().trim())) {
+    unit = ''
+  }
+  if (unit && unit.toLowerCase() === '1l' && base.toLowerCase().endsWith('1lit')) {
+    unit = ''
+  }
+
+  const displayName = unit ? `${base} ${unit}` : base
   const displayPrice = product.displayPrice || minPrice
   const displayMrp = product.displayPrice ? getMRP(product.displayPrice, product.id || 1) : mrp
 

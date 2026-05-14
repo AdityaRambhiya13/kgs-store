@@ -4003,7 +4003,11 @@ p { line-height: 1.6; }
 }
 
 @media (max-width: 767px) {
-  :root { --navbar-h: 100px; }
+  :root { --navbar-h: 90px; } /* Even smaller to save space */
+  .navbar-inner { padding: 4px 10px; gap: 4px; }
+  .navbar-trust-strip { padding: 3px 10px 4px; gap: 6px; }
+  .trust-chip { padding: 3px 8px; font-size: 10px; gap: 4px; }
+  .payment-icon-pill { padding: 2px 6px; font-size: 9px; }
 }
 
 @media (min-width: 768px) {

@@ -145,9 +145,13 @@ export default function ProductDetailsModal({ product, onClose, mrp }) {
             </div>
             <div className="pdm-main-info">
               <h1 className="pdm-title">
-                {activeVariant.base_name 
-                  ? `${activeVariant.base_name}${activeVariant.unit ? ' ' + activeVariant.unit : ''}` 
-                  : activeVariant.name}
+                {(() => {
+                  let b = activeVariant.base_name || activeVariant.name
+                  let u = activeVariant.unit || ''
+                  if (u && b.toLowerCase().endsWith(u.toLowerCase().trim())) u = ''
+                  if (u && u.toLowerCase() === '1l' && b.toLowerCase().endsWith('1lit')) u = ''
+                  return u ? `${b} ${u}` : b
+                })()}
               </h1>
               <p className="pdm-subtitle">{product.category} · {activeVariant.unit}</p>
               
