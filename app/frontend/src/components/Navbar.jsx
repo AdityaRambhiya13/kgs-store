@@ -78,7 +78,8 @@ export default function Navbar({ searchQuery, onSearchChange, onCategorySelect }
           {/* Left group: Logo + Location */}
           <div className="nav-left">
             <div className="nav-logo" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
-              <span className="nav-logo-text">Ketan</span>
+              <img src="/icon-512.png" alt="" className="nav-logo-img" />
+              <span className="nav-logo-text">Ketan Stores</span>
             </div>
 
             {/* Location selector */}
