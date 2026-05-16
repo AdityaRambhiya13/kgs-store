@@ -1,11 +1,11 @@
 /* ================================================================
-   KGS Quick-Commerce â€” Design System (Zepto / Blinkit Style)
+   KGS Quick-Commerce — Design System (Zepto / Blinkit Style)
    Font: Poppins | Colors: Blue + Orange
    ================================================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap');
 
-/* â”€â”€ Reset â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Reset ───────────────────────────────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -42,7 +42,7 @@ body {
   position: relative;
 }
 
-/* â”€â”€ Design Tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Design Tokens ───────────────────────────────────────────── */
 :root {
   /* Brand */
   --primary:        #2563EB;   /* Royal Blue */
@@ -91,16 +91,16 @@ body {
   --navbar-h: 116px;
 }
 
-/* â”€â”€ Scrollbar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Scrollbar ───────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 99px; }
 
-/* â”€â”€ Typography â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Typography ──────────────────────────────────────────────── */
 h1,h2,h3,h4 { font-weight: 700; line-height: 1.2; color: var(--text); }
 p { line-height: 1.6; }
 
-/* â”€â”€ Utility â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Utility ─────────────────────────────────────────────────── */
 .container {
   width: 100%;
   max-width: 1280px;
@@ -114,7 +114,7 @@ p { line-height: 1.6; }
   }
 }
 
-/* â”€â”€ Buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Buttons ─────────────────────────────────────────────────── */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -163,7 +163,7 @@ p { line-height: 1.6; }
 
 .btn-danger { background: var(--danger); color: #fff; }
 
-/* â”€â”€ Inputs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Inputs ──────────────────────────────────────────────────── */
 .input {
   width: 100%;
   padding: 12px 16px;
@@ -179,7 +179,7 @@ p { line-height: 1.6; }
 .input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
 .input.error { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(239,68,68,0.15); }
 
-/* â”€â”€ Badge utility â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Badge utility ───────────────────────────────────────────── */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -190,7 +190,7 @@ p { line-height: 1.6; }
   font-weight: 700;
 }
 
-/* â”€â”€ Gradient text â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Gradient text ───────────────────────────────────────────── */
 .gradient-text {
   background: linear-gradient(135deg, var(--primary), var(--primary-light));
   -webkit-background-clip: text;
@@ -810,7 +810,7 @@ p { line-height: 1.6; }
    PRODUCT GRIDS
    ================================================================ */
 
-/* Horizontal scroll row (default â€” per category in All view) */
+/* Horizontal scroll row (default — per category in All view) */
 .product-grid {
   display: flex;
   flex-direction: row;
@@ -2262,7 +2262,7 @@ p { line-height: 1.6; }
 }
 
 /* ================================================================
-   BACKWARD COMPAT â€” existing pages
+   BACKWARD COMPAT — existing pages
    ================================================================ */
 
 /* Used by auth pages / confirm page as containers */
@@ -2408,7 +2408,7 @@ p { line-height: 1.6; }
 .admin-table tr:hover td { background: var(--bg-surface); }
 
 /* ================================================================
-   REFINEMENTS â€” Checkout & Buttons
+   REFINEMENTS — Checkout & Buttons
    ================================================================ */
 
 /* Delivery Toggle / Segmented Control */
@@ -3054,7 +3054,7 @@ p { line-height: 1.6; }
 }
 
 .pdm-desc-item::before {
-  content: "â€¢";
+  content: "¢";
   position: absolute;
   left: 0;
   color: var(--primary);
@@ -3510,7 +3510,7 @@ p { line-height: 1.6; }
 }
 
 /* ================================================================
-   NEW DESIGN SYSTEM TOKENS â€” Typography Scale
+   NEW DESIGN SYSTEM TOKENS — Typography Scale
    ================================================================ */
 :root {
   /* 4-level typography scale */
@@ -3531,7 +3531,7 @@ p { line-height: 1.6; }
 }
 
 /* ================================================================
-   NAVBAR â€” Mobile compressed to ~56px
+   NAVBAR — Mobile compressed to ~56px
    ================================================================ */
 @media (max-width: 767px) {
   .navbar-inner {
@@ -3542,7 +3542,7 @@ p { line-height: 1.6; }
   /* Compress logo on mobile */
   .nav-logo-text { font-size: 22px; letter-spacing: -0.8px; }
 
-  /* Location button: min 44Ã—44px tap target */
+  /* Location button: min 44×44px tap target */
   .nav-location-btn {
     padding: 5px 8px;
     max-width: 130px;
@@ -3568,7 +3568,7 @@ p { line-height: 1.6; }
 .nav-location-btn:hover .nav-location-chevron { transform: rotate(180deg); }
 
 /* ================================================================
-   SEARCH BAR â€” full-width expand on focus
+   SEARCH BAR — full-width expand on focus
    ================================================================ */
 .nav-search-input:focus {
   border-color: var(--primary);
@@ -3582,7 +3582,7 @@ p { line-height: 1.6; }
 }
 
 /* ================================================================
-   PRODUCT CARD â€” Tabular numbers, consistent radius
+   PRODUCT CARD — Tabular numbers, consistent radius
    ================================================================ */
 .product-card {
   border-radius: var(--radius-lg) !important;
@@ -3596,7 +3596,7 @@ p { line-height: 1.6; }
   font-variant-numeric: tabular-nums;
 }
 
-/* MRP should be clearly muted â€” different from selling price */
+/* MRP should be clearly muted — different from selling price */
 .pc-mrp {
   color: var(--color-text-muted) !important;
   font-size: var(--text-xs);
@@ -3605,7 +3605,7 @@ p { line-height: 1.6; }
   color: var(--color-text-muted) !important;
 }
 
-/* Selling price â€” emphasize */
+/* Selling price — emphasize */
 .pc-price {
   font-size: var(--text-base);
   font-weight: 900;
@@ -3613,7 +3613,7 @@ p { line-height: 1.6; }
 }
 
 /* ================================================================
-   STAR RATING â€” 5-star visual component
+   STAR RATING — 5-star visual component
    ================================================================ */
 .pc-star-visual {
   display: inline-flex;
@@ -3644,7 +3644,7 @@ p { line-height: 1.6; }
 }
 
 /* ================================================================
-   ADD BUTTON â€” micro-animation pulse
+   ADD BUTTON — micro-animation pulse
    ================================================================ */
 .pc-add-btn {
   transition: background var(--t), color var(--t), transform 0.15s, box-shadow 0.15s;
@@ -3655,7 +3655,7 @@ p { line-height: 1.6; }
 }
 
 /* ================================================================
-   WISHLIST HEART â€” frosted glass backdrop
+   WISHLIST HEART — frosted glass backdrop
    ================================================================ */
 .pc-fav-btn {
   background: rgba(255, 255, 255, 0.75) !important;
@@ -3673,7 +3673,7 @@ p { line-height: 1.6; }
 }
 
 /* ================================================================
-   SECTION HEADINGS â€” cap at --text-xl, single-line balanced
+   SECTION HEADINGS — cap at --text-xl, single-line balanced
    ================================================================ */
 .smart-section-title {
   font-size: var(--text-lg) !important;
@@ -3689,7 +3689,7 @@ p { line-height: 1.6; }
   text-wrap: balance;
 }
 
-/* Smart section badge â€” proper component instead of emoji */
+/* Smart section badge — proper component instead of emoji */
 .smart-section-badge {
   display: inline-flex;
   align-items: center;
@@ -3836,7 +3836,7 @@ p { line-height: 1.6; }
 }
 
 /* ================================================================
-   MINIMUM ORDER BANNER â€” dismissable, persistent in cart
+   MINIMUM ORDER BANNER — dismissable, persistent in cart
    ================================================================ */
 .min-order-banner {
   background: linear-gradient(135deg, #FFF7ED, #FEF3C7);
@@ -3857,7 +3857,7 @@ p { line-height: 1.6; }
 .min-order-banner strong { color: var(--accent); }
 
 /* ================================================================
-   TRUST CHIPS â€” COD badge, payment icons
+   TRUST CHIPS — COD badge, payment icons
    ================================================================ */
 .trust-strip {
   display: flex;
@@ -3949,7 +3949,7 @@ p { line-height: 1.6; }
 .payment-icon-pill.cash { color: #059669; }
 
 /* ================================================================
-   HERO DOTS â€” improved swipe affordance
+   HERO DOTS — improved swipe affordance
    ================================================================ */
 .hero-dots {
   cursor: pointer;
@@ -3957,14 +3957,14 @@ p { line-height: 1.6; }
 }
 
 /* ================================================================
-   SECTION TITLE â€” fix section heading emoji â†’ clean text
+   SECTION TITLE — fix section heading emoji → clean text
    ================================================================ */
 .section-title {
   font-size: var(--text-lg) !important;
 }
 
 /* ================================================================
-   MOBILE RESPONSIVENESS â€” ensure nav fits one row at 56px
+   MOBILE RESPONSIVENESS — ensure nav fits one row at 56px
    ================================================================ */
 @media (max-width: 400px) {
   .nav-logo-text { font-size: 18px; }
@@ -4103,7 +4103,7 @@ p { line-height: 1.6; }
 }
 
 /* ================================================================
-   PWA SAFE AREA â€” Bottom nav and fixed elements
+   PWA SAFE AREA — Bottom nav and fixed elements
    ================================================================ */
 .bottom-nav {
   /* Already has padding-bottom: env(safe-area-inset-bottom) but strengthen */
@@ -4119,7 +4119,7 @@ p { line-height: 1.6; }
 }
 
 /* ================================================================
-   PROFILE PAGE â€” Back button in header
+   PROFILE PAGE — Back button in header
    ================================================================ */
 .profile-page-header {
   display: flex;
@@ -4147,7 +4147,7 @@ p { line-height: 1.6; }
 .profile-back-btn:hover { background: var(--primary-glow); }
 
 /* ================================================================
-   BOTTOM NAV â€” bounce on cart tab when item added
+   BOTTOM NAV — bounce on cart tab when item added
    ================================================================ */
 .bottom-nav-tab.cart-tab {
   transition: color var(--t);

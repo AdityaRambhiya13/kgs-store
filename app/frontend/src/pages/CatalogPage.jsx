@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import ProductCard from '../components/ProductCard'
 import HeroBanner from '../components/HeroBanner'
 import RecommendationsSection from '../components/RecommendationsSection'
@@ -81,7 +81,9 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
   const [activeSubCategory, setActiveSubCategory] = useState('All')
   const [selectedGroup, setSelectedGroup] = useState(null)
   const [selectedProductDetails, setSelectedProductDetails] = useState(null)
-  const [filterDrawerSection, setFilterDrawerSection] = useState(null)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const categoryParam = searchParams.get('category') || 'All'
+
   const { cartCount } = useCart()
   const { user } = useAuth()
   const [productLimit, setProductLimit] = useState(40)
@@ -102,6 +104,13 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
   const [toastMessage, setToastMessage] = useState('')
   const categoryBarRef = useRef(null)
   const catalogMainRef = useRef(null)
+
+  // Sync state with URL param
+  useEffect(() => {
+    setActiveCategory(categoryParam)
+    setActiveSubCategory('All')
+    setProductLimit(40)
+  }, [categoryParam])
 
   // React to navCategory from Navbar dropdown
   useEffect(() => {
@@ -305,9 +314,9 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
 
   const isSearchMode = !!(debouncedSearch && debouncedSearch.trim())
 
-  // â”€â”€ Dynamic Metadata â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Dynamic Metadata ──────────────────────────────────
   useEffect(() => {
-    let title = 'Ketan Stores â€” Fresh Groceries in Dombivali'
+    let title = 'Ketan Stores — Fresh Groceries in Dombivali'
     let desc = 'Get fresh groceries, snacks, and essentials delivered fast in Dombivali from Ketan Stores.'
     
     if (isSearchMode) {
@@ -323,9 +332,11 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
   }, [activeCategory, debouncedSearch, isSearchMode])
 
   const handleCategorySelect = (catName) => {
-    setActiveCategory(catName)
-    setActiveSubCategory('All')
-    setProductLimit(40) // Reset limit on category change
+    if (catName === 'All') {
+      setSearchParams({})
+    } else {
+      setSearchParams({ category: catName })
+    }
     
     // Scroll to top of content or main grid
     if (catName === 'All') {
@@ -373,13 +384,13 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
         )}
       </AnimatePresence>
 
-      {/* Hero Banner â€” only when not searching and on home page */}
+      {/* Hero Banner — only when not searching and on home page */}
       {!isSearchMode && activeCategory === 'All' && <HeroBanner />}
 
-      {/* â”€â”€ Recommendations / Trending Section â”€â”€ */}
+      {/* ── Recommendations / Trending Section ── */}
       {!isSearchMode && activeCategory === 'All' && <RecommendationsSection />}
 
-      {/* â”€â”€ Zepto Category Icon Grid ─────────────────────── */}
+      {/* ── Zepto Category Icon Grid ─────────────────────── */}
       {!isSearchMode && activeCategory === 'All' && (
         <section className="zepto-cat-grid-section">
           <div className="zepto-cat-grid">
@@ -409,7 +420,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
         </section>
       )}
 
-      {/* â”€â”€ Horizontal Category Pill Bar (sticky, shows when category selected) â”€â”€ */}
+      {/* ── Horizontal Category Pill Bar (sticky, shows when category selected) ── */}
       {!isSearchMode && activeCategory !== 'All' && (
         <div className="zepto-sticky-cat-bar" ref={categoryBarRef}>
           <div className="zepto-cat-pills-wrap">
@@ -427,7 +438,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
         </div>
       )}
 
-      {/* â”€â”€ Sub-category filter bar ──────────────────────── */}
+      {/* ── Sub-category filter bar ──────────────────────── */}
       {!isSearchMode && activeCategory !== 'All' && subCategories.length > 1 && (
         <div className="zepto-subcat-bar">
           <div className="zepto-subcat-pills">
@@ -444,7 +455,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
         </div>
       )}
 
-      {/* â”€â”€ Main Content ─────────────────────────────────── */}
+      {/* ── Main Content ─────────────────────────────────── */}
       <div className="catalog-main-content" ref={catalogMainRef}>
 
         {/* Loading Skeletons */}
@@ -465,7 +476,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
 
         {error && !loading && (
           <div className="empty-state">
-            <div className="emoji">âš ï¸ </div>
+            <div className="emoji">⚠️</div>
             <h3>Couldn't load products</h3>
             <p>{error}</p>
           </div>
@@ -528,7 +539,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
                         onClick={() => handleCategorySelect(section.name)}
                         className="see-all-btn"
                       >
-                        See All â†’
+                        See All →
                       </button>
                     )}
                   </div>
@@ -547,7 +558,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
                     <div style={{ textAlign: 'center', marginTop: '16px' }}>
                       <button
                         className="btn btn-outline"
-                        onClick={() => setFilterDrawerSection(section)}
+                        onClick={() => handleCategorySelect(section.name)}
                         style={{ maxWidth: '300px', padding: '12px 24px', width: '100%', borderRadius: '12px' }}
                       >
                         View {section.items.length - preview.length} more in {section.name}
@@ -560,70 +571,15 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
           </div>
         )}
 
-        {/* â”€â”€ Filter Drawer (Task: "See All" Logic) ────────────────── */}
-        <AnimatePresence>
-          {filterDrawerSection && (
-            <motion.div 
-              className="drawer-overlay"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setFilterDrawerSection(null)}
-            >
-              <motion.div 
-                className="bottom-drawer"
-                initial={{ y: '100%' }}
-                animate={{ y: 0 }}
-                exit={{ y: '100%' }}
-                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                onClick={e => e.stopPropagation()}
-              >
-                <div className="drawer-handle" />
-                <div className="drawer-header">
-                  <div className="drawer-header-left">
-                    <span className="drawer-emoji">{filterDrawerSection.emoji}</span>
-                    <h3>{filterDrawerSection.name}</h3>
-                  </div>
-                  <button className="drawer-close" onClick={() => setFilterDrawerSection(null)}>âœ•</button>
-                </div>
-                <div className="drawer-content">
-                  <p className="drawer-label">Quick Filter</p>
-                  <div className="drawer-grid">
-                    <button 
-                      className="drawer-tile active-all" 
-                      onClick={() => { handleCategorySelect(filterDrawerSection.name); setFilterDrawerSection(null); }}
-                    >
-                      <div className="drawer-tile-icon">✨</div>
-                      <span>View All</span>
-                    </button>
-                    {[...new Set(filterDrawerSection.items.filter(i => i.sub_category).map(i => i.sub_category))].sort().map(sub => (
-                      <button 
-                        key={sub}
-                        className="drawer-tile"
-                        onClick={() => { 
-                          handleCategorySelect(filterDrawerSection.name); 
-                          setActiveSubCategory(sub);
-                          setFilterDrawerSection(null);
-                        }}
-                      >
-                        <div className="drawer-tile-icon">🎯</div>
-                        <span>{sub}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
-        {/* Single category selected â€” full grid */}
+
+        {/* Single category selected — full grid */}
         {!loading && !error && !isSearchMode && activeCategory !== 'All' && filtered.length > 0 && (
           <div style={{ padding: '0 16px', marginTop: '8px' }}>
             <div className="section-header" style={{ marginBottom: '16px' }}>
               <h2 className="section-title" style={{ color: CATEGORY_MAP[activeCategory]?.color }}>
                 {CATEGORY_MAP[activeCategory]?.emoji} {activeCategory}
-                {activeSubCategory !== 'All' && <span style={{ fontSize: '0.8em', marginLeft: '8px', opacity: 0.7 }}>â€º {activeSubCategory}</span>}
+                {activeSubCategory !== 'All' && <span style={{ fontSize: '0.8em', marginLeft: '8px', opacity: 0.7 }}>› {activeSubCategory}</span>}
               </h2>
               <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{filtered.length} items</span>
             </div>
