@@ -41,29 +41,35 @@ export default function InstallPrompt() {
     const handleManualTrigger = () => setShow(true)
     window.addEventListener('pwa-manual-prompt', handleManualTrigger)
 
-    // Don't auto-show if already dismissed this session
-    if (isDismissed) {
-      return () => window.removeEventListener('pwa-manual-prompt', handleManualTrigger)
+    // SMART TIMING: Show after engagement
+    const checkEngagement = () => {
+      const count = parseInt(localStorage.getItem('kgs_cart_add_count') || '0', 10)
+      if (count >= 3 && (deferredPrompt || isIOS)) {
+        setTimeout(() => setShow(true), 1500) // Show after a short delay on load
+        return true
+      }
+      return false
     }
 
-    // SMART TIMING: Show after first cart add — not on page load
-    const cartAddCount = parseInt(localStorage.getItem('kgs_cart_add_count') || '0', 10)
-    
-    const handleCartAdd = () => {
-      const newCount = parseInt(localStorage.getItem('kgs_cart_add_count') || '0', 10) + 1
-      localStorage.setItem('kgs_cart_add_count', String(newCount))
-      
-      // Show prompt after 3rd item add (user is engaged, not just browsing)
-      if (newCount >= 3 && (deferredPrompt || isIOS)) {
-        setTimeout(() => setShow(true), 800)
-        window.removeEventListener('kgs-cart-add', handleCartAdd)
+    if (!isDismissed) {
+      if (!checkEngagement()) {
+        const handleCartAdd = (e) => {
+          const newCount = e.detail.count || 0
+          if (newCount >= 3 && (deferredPrompt || isIOS)) {
+            setTimeout(() => setShow(true), 800)
+            window.removeEventListener('kgs-cart-add', handleCartAdd)
+          }
+        }
+        window.addEventListener('kgs-cart-add', handleCartAdd)
+        return () => {
+          window.removeEventListener('pwa-manual-prompt', handleManualTrigger)
+          window.removeEventListener('kgs-cart-add', handleCartAdd)
+        }
       }
     }
-    window.addEventListener('kgs-cart-add', handleCartAdd)
 
     return () => {
       window.removeEventListener('pwa-manual-prompt', handleManualTrigger)
-      window.removeEventListener('kgs-cart-add', handleCartAdd)
     }
   }, [deferredPrompt, isIOS])
 

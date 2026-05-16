@@ -55,8 +55,13 @@ export function CartProvider({ children }) {
         if (delta > 0) {
             const ts = Date.now()
             setLastAddedAt(ts)
+            
+            // Increment engagement count for PWA prompt
+            const currentCount = parseInt(localStorage.getItem('kgs_cart_add_count') || '0', 10)
+            localStorage.setItem('kgs_cart_add_count', String(currentCount + 1))
+
             // Dispatch custom event — used by InstallPrompt to detect first cart add
-            window.dispatchEvent(new CustomEvent('kgs-cart-add', { detail: { ts } }))
+            window.dispatchEvent(new CustomEvent('kgs-cart-add', { detail: { ts, count: currentCount + 1 } }))
         }
     }
 
