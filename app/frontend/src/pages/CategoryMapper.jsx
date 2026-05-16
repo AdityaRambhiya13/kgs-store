@@ -102,6 +102,23 @@ export default function CategoryMapper() {
     setSelectedIds(newSelected)
   }
 
+  const handleSelectAll = () => {
+    if (sourceProducts.length === 0) return
+    const allVisibleSelected = sourceProducts.every(p => selectedIds.has(p.id))
+    
+    if (allVisibleSelected) {
+      // Unselect only those in the current view
+      const newSelected = new Set(selectedIds)
+      sourceProducts.forEach(p => newSelected.delete(p.id))
+      setSelectedIds(newSelected)
+    } else {
+      // Select all in current view
+      const newSelected = new Set(selectedIds)
+      sourceProducts.forEach(p => newSelected.add(p.id))
+      setSelectedIds(newSelected)
+    }
+  }
+
   if (!token) {
     return (
       <div className="mapper-login">
@@ -158,7 +175,7 @@ export default function CategoryMapper() {
                 {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
               </select>
             </div>
-            <div className="search-group">
+            <div className="search-group" style={{ display: 'flex', gap: 12 }}>
               <input 
                 type="text" 
                 placeholder="Search products..." 
@@ -166,6 +183,13 @@ export default function CategoryMapper() {
                 onChange={e => setSearch(e.target.value)} 
                 className="product-search"
               />
+              <button 
+                onClick={handleSelectAll}
+                className="select-all-btn"
+                title="Select all filtered products"
+              >
+                {sourceProducts.length > 0 && sourceProducts.every(p => selectedIds.has(p.id)) ? 'Deselect All' : 'Select All'}
+              </button>
             </div>
           </div>
 
@@ -304,7 +328,7 @@ export default function CategoryMapper() {
           flex: 1;
         }
         .product-search {
-          width: 100%;
+          flex: 1;
           background: #0f172a;
           border: 1px solid rgba(255,255,255,0.1);
           color: white;
@@ -315,6 +339,20 @@ export default function CategoryMapper() {
           transition: 0.3s;
         }
         .product-search:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+
+        .select-all-btn {
+          background: rgba(59, 130, 246, 0.1);
+          color: #60a5fa;
+          border: 1px solid rgba(59, 130, 246, 0.2);
+          padding: 0 16px;
+          border-radius: 12px;
+          font-weight: 700;
+          font-size: 0.85rem;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: 0.3s;
+        }
+        .select-all-btn:hover { background: rgba(59, 130, 246, 0.2); }
 
         .product-list-scroll { flex: 1; overflow-y: auto; padding: 20px; }
         .product-grid {
