@@ -41,34 +41,17 @@ export default function InstallPrompt() {
     const handleManualTrigger = () => setShow(true)
     window.addEventListener('pwa-manual-prompt', handleManualTrigger)
 
-    // SMART TIMING: Show after engagement
-    const checkEngagement = () => {
-      const count = parseInt(localStorage.getItem('kgs_cart_add_count') || '0', 10)
-      if (count >= 3 && (deferredPrompt || isIOS)) {
-        setTimeout(() => setShow(true), 1500) // Show after a short delay on load
-        return true
-      }
-      return false
-    }
+    if (isDismissed || isStandalone) return
 
-    if (!isDismissed) {
-      if (!checkEngagement()) {
-        const handleCartAdd = (e) => {
-          const newCount = e.detail.count || 0
-          if (newCount >= 3 && (deferredPrompt || isIOS)) {
-            setTimeout(() => setShow(true), 800)
-            window.removeEventListener('kgs-cart-add', handleCartAdd)
-          }
-        }
-        window.addEventListener('kgs-cart-add', handleCartAdd)
-        return () => {
-          window.removeEventListener('pwa-manual-prompt', handleManualTrigger)
-          window.removeEventListener('kgs-cart-add', handleCartAdd)
-        }
+    // Show prompt after a short delay on mount if ready
+    const timer = setTimeout(() => {
+      if (deferredPrompt || isIOS) {
+        setShow(true)
       }
-    }
+    }, 3000) // 3s delay for better UX
 
     return () => {
+      clearTimeout(timer)
       window.removeEventListener('pwa-manual-prompt', handleManualTrigger)
     }
   }, [deferredPrompt, isIOS])
