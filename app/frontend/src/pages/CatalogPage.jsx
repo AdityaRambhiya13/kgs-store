@@ -101,12 +101,12 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
   const navigate = useNavigate()
   const [toastMessage, setToastMessage] = useState('')
   const categoryBarRef = useRef(null)
+  const catalogMainRef = useRef(null)
 
   // React to navCategory from Navbar dropdown
   useEffect(() => {
     if (navCategory) {
-      setActiveCategory(navCategory)
-      setActiveSubCategory('All')
+      handleCategorySelect(navCategory)
     }
   }, [navCategory])
 
@@ -131,7 +131,9 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
     getProducts(controller.signal)
       .then(data => {
         if (!controller.signal.aborted) {
-          setProducts(Array.isArray(data) ? data : [])
+          // Filter out products without images early
+          const withImages = (Array.isArray(data) ? data : []).filter(p => p && p.image_url && p.image_url.trim() !== '')
+          setProducts(withImages)
           setLoading(false)
         }
       })
@@ -179,6 +181,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
     const groups = {}
     products.forEach(p => {
       if (!p.category || BLOCKED_CATEGORIES.has(p.category)) return
+      if (!p.image_url) return // Extra safety
       
       // Standardize category name for grouping
       let cat = p.category
@@ -225,6 +228,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
       return products
         .filter(p => {
           if (!p) return false
+          if (!p.image_url) return false
           if (!p.category || BLOCKED_CATEGORIES.has(p.category)) return false
           const nameMatch = p.name ? fuzzyMatch(lq, p.name) : false
           const baseMatch = p.base_name ? fuzzyMatch(lq, p.base_name) : false
@@ -301,9 +305,9 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
 
   const isSearchMode = !!(debouncedSearch && debouncedSearch.trim())
 
-  // ── Dynamic Metadata ──────────────────────────────────────────
+  // â”€â”€ Dynamic Metadata â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
-    let title = 'Ketan Stores — Fresh Groceries in Dombivali'
+    let title = 'Ketan Stores â€” Fresh Groceries in Dombivali'
     let desc = 'Get fresh groceries, snacks, and essentials delivered fast in Dombivali from Ketan Stores.'
     
     if (isSearchMode) {
@@ -323,10 +327,25 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
     setActiveSubCategory('All')
     setProductLimit(40) // Reset limit on category change
     
-    // Scroll to top of content
-    setTimeout(() => {
+    // Scroll to top of content or main grid
+    if (catName === 'All') {
       window.scrollTo({ top: 0, behavior: 'smooth' })
-    }, 50)
+    } else {
+      setTimeout(() => {
+        if (catalogMainRef.current) {
+          const navOffset = 100 // Adjust based on navbar height
+          const elementPosition = catalogMainRef.current.getBoundingClientRect().top
+          const offsetPosition = elementPosition + window.pageYOffset - navOffset
+          
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          })
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+        }
+      }, 100)
+    }
   }
 
   return (
@@ -354,14 +373,14 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
         )}
       </AnimatePresence>
 
-      {/* Hero Banner — only when not searching */}
-      {!isSearchMode && <HeroBanner />}
+      {/* Hero Banner â€” only when not searching and on home page */}
+      {!isSearchMode && activeCategory === 'All' && <HeroBanner />}
 
-      {/* ── Recommendations / Trending Section ── */}
-      {!isSearchMode && <RecommendationsSection />}
+      {/* â”€â”€ Recommendations / Trending Section â”€â”€ */}
+      {!isSearchMode && activeCategory === 'All' && <RecommendationsSection />}
 
-      {/* ── Zepto Category Icon Grid ─────────────────────── */}
-      {!isSearchMode && (
+      {/* â”€â”€ Zepto Category Icon Grid ─────────────────────── */}
+      {!isSearchMode && activeCategory === 'All' && (
         <section className="zepto-cat-grid-section">
           <div className="zepto-cat-grid">
             <div
@@ -390,7 +409,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
         </section>
       )}
 
-      {/* ── Horizontal Category Pill Bar (sticky, shows when category selected) ── */}
+      {/* â”€â”€ Horizontal Category Pill Bar (sticky, shows when category selected) â”€â”€ */}
       {!isSearchMode && activeCategory !== 'All' && (
         <div className="zepto-sticky-cat-bar" ref={categoryBarRef}>
           <div className="zepto-cat-pills-wrap">
@@ -408,7 +427,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
         </div>
       )}
 
-      {/* ── Sub-category filter bar ──────────────────────── */}
+      {/* â”€â”€ Sub-category filter bar ──────────────────────── */}
       {!isSearchMode && activeCategory !== 'All' && subCategories.length > 1 && (
         <div className="zepto-subcat-bar">
           <div className="zepto-subcat-pills">
@@ -425,8 +444,8 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
         </div>
       )}
 
-      {/* ── Main Content ─────────────────────────────────── */}
-      <div className="catalog-main-content">
+      {/* â”€â”€ Main Content ─────────────────────────────────── */}
+      <div className="catalog-main-content" ref={catalogMainRef}>
 
         {/* Loading Skeletons */}
         {loading && (
@@ -446,7 +465,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
 
         {error && !loading && (
           <div className="empty-state">
-            <div className="emoji">⚠️</div>
+            <div className="emoji">âš ï¸ </div>
             <h3>Couldn't load products</h3>
             <p>{error}</p>
           </div>
@@ -509,7 +528,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
                         onClick={() => handleCategorySelect(section.name)}
                         className="see-all-btn"
                       >
-                        See All →
+                        See All â†’
                       </button>
                     )}
                   </div>
@@ -541,7 +560,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
           </div>
         )}
 
-        {/* ── Filter Drawer (Task: "See All" Logic) ────────────────── */}
+        {/* â”€â”€ Filter Drawer (Task: "See All" Logic) ────────────────── */}
         <AnimatePresence>
           {filterDrawerSection && (
             <motion.div 
@@ -565,7 +584,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
                     <span className="drawer-emoji">{filterDrawerSection.emoji}</span>
                     <h3>{filterDrawerSection.name}</h3>
                   </div>
-                  <button className="drawer-close" onClick={() => setFilterDrawerSection(null)}>✕</button>
+                  <button className="drawer-close" onClick={() => setFilterDrawerSection(null)}>âœ•</button>
                 </div>
                 <div className="drawer-content">
                   <p className="drawer-label">Quick Filter</p>
@@ -598,13 +617,13 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
           )}
         </AnimatePresence>
 
-        {/* Single category selected — full grid */}
+        {/* Single category selected â€” full grid */}
         {!loading && !error && !isSearchMode && activeCategory !== 'All' && filtered.length > 0 && (
           <div style={{ padding: '0 16px', marginTop: '8px' }}>
             <div className="section-header" style={{ marginBottom: '16px' }}>
               <h2 className="section-title" style={{ color: CATEGORY_MAP[activeCategory]?.color }}>
                 {CATEGORY_MAP[activeCategory]?.emoji} {activeCategory}
-                {activeSubCategory !== 'All' && <span style={{ fontSize: '0.8em', marginLeft: '8px', opacity: 0.7 }}>› {activeSubCategory}</span>}
+                {activeSubCategory !== 'All' && <span style={{ fontSize: '0.8em', marginLeft: '8px', opacity: 0.7 }}>â€º {activeSubCategory}</span>}
               </h2>
               <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{filtered.length} items</span>
             </div>
