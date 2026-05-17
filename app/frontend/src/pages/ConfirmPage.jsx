@@ -65,8 +65,8 @@ export default function ConfirmPage() {
     const [paymentMethod, setPaymentMethod] = useState('cod')  // 'upi' | 'cod'
     const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
 
-    const FREE_DELIVERY_THRESHOLD = 500
-    const DELIVERY_FEE = 150
+    const FREE_DELIVERY_THRESHOLD = 1000
+    const DELIVERY_FEE = 40
 
     const isFreeDelivery = cartTotal >= FREE_DELIVERY_THRESHOLD
     const activeDeliveryFee = (deliveryType === 'delivery' && !isFreeDelivery) ? DELIVERY_FEE : 0
@@ -203,7 +203,7 @@ export default function ConfirmPage() {
     const whatsappMsg = encodeURIComponent(
         `Hi KGS! My order token is *${token}*. Please confirm my ${deliveryType === 'delivery' ? 'home delivery' : 'store pickup'} order.`
     )
-    const whatsappUrl = `https://wa.me/918879485171?text=${whatsappMsg}`
+    const whatsappUrl = `https://wa.me/919987502271?text=${whatsappMsg}`
 
     return (
         <div>

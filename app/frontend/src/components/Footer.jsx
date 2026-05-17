@@ -17,8 +17,8 @@ export default function Footer() {
 
                     <div className="footer-col">
                         <h4>📞 Contact</h4>
-                        <p>+91 88794 85171</p>
-                        <p style={{ marginTop: 6 }}>Mon – Sat: 8 AM – 9 PM<br />Sunday: 9 AM – 7 PM</p>
+                        <p>+91 99875 02271</p>
+                        <p style={{ marginTop: 6 }}>Monday to Sunday: 9 AM – 10 PM</p>
                     </div>
 
                     <div className="footer-col">

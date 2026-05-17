@@ -69,7 +69,11 @@ export default function CategoryMapper() {
     const targetCategory = category === 'UNASSIGNED' ? '' : category
     setStatus({ type: 'loading', msg: `Moving to ${category}...` })
     try {
-      await Promise.all(productIds.map(id => updateProduct(id, { category: targetCategory }, token)))
+      const BATCH_SIZE = 5;
+      for (let i = 0; i < productIds.length; i += BATCH_SIZE) {
+        const batch = productIds.slice(i, i + BATCH_SIZE);
+        await Promise.all(batch.map(id => updateProduct(id, { category: targetCategory }, token)));
+      }
       
       setProducts(prev => prev.map(p => 
         productIds.includes(p.id) ? { ...p, category: targetCategory } : p

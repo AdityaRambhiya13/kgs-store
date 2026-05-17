@@ -218,7 +218,7 @@ export default function StatusPage() {
                                     {order.payment_status === 'rejected' ? (
                                         <>
                                             <strong>⚠️ Payment Verification Issue</strong><br/>
-                                            We're having trouble finding your payment in our records. Banks sometimes take a while! Could you please help us by sharing a screenshot of your payment on WhatsApp <strong>8879485171</strong>? This will help us confirm and get your order ready immediately! 🙏
+                                            We're having trouble finding your payment in our records. Banks sometimes take a while! Could you please help us by sharing a screenshot of your payment on WhatsApp <strong>9987502271</strong>? This will help us confirm and get your order ready immediately! 🙏
                                         </>
                                     ) : (
                                         <>

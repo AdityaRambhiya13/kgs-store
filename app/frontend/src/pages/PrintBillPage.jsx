@@ -60,7 +60,7 @@ export default function PrintBillPage() {
             <div id="print-bill-content">
                 <div className="text-center bold store-name">KETAN GENERAL STORES</div>
                 <div className="text-center store-addr">G3, G4, Vasant Chamber, Gupte Road,<br/>Dombivali (West) - 421202</div>
-                <div className="text-center store-meta">Phone: 8879485171 &nbsp; GSTIN: 27AAAPF9753F2ZP</div>
+                <div className="text-center store-meta">Phone: 9987502271 &nbsp; GSTIN: 27AAAPF9753F2ZP</div>
                 
                 <div className="sep"></div>
                 <div className="text-center bold title">TAX INVOICE</div>

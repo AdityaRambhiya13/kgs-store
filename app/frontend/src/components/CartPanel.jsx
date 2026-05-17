@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { getMRP } from '../utils/pricing'
 
-const FREE_DELIVERY_THRESHOLD = 500
+const FREE_DELIVERY_THRESHOLD = 1000
 const MIN_ORDER = 0
 
 export default function CartPanel() {
