@@ -3074,13 +3074,19 @@ p { line-height: 1.6; }
    ================================================================ */
 .mobile-cart-bar-wrap {
   position: fixed;
-  bottom: 20px;
+  bottom: calc(76px + env(safe-area-inset-bottom, 0px));
   left: 0;
   right: 0;
   padding: 0 16px;
   z-index: 900;
   display: flex;
   justify-content: center;
+}
+
+@media (min-width: 768px) {
+  .mobile-cart-bar-wrap {
+    display: none !important;
+  }
 }
 
 .mobile-cart-bar {

@@ -22,6 +22,7 @@ import PrintBillPage from './pages/PrintBillPage'
 import UPIPaymentPage from './pages/UPIPaymentPage'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import CartPanel from './components/CartPanel'
+import MobileCartBar from './components/MobileCartBar'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import BottomNav from './components/BottomNav'
@@ -149,6 +150,7 @@ export default function App() {
         </AnimatePresence>
 
         {!isAuthPage && <CartPanel />}
+        {!isAuthPage && <MobileCartBar />}
         {!isAuthPage && <BottomNav />}
         {!isAuthPage && <Footer />}
         <InstallPrompt />
