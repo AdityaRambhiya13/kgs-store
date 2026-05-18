@@ -95,7 +95,7 @@ export default function AdminPage() {
                 await addProduct(productForm, adminToken)
             }
             setProductForm(null)
-            const data = await getProducts()
+            const data = await getAdminProducts(adminToken)
             setProducts(data)
         } catch (err) {
             alert(err.message)

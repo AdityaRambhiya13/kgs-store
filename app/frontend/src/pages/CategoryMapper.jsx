@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { getProducts, updateProduct, adminLogin } from '../api'
+import { getAdminProducts, updateProduct, adminLogin } from '../api'
 
 export default function CategoryMapper() {
   const [products, setProducts] = useState([])
@@ -22,7 +22,7 @@ export default function CategoryMapper() {
   async function loadData() {
     setLoading(true)
     try {
-      const data = await getProducts(null, token)
+      const data = await getAdminProducts(token)
       setProducts(Array.isArray(data) ? data : [])
     } catch (err) {
       if (err.message.includes('Unauthorized') || err.message.includes('401')) {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { getProducts, getAvailableImages, updateProduct, adminLogin } from '../api'
+import { getAdminProducts, getAvailableImages, updateProduct, adminLogin } from '../api'
 
 const PROJECT_ID = 'iezqlltomqrdkgogdgqu'
 const BUCKET_NAME = 'products'
@@ -42,7 +42,7 @@ export default function ImageMapper() {
     setLoading(true)
     try {
       const [pData, iData] = await Promise.all([
-        getProducts(null, token),
+        getAdminProducts(token),
         getAvailableImages(token)
       ])
       setProducts(pData)
