@@ -211,7 +211,7 @@ export default function AdminPage() {
                         </div>
 
                         <div className="products-grid">
-                            {products.filter(p => p.image_url && p.image_url.trim() !== '' && p.image_url !== 'null' && !p.image_url.includes('placeholder')).map(p => (
+                            {products.map(p => (
                                 <div key={p.id} className="product-admin-card card">
                                     <img src={p.image_url} alt="" className="p-img" onError={(e) => e.target.style.display='none'} />
                                     <div className="p-info">
@@ -240,7 +240,7 @@ export default function AdminPage() {
                             <p style={{ fontSize: 13, color: '#64748b' }}>Choose which products are shown to customers</p>
                         </div>
                         <div className="products-grid">
-                            {products.filter(p => p.image_url && p.image_url.trim() !== '' && p.image_url !== 'null' && !p.image_url.includes('placeholder')).map(p => (
+                            {products.map(p => (
                                 <div key={p.id} className="product-admin-card card">
                                     <img src={p.image_url} alt="" className="p-img" onError={(e) => e.target.style.display='none'} />
                                     <div className="p-info">
@@ -275,7 +275,7 @@ export default function AdminPage() {
                             <p style={{ fontSize: 13, color: '#64748b' }}>Manage product availability</p>
                         </div>
                         <div className="products-grid">
-                            {products.filter(p => p.image_url && p.image_url.trim() !== '' && p.image_url !== 'null' && !p.image_url.includes('placeholder')).map(p => (
+                            {products.map(p => (
                                 <div key={p.id} className="product-admin-card card">
                                     <img src={p.image_url} alt="" className="p-img" onError={(e) => e.target.style.display='none'} />
                                     <div className="p-info">

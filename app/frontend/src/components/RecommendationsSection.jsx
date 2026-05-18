@@ -111,8 +111,8 @@ export default function RecommendationsSection() {
       setLabel('✨ Just For You')
       getRecommendations()
         .then(data => {
-          const withImages = (Array.isArray(data) ? data : []).filter(p => p && p.image_url && p.image_url.trim() !== '')
-          setProducts(withImages)
+          const allRecs = Array.isArray(data) ? data : []
+          setProducts(allRecs)
           setLoading(false)
         })
         .catch(() => {
@@ -120,8 +120,8 @@ export default function RecommendationsSection() {
           getTrending()
             .then(data => {
               setLabel('🔥 Trending Now')
-              const withImages = (Array.isArray(data) ? data : []).filter(p => p && p.image_url && p.image_url.trim() !== '')
-              setProducts(withImages)
+              const allTrending = Array.isArray(data) ? data : []
+              setProducts(allTrending)
               setLoading(false)
             })
             .catch(() => setLoading(false))
@@ -130,8 +130,8 @@ export default function RecommendationsSection() {
       setLabel('🔥 Trending Now')
       getTrending()
         .then(data => {
-          const withImages = (Array.isArray(data) ? data : []).filter(p => p && p.image_url && p.image_url.trim() !== '')
-          setProducts(withImages)
+          const allTrending = Array.isArray(data) ? data : []
+          setProducts(allTrending)
           setLoading(false)
         })
         .catch(() => setLoading(false))

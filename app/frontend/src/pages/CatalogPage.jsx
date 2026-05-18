@@ -140,9 +140,8 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
     getProducts(controller.signal)
       .then(data => {
         if (!controller.signal.aborted) {
-          // Filter out products without images early
-          const withImages = (Array.isArray(data) ? data : []).filter(p => p && p.image_url && p.image_url.trim() !== '')
-          setProducts(withImages)
+          const allProducts = Array.isArray(data) ? data : []
+          setProducts(allProducts)
           setLoading(false)
         }
       })
@@ -190,7 +189,6 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
     const groups = {}
     products.forEach(p => {
       if (!p.category || BLOCKED_CATEGORIES.has(p.category)) return
-      if (!p.image_url) return // Extra safety
       
       // Standardize category name for grouping
       let cat = p.category
@@ -237,7 +235,6 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
       return products
         .filter(p => {
           if (!p) return false
-          if (!p.image_url) return false
           if (!p.category || BLOCKED_CATEGORIES.has(p.category)) return false
           const nameMatch = p.name ? fuzzyMatch(lq, p.name) : false
           const baseMatch = p.base_name ? fuzzyMatch(lq, p.base_name) : false
