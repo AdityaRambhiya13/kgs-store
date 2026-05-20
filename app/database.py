@@ -3,6 +3,7 @@ from psycopg2 import extras, pool  # type: ignore
 import os
 import json
 import time
+import html
 from datetime import datetime
 from typing import Optional
 
@@ -616,8 +617,20 @@ def mark_delivered(token: str) -> bool:
 
 # ── Admin Product Management ─────────────────────────────
 
+def clean_html_entities(text: str) -> str:
+    if not text:
+        return ""
+    prev = ""
+    curr = str(text)
+    while curr != prev:
+        prev = curr
+        curr = html.unescape(prev)
+    return curr.strip()
+
 def add_product(name: str, price: float, mrp: float, description: str, image_url: str, category: str, sub_category: str = "", base_name: str = "", unit: str = "kg") -> Optional[int]:
     """Add a new product to the database."""
+    category = clean_html_entities(category)
+    sub_category = clean_html_entities(sub_category)
     conn = get_connection()
     try:
         cursor = conn.cursor()
@@ -639,6 +652,13 @@ def update_product(product_id: int, updates: dict) -> bool:
     """Update an existing product."""
     if not updates:
         return False
+    
+    # Clean HTML entities if category or sub_category are updated
+    if 'category' in updates and updates['category']:
+        updates['category'] = clean_html_entities(updates['category'])
+    if 'sub_category' in updates and updates['sub_category']:
+        updates['sub_category'] = clean_html_entities(updates['sub_category'])
+
     conn = get_connection()
     try:
         cursor = conn.cursor()

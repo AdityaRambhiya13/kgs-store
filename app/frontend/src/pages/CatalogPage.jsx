@@ -34,6 +34,20 @@ const BLOCKED_CATEGORIES = new Set([
   'Pet Supplies', 'Books & Media', 'Stationery', 'Packaging & Carry Bags'
 ])
 
+// ── HTML Entity Unescaping Helper ───────────────────────────
+const unescapeHTML = (str) => {
+  if (!str) return ''
+  const txt = document.createElement('textarea')
+  txt.innerHTML = str
+  let val = txt.value
+  while (val.includes('&') && val !== str) {
+    str = val
+    txt.innerHTML = str
+    val = txt.value
+  }
+  return val.trim()
+}
+
 // ── Hybrid Search Helper ────────────────────────────────────────
 const fuzzyMatch = (query, text) => {
   if (!query) return true
@@ -159,7 +173,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
     const set = new Set()
     products.forEach(p => {
       if (!p.category) return
-      const cat = p.category.trim()
+      const cat = unescapeHTML(p.category)
       if (!BLOCKED_CATEGORIES.has(cat)) set.add(cat)
     })
     
@@ -179,7 +193,10 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
     if (activeCategory === 'All') return []
     const subs = new Set()
     products.forEach(p => {
-      if (p.category === activeCategory && p.sub_category) subs.add(p.sub_category)
+      const cat = unescapeHTML(p.category)
+      if (cat === activeCategory && p.sub_category) {
+        subs.add(unescapeHTML(p.sub_category))
+      }
     })
     return ['All', ...Array.from(subs).sort()]
   }, [products, activeCategory])
@@ -188,18 +205,20 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
   const grouped = useMemo(() => {
     const groups = {}
     products.forEach(p => {
-      if (!p.category || BLOCKED_CATEGORIES.has(p.category)) return
+      if (!p.category) return
+      const unescapedCat = unescapeHTML(p.category)
+      if (BLOCKED_CATEGORIES.has(unescapedCat)) return
       
       // Standardize category name for grouping
-      let cat = p.category
+      let cat = unescapedCat
       if (cat === 'Dairy, Bread & Eggs') cat = 'Dairy & Bread'
       if (cat === 'Pharma & Wellness' || cat === '& Wellness') cat = 'Wellness'
 
       const key = (p.base_name || p.name) + '|' + cat
       if (!groups[key]) {
-        groups[key] = { ...p, category: cat, variants: [] }
+        groups[key] = { ...p, category: cat, sub_category: unescapeHTML(p.sub_category), variants: [] }
       }
-      groups[key].variants.push(p)
+      groups[key].variants.push({ ...p, category: cat, sub_category: unescapeHTML(p.sub_category) })
       groups[key].variants.sort((a, b) => a.price - b.price)
     })
     
@@ -235,14 +254,15 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
       return products
         .filter(p => {
           if (!p) return false
-          if (!p.category || BLOCKED_CATEGORIES.has(p.category)) return false
+          const unescapedCat = unescapeHTML(p.category)
+          if (!unescapedCat || BLOCKED_CATEGORIES.has(unescapedCat)) return false
           const nameMatch = p.name ? fuzzyMatch(lq, p.name) : false
           const baseMatch = p.base_name ? fuzzyMatch(lq, p.base_name) : false
           return nameMatch || baseMatch
         })
         .map(p => {
           // Standardize category name for matching group key
-          let cat = p.category || 'Other'
+          let cat = unescapeHTML(p.category) || 'Other'
           if (cat === 'Dairy, Bread & Eggs') cat = 'Dairy & Bread'
           if (cat === 'Pharma & Wellness' || cat === '& Wellness') cat = 'Wellness'
           
@@ -266,7 +286,8 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
             displayName: unit ? `${base} ${unit}` : base,
             displayPrice: p.price || 0,
             category: cat,
-            variants: (group && group.variants) ? group.variants : [p]
+            sub_category: unescapeHTML(p.sub_category),
+            variants: (group && group.variants) ? group.variants : [{ ...p, category: cat, sub_category: unescapeHTML(p.sub_category) }]
           }
         })
         .sort((a, b) => {

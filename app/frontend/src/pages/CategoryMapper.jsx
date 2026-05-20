@@ -2,6 +2,36 @@ import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getAdminProducts, updateProduct, adminLogin } from '../api'
 
+const VALID_CATEGORIES = [
+  'Atta, Rice & Dal',
+  'Masala & Dry Fruits',
+  'Snacks & Munchies',
+  'Sweet Tooth',
+  'Cleaning Essentials',
+  'Instant & Frozen Food',
+  'Dairy & Bread',
+  'Personal Care',
+  'Cold Drinks & Juices',
+  'Wellness',
+  'Tea, Coffee & Health Drinks',
+  'Home & Lifestyle',
+  'Pooja Needs',
+  'Miscellaneous'
+];
+
+const unescapeHTML = (str) => {
+  if (!str) return ''
+  const txt = document.createElement('textarea')
+  txt.innerHTML = str
+  let val = txt.value
+  while (val.includes('&') && val !== str) {
+    str = val
+    txt.innerHTML = str
+    val = txt.value
+  }
+  return val.trim()
+}
+
 export default function CategoryMapper() {
   const [products, setProducts] = useState([])
   const [search, setSearch] = useState('')
@@ -23,7 +53,13 @@ export default function CategoryMapper() {
     setLoading(true)
     try {
       const data = await getAdminProducts(token)
-      setProducts(Array.isArray(data) ? data : [])
+      // Unescape all product categories and sub-categories immediately when loaded
+      const cleanedData = (Array.isArray(data) ? data : []).map(p => ({
+        ...p,
+        category: unescapeHTML(p.category),
+        sub_category: unescapeHTML(p.sub_category)
+      }))
+      setProducts(cleanedData)
     } catch (err) {
       if (err.message.includes('Unauthorized') || err.message.includes('401')) {
         setToken('')
@@ -237,7 +273,10 @@ export default function CategoryMapper() {
                 onDrop={(ids) => assignCategory(ids, 'UNASSIGNED')}
                 isSpecial
               />
-              {categories.map(cat => (
+              
+              {/* Standard visible categories */}
+              <div className="target-section-title">Standard Categories (Visible on Website)</div>
+              {VALID_CATEGORIES.map(cat => (
                 <CategoryDropZone 
                   key={cat} 
                   name={cat} 
@@ -245,6 +284,23 @@ export default function CategoryMapper() {
                   isActive={sourceCategory === cat}
                 />
               ))}
+
+              {/* Custom / Non-standard categories with warnings */}
+              {categories.filter(cat => !VALID_CATEGORIES.includes(cat)).length > 0 && (
+                <>
+                  <div className="target-section-title warning-title">⚠️ Custom Categories (Hidden from Website)</div>
+                  {categories.filter(cat => !VALID_CATEGORIES.includes(cat)).map(cat => (
+                    <CategoryDropZone 
+                      key={cat} 
+                      name={cat} 
+                      onDrop={(ids) => assignCategory(ids, cat)}
+                      isActive={sourceCategory === cat}
+                      isWarning
+                    />
+                  ))}
+                </>
+              )}
+              
               <AddCategoryDropZone onAdd={(name, ids) => assignCategory(ids, name)} selectedIds={selectedIds} />
             </div>
           </div>
@@ -252,6 +308,43 @@ export default function CategoryMapper() {
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
+        .target-section-title {
+          font-size: 0.8rem;
+          font-weight: 700;
+          color: #94a3b8;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-top: 16px;
+          margin-bottom: 8px;
+          padding-left: 4px;
+        }
+        .target-section-title.warning-title {
+          color: #f97316;
+        }
+        .category-drop-zone.is-warning {
+          border-color: rgba(249, 115, 22, 0.4);
+          background: rgba(249, 115, 22, 0.03);
+        }
+        .category-drop-zone.is-warning:hover {
+          background: rgba(249, 115, 22, 0.08);
+          border-color: rgba(249, 115, 22, 0.6);
+        }
+        .category-drop-zone.is-warning.drag-over {
+          background: rgba(249, 115, 22, 0.2);
+          border-color: #f97316;
+          box-shadow: 0 4px 20px rgba(249, 115, 22, 0.2);
+        }
+        .warning-badge {
+          font-size: 0.7rem;
+          font-weight: 600;
+          color: #f97316;
+          background: rgba(249, 115, 22, 0.1);
+          padding: 2px 8px;
+          border-radius: 4px;
+          display: inline-block;
+          width: fit-content;
+        }
+
         .category-mapper-container {
           display: flex;
           flex-direction: column;
@@ -515,7 +608,7 @@ function DraggableProduct({ product, isSelected, onClick, selectedCount, selecte
   )
 }
 
-function CategoryDropZone({ name, onDrop, isSpecial, isActive }) {
+function CategoryDropZone({ name, onDrop, isSpecial, isActive, isWarning }) {
   const [isOver, setIsOver] = useState(false)
 
   const handleDrop = (e) => {
@@ -530,12 +623,17 @@ function CategoryDropZone({ name, onDrop, isSpecial, isActive }) {
 
   return (
     <div 
-      className={`category-drop-zone ${isOver ? 'drag-over' : ''} ${isSpecial ? 'is-special' : ''} ${isActive ? 'is-active' : ''}`}
+      className={`category-drop-zone ${isOver ? 'drag-over' : ''} ${isSpecial ? 'is-special' : ''} ${isActive ? 'is-active' : ''} ${isWarning ? 'is-warning' : ''}`}
       onDragOver={(e) => { e.preventDefault(); if (!isActive) setIsOver(true); }}
       onDragLeave={() => setIsOver(false)}
       onDrop={handleDrop}
     >
-      <span className="drop-zone-name">{name}</span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <span className="drop-zone-name">{name}</span>
+        {isWarning && (
+          <span className="warning-badge">⚠️ Non-standard: won't show on website</span>
+        )}
+      </div>
       <span className="drop-icon">📥</span>
     </div>
   )
