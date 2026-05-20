@@ -3,6 +3,19 @@ import { listOrders, updateStatus, listCustomers, adminLogin, getProducts, getAd
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 
+const unescapeHTML = (str) => {
+  if (!str) return ''
+  const txt = document.createElement('textarea')
+  txt.innerHTML = str
+  let val = txt.value
+  while (val.includes('&') && val !== str) {
+    str = val
+    txt.innerHTML = str
+    val = txt.value
+  }
+  return val.trim()
+}
+
 export default function AdminPage() {
     const navigate = useNavigate()
     // Privacy helper: show only last 4 digits
@@ -39,7 +52,12 @@ export default function AdminPage() {
                     setCustomers(Array.isArray(data) ? data : [])
                 } else if (activeTab === 'products' || activeTab === 'visibility' || activeTab === 'inventory') {
                     const data = await getAdminProducts(adminToken)
-                    setProducts(Array.isArray(data) ? data : [])
+                    const cleanedData = (Array.isArray(data) ? data : []).map(p => ({
+                        ...p,
+                        category: unescapeHTML(p.category),
+                        sub_category: unescapeHTML(p.sub_category)
+                    }))
+                    setProducts(cleanedData)
                 }
             } catch (err) { 
                 console.error("Admin fetch error:", err)
@@ -96,7 +114,12 @@ export default function AdminPage() {
             }
             setProductForm(null)
             const data = await getAdminProducts(adminToken)
-            setProducts(data)
+            const cleanedData = (Array.isArray(data) ? data : []).map(p => ({
+                ...p,
+                category: unescapeHTML(p.category),
+                sub_category: unescapeHTML(p.sub_category)
+            }))
+            setProducts(cleanedData)
         } catch (err) {
             alert(err.message)
         } finally {

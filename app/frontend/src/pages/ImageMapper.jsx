@@ -6,6 +6,19 @@ const PROJECT_ID = 'iezqlltomqrdkgogdgqu'
 const BUCKET_NAME = 'products'
 const SUPABASE_BASE_URL = `https://${PROJECT_ID}.supabase.co/storage/v1/object/public/${BUCKET_NAME}`
 
+const unescapeHTML = (str) => {
+  if (!str) return ''
+  const txt = document.createElement('textarea')
+  txt.innerHTML = str
+  let val = txt.value
+  while (val.includes('&') && val !== str) {
+    str = val
+    txt.innerHTML = str
+    val = txt.value
+  }
+  return val.trim()
+}
+
 export default function ImageMapper() {
   const [products, setProducts] = useState([])
   const [images, setImages] = useState([])
@@ -45,7 +58,12 @@ export default function ImageMapper() {
         getAdminProducts(token),
         getAvailableImages(token)
       ])
-      setProducts(pData)
+      const cleanedProducts = (Array.isArray(pData) ? pData : []).map(p => ({
+        ...p,
+        category: unescapeHTML(p.category),
+        sub_category: unescapeHTML(p.sub_category)
+      }))
+      setProducts(cleanedProducts)
       setImages(iData.images)
     } catch (err) {
       if (err.message.includes('Unauthorized') || err.message.includes('401')) {
