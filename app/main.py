@@ -444,10 +444,34 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 
 
+# In-memory caching for products
+_products_cache = {
+    "all_products": None,
+    "timestamp": 0.0
+}
+PRODUCTS_CACHE_TTL = 300  # 5 minutes cache TTL
+
+def get_cached_products():
+    current_time = time.time()
+    if _products_cache["all_products"] is not None and (current_time - _products_cache["timestamp"] < PRODUCTS_CACHE_TTL):
+        print("DEBUG: Serving products from memory cache")
+        return _products_cache["all_products"]
+    
+    products = get_all_products()
+    _products_cache["all_products"] = products
+    _products_cache["timestamp"] = current_time
+    print("DEBUG: Products memory cache populated")
+    return products
+
+def invalidate_products_cache():
+    _products_cache["all_products"] = None
+    _products_cache["timestamp"] = 0.0
+    print("DEBUG: Products memory cache invalidated")
+
 @app.get("/api/products", response_model=List[ProductOut])
 def list_products(request: Request, include_hidden: bool = False):
     check_rate_limit(request, limit=120, window=60, scope="products")
-    products = get_all_products()
+    products = get_cached_products()
     
     # If not explicitly requested to include hidden, filter them out
     if not include_hidden:
@@ -459,7 +483,7 @@ def list_products(request: Request, include_hidden: bool = False):
 @app.get("/api/admin/products", response_model=List[ProductOut])
 def admin_list_products(request: Request, admin: dict = Depends(get_current_admin)):
     check_rate_limit(request, limit=120, window=60, scope="admin-products")
-    return get_all_products()
+    return get_cached_products()
 
 
 
@@ -838,6 +862,8 @@ def admin_add_product(body: ProductCreate, admin: dict = Depends(get_current_adm
 
         raise HTTPException(status_code=500, detail="Failed to add product")
 
+    invalidate_products_cache()
+
     return {"id": product_id, "message": "Product added successfully"}
 
 
@@ -866,6 +892,8 @@ def admin_update_product(product_id: int, body: ProductUpdate, admin: dict = Dep
 
     
 
+    invalidate_products_cache()
+
     print(f"DEBUG: Product {product_id} updated successfully!")
 
     return {"message": "Product updated successfully"}
@@ -881,6 +909,8 @@ def admin_delete_product(product_id: int, admin: dict = Depends(get_current_admi
     if not success:
 
         raise HTTPException(status_code=404, detail="Product not found or deletion failed")
+
+    invalidate_products_cache()
 
     return {"message": "Product deleted successfully"}
 

@@ -34,6 +34,7 @@ export default function ImageMapper() {
   const [debouncedImgSearch, setDebouncedImgSearch] = useState('')
   const [mappingInProgress, setMappingInProgress] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState('All Categories')
+  const [selectedImage, setSelectedImage] = useState(null)
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300)
@@ -227,7 +228,19 @@ export default function ImageMapper() {
             </div>
             <div className="product-list">
               {visibleProducts.map(p => (
-                <ProductRow key={p.id} product={p} onDrop={onDrop} isMapped={p.image_url && p.image_url.includes(SUPABASE_BASE_URL)} />
+                <ProductRow 
+                  key={p.id} 
+                  product={p} 
+                  onDrop={onDrop} 
+                  isMapped={p.image_url && p.image_url.includes(SUPABASE_BASE_URL)} 
+                  selectedImage={selectedImage}
+                  onClick={() => {
+                    if (selectedImage) {
+                      onDrop(p.id, selectedImage)
+                      setSelectedImage(null)
+                    }
+                  }}
+                />
               ))}
             </div>
             {filteredProducts.length > productLimit && (
@@ -259,7 +272,12 @@ export default function ImageMapper() {
           </div>
           <div className="image-grid">
             {visibleImages.map(img => (
-              <DraggableImage key={img} name={img} />
+              <DraggableImage 
+                key={img} 
+                name={img} 
+                isSelected={selectedImage === img}
+                onClick={() => setSelectedImage(selectedImage === img ? null : img)}
+              />
             ))}
           </div>
           {filteredImages.length > imageLimit && (
@@ -505,7 +523,7 @@ export default function ImageMapper() {
   )
 }
 
-function ProductRow({ product, onDrop, isMapped }) {
+function ProductRow({ product, onDrop, isMapped, onClick, selectedImage }) {
   const [isOver, setIsOver] = useState(false)
 
   const handleDragOver = (e) => {
@@ -528,10 +546,13 @@ function ProductRow({ product, onDrop, isMapped }) {
 
   return (
     <div 
-      className={`product-row ${isOver ? 'drag-over' : ''} ${isMapped ? 'mapped' : ''}`}
+      className={`product-row ${isOver ? 'drag-over' : ''} ${isMapped ? 'mapped' : ''} ${selectedImage ? 'has-selection' : ''}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
+      onClick={onClick}
+      style={selectedImage ? { cursor: 'pointer', border: '1.5px dashed rgba(59, 130, 246, 0.4)' } : {}}
+      title={selectedImage ? `Click to map ${selectedImage} to this product` : ""}
     >
       <img 
         src={product.image_url ? `${product.image_url}?width=80` : 'https://via.placeholder.com/40'} 
@@ -546,23 +567,28 @@ function ProductRow({ product, onDrop, isMapped }) {
           {product.mrp && <span className="mrp-badge">₹{product.mrp}</span>}
         </div>
       </div>
-      {isMapped && (
+      {isMapped ? (
         <div className="row-check">✅</div>
-      )}
+      ) : selectedImage ? (
+        <div className="row-check" style={{ color: '#3b82f6', fontSize: '1.1rem' }}>👈</div>
+      ) : null}
     </div>
   )
 }
 
-function DraggableImage({ name }) {
+function DraggableImage({ name, isSelected, onClick }) {
   const handleDragStart = (e) => {
     e.dataTransfer.setData('imageName', name)
   }
 
   return (
     <div 
-      className="image-item" 
+      className={`image-item ${isSelected ? 'selected' : ''}`}
       draggable 
       onDragStart={handleDragStart}
+      onClick={onClick}
+      style={isSelected ? { border: '2px solid #3b82f6', background: '#1e3a8a', transform: 'scale(0.98)' } : {}}
+      title="Click to select this image for mapping"
     >
       <img src={`${SUPABASE_BASE_URL}/${name}?width=200`} alt="" loading="lazy" />
       <p>{name}</p>

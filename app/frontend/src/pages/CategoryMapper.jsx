@@ -272,6 +272,8 @@ export default function CategoryMapper() {
                 name="UNASSIGNED" 
                 onDrop={(ids) => assignCategory(ids, 'UNASSIGNED')}
                 isSpecial
+                onClick={() => { if (selectedIds.size > 0) assignCategory(Array.from(selectedIds), 'UNASSIGNED') }}
+                hasSelection={selectedIds.size > 0}
               />
               
               {/* Standard visible categories */}
@@ -282,6 +284,8 @@ export default function CategoryMapper() {
                   name={cat} 
                   onDrop={(ids) => assignCategory(ids, cat)}
                   isActive={sourceCategory === cat}
+                  onClick={() => { if (selectedIds.size > 0) assignCategory(Array.from(selectedIds), cat) }}
+                  hasSelection={selectedIds.size > 0}
                 />
               ))}
 
@@ -296,6 +300,8 @@ export default function CategoryMapper() {
                       onDrop={(ids) => assignCategory(ids, cat)}
                       isActive={sourceCategory === cat}
                       isWarning
+                      onClick={() => { if (selectedIds.size > 0) assignCategory(Array.from(selectedIds), cat) }}
+                      hasSelection={selectedIds.size > 0}
                     />
                   ))}
                 </>
@@ -608,7 +614,7 @@ function DraggableProduct({ product, isSelected, onClick, selectedCount, selecte
   )
 }
 
-function CategoryDropZone({ name, onDrop, isSpecial, isActive, isWarning }) {
+function CategoryDropZone({ name, onDrop, isSpecial, isActive, isWarning, onClick, hasSelection }) {
   const [isOver, setIsOver] = useState(false)
 
   const handleDrop = (e) => {
@@ -623,10 +629,13 @@ function CategoryDropZone({ name, onDrop, isSpecial, isActive, isWarning }) {
 
   return (
     <div 
-      className={`category-drop-zone ${isOver ? 'drag-over' : ''} ${isSpecial ? 'is-special' : ''} ${isActive ? 'is-active' : ''} ${isWarning ? 'is-warning' : ''}`}
+      className={`category-drop-zone ${isOver ? 'drag-over' : ''} ${isSpecial ? 'is-special' : ''} ${isActive ? 'is-active' : ''} ${isWarning ? 'is-warning' : ''} ${hasSelection ? 'has-selection' : ''}`}
       onDragOver={(e) => { e.preventDefault(); if (!isActive) setIsOver(true); }}
       onDragLeave={() => setIsOver(false)}
       onDrop={handleDrop}
+      onClick={onClick}
+      style={hasSelection ? { cursor: 'pointer', borderColor: 'rgba(96, 165, 250, 0.4)' } : {}}
+      title={hasSelection ? "Click to assign selected products here" : ""}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <span className="drop-zone-name">{name}</span>
@@ -634,7 +643,7 @@ function CategoryDropZone({ name, onDrop, isSpecial, isActive, isWarning }) {
           <span className="warning-badge">⚠️ Non-standard: won't show on website</span>
         )}
       </div>
-      <span className="drop-icon">📥</span>
+      <span className="drop-icon">{hasSelection ? '👈' : '📥'}</span>
     </div>
   )
 }
