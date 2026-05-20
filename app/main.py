@@ -70,23 +70,16 @@ load_dotenv(env_path)
 
 
 from database import (
-
     init_db, get_all_products, create_order,
-
     get_all_orders, get_order_by_token, update_order_status, mark_delivered,
-
     get_orders_by_phone, get_customer, create_or_update_customer, get_all_customers,
-
     get_customer_by_email, update_customer_cancels,
-
     add_product, update_product, delete_product,
-
     get_favorites, add_favorite, remove_favorite,
-
     get_trending_products, get_personalized_recommendations,
-
-    confirm_payment_and_generate_otp, reject_order_payment
-
+    confirm_payment_and_generate_otp, reject_order_payment,
+    get_frequently_bought_together, get_smart_reorder_reminders,
+    get_similar_products
 )
 
 from models import (
@@ -1283,6 +1276,28 @@ def get_trending(request: Request):
     check_rate_limit(request, limit=30, window=60, scope="trending")
 
     return get_trending_products(limit=12)
+
+class FBTRequest(BaseModel):
+    product_ids: List[int]
+
+@app.post("/api/recommendations/frequently-bought-together", response_model=List[ProductOut])
+def get_fbt_recs(request: Request, body: FBTRequest):
+    """Fetch cross-sell recommendations based on items in the current cart."""
+    check_rate_limit(request, limit=60, window=60, scope="fbt-recs")
+    return get_frequently_bought_together(body.product_ids, limit=4)
+
+@app.get("/api/recommendations/reorder", response_model=List[ProductOut])
+def get_reorder_reminders_route(request: Request, customer: dict = Depends(get_current_customer)):
+    """Fetch cyclical grocery reorder recommendations for a logged-in user."""
+    check_rate_limit(request, limit=30, window=60, scope="reorder-recs")
+    phone = customer.get("phone")
+    return get_smart_reorder_reminders(phone, limit=6)
+
+@app.get("/api/recommendations/similar/{product_id}", response_model=List[ProductOut])
+def get_similar_products_route(product_id: int, request: Request):
+    """Fetch semantic title-matched similar products in the same category."""
+    check_rate_limit(request, limit=60, window=60, scope="similar-recs")
+    return get_similar_products(product_id, limit=6)
 
 
 

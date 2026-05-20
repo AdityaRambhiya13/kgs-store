@@ -133,5 +133,14 @@ export const getRecommendations = () =>
 export const getTrending = () =>
     request('GET', '/api/trending')
 
+export const getFrequentlyBoughtTogether = (productIds) =>
+    request('POST', '/api/recommendations/frequently-bought-together', { product_ids: productIds })
+
+export const getReorderReminders = () =>
+    request('GET', '/api/recommendations/reorder')
+
+export const getSimilarProducts = (productId) =>
+    request('GET', `/api/recommendations/similar/${productId}`)
+
 export const getAvailableImages = (token) =>
     request('GET', '/api/admin/available-images', null, null, token)

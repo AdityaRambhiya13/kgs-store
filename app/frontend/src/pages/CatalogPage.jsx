@@ -6,8 +6,9 @@ import HeroBanner from '../components/HeroBanner'
 import RecommendationsSection from '../components/RecommendationsSection'
 import { useCart } from '../CartContext'
 import { useAuth } from '../AuthContext'
-import { getProducts } from '../api'
+import { getProducts, getReorderReminders } from '../api'
 import ProductDetailsModal from '../components/ProductDetailsModal'
+import { getMRP } from '../utils/pricing'
 
 // ── Zepto category definitions ──────────────────────────────────
 const CATEGORY_CONFIG = [
@@ -102,6 +103,26 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
   const { user } = useAuth()
   const [productLimit, setProductLimit] = useState(40)
   const [debouncedSearch, setDebouncedSearch] = useState('')
+
+  const [reorderItems, setReorderItems] = useState([])
+  const [reorderLoading, setReorderLoading] = useState(false)
+
+  useEffect(() => {
+    if (!user) {
+      setReorderItems([])
+      return
+    }
+    setReorderLoading(true)
+    getReorderReminders()
+      .then(data => {
+        setReorderItems(Array.isArray(data) ? data : [])
+        setReorderLoading(false)
+      })
+      .catch(err => {
+        console.error('Failed to load reorder essentials:', err)
+        setReorderLoading(false)
+      })
+  }, [user])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -404,6 +425,38 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
 
       {/* Hero Banner — only when not searching and on home page */}
       {!isSearchMode && activeCategory === 'All' && <HeroBanner />}
+
+      {/* ── Reorder Essentials Section ── */}
+      {!isSearchMode && activeCategory === 'All' && user && reorderItems.length > 0 && (
+        <section className="reorder-section">
+          <div className="reorder-header">
+            <div className="reorder-title-group">
+              <h2 className="reorder-title">⏰ Running Low? Reorder Essentials</h2>
+              <p className="reorder-subtitle">Based on your past purchase cycles</p>
+            </div>
+            <span className="reorder-badge">Reorder Alert</span>
+          </div>
+          <div className="reorder-scroll-outer">
+            <div className="reorder-scroll-track">
+              {reorderItems.map(item => {
+                const variants = item.variants && item.variants.length > 0 ? item.variants : [item]
+                return (
+                  <div key={item.id} className="smart-card-wrap">
+                    <ProductCard
+                      product={{
+                        ...item,
+                        variants: variants
+                      }}
+                      onDetailClick={(prod, mrpVal) => setSelectedProductDetails({ product: prod, mrp: mrpVal })}
+                      onVariantClick={(prod, mrpVal) => setSelectedProductDetails({ product: prod, mrp: mrpVal })}
+                    />
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── Recommendations / Trending Section ── */}
       {!isSearchMode && activeCategory === 'All' && <RecommendationsSection />}

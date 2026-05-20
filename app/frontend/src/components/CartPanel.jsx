@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useCart } from '../CartContext'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { getMRP } from '../utils/pricing'
+import { getFrequentlyBoughtTogether } from '../api'
 
 const FREE_DELIVERY_THRESHOLD = 1000
 const MIN_ORDER = 0
@@ -10,6 +11,31 @@ const MIN_ORDER = 0
 export default function CartPanel() {
   const { cartItems, cartOpen, setCartOpen, cartTotal, cartCount, addToCart, removeFromCart } = useCart()
   const navigate = useNavigate()
+  
+  const [fbtProducts, setFbtProducts] = useState([])
+  const [fbtLoading, setFbtLoading] = useState(false)
+
+  useEffect(() => {
+    if (cartItems.length === 0) {
+      setFbtProducts([])
+      return
+    }
+    
+    setFbtLoading(true)
+    const productIds = cartItems.map(item => item.id)
+    getFrequentlyBoughtTogether(productIds)
+      .then(data => {
+        // Filter out items that are already in the cart to avoid suggesting what's already there
+        const cartIds = new Set(productIds)
+        const suggestions = (data || []).filter(p => !cartIds.has(p.id))
+        setFbtProducts(suggestions)
+        setFbtLoading(false)
+      })
+      .catch(err => {
+        console.error('Failed to fetch FBT recommendations:', err)
+        setFbtLoading(false)
+      })
+  }, [cartItems])
 
   const goCheckout = () => {
     setCartOpen(false)
@@ -126,6 +152,36 @@ export default function CartPanel() {
                     >✕</motion.button>
                   </motion.div>
                 ))}
+
+                {/* Frequently Bought Together Slider */}
+                {fbtProducts.length > 0 && (
+                  <div className="cart-fbt-section">
+                    <h3 className="cart-fbt-title">🏷️ Frequently Bought Together</h3>
+                    <div className="cart-fbt-scroll">
+                      {fbtProducts.map(prod => {
+                        const mrp = getMRP(prod.price, prod.id)
+                        return (
+                          <div key={prod.id} className="cart-fbt-card">
+                            <img
+                              className="cart-fbt-img"
+                              src={prod.image_url}
+                              alt={prod.name}
+                              onError={e => e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNmM2Y0ZjYiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjgwIiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj4/PC90ZXh0Pjwvc3ZnPg=='}
+                            />
+                            <div className="cart-fbt-info">
+                              <div className="cart-fbt-name" title={prod.name}>{prod.name}</div>
+                              <div className="cart-fbt-price-row">
+                                <span className="cart-fbt-price">₹{prod.price.toFixed(0)}</span>
+                                <span className="cart-fbt-mrp">₹{mrp.toFixed(0)}</span>
+                              </div>
+                            </div>
+                            <button className="cart-fbt-add-btn" onClick={() => addToCart(prod, 1)}>+ Add</button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>

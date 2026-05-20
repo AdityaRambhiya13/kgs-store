@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCart } from '../CartContext'
 import { useFavorites } from '../FavoritesContext'
 import { getMRP } from '../utils/pricing'
+import { getSimilarProducts } from '../api'
 
 // Helper to generate AI-style metadata if missing
 function getAiMetadata(product) {
@@ -75,16 +76,48 @@ function getPricePerUnit(price, unit) {
 
 const PLACEHOLDER_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNmM2Y0ZjYiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjgwIiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj4/PC90ZXh0Pjwvc3ZnPg==';
 
-export default function ProductDetailsModal({ product, onClose, mrp }) {
+export default function ProductDetailsModal({ product: propProduct, onClose, mrp }) {
   const { cart, addToCart } = useCart()
   const { isFavorite, toggleFavorite } = useFavorites()
   
+  const [currentProduct, setCurrentProduct] = useState(propProduct)
+  const [similarProducts, setSimilarProducts] = useState([])
+  const [similarLoading, setSimilarLoading] = useState(false)
+
+  // Sync state with prop if the prop changes
+  useEffect(() => {
+    setCurrentProduct(propProduct)
+  }, [propProduct])
+
   // Ensure we have a variants array (handle single product case)
-  const variants = product.variants && product.variants.length > 0 ? product.variants : [product]
-  const [activeVariant, setActiveVariant] = useState(variants[0] || product)
+  const variants = currentProduct?.variants && currentProduct.variants.length > 0 ? currentProduct.variants : [currentProduct]
+  const [activeVariant, setActiveVariant] = useState(variants[0] || currentProduct)
+  
+  useEffect(() => {
+    const freshVariants = currentProduct?.variants && currentProduct.variants.length > 0 ? currentProduct.variants : [currentProduct]
+    setActiveVariant(freshVariants[0] || currentProduct)
+  }, [currentProduct])
+
   const hasMultipleVariants = variants.length > 1
   
-  if (!product) return null
+  // Fetch similar products
+  useEffect(() => {
+    if (!currentProduct || !currentProduct.id) return
+    setSimilarLoading(true)
+    getSimilarProducts(currentProduct.id)
+      .then(data => {
+        // Exclude the current product itself
+        const items = (data || []).filter(p => p.id !== currentProduct.id)
+        setSimilarProducts(items)
+        setSimilarLoading(false)
+      })
+      .catch(err => {
+        console.error('Failed to fetch similar products:', err)
+        setSimilarLoading(false)
+      })
+  }, [currentProduct])
+
+  if (!currentProduct) return null
 
   // For metadata, use the active variant
   const metadata = getAiMetadata(activeVariant)
@@ -110,15 +143,15 @@ export default function ProductDetailsModal({ product, onClose, mrp }) {
         <div className="pdm-header">
           <button className="pdm-close" onClick={onClose}>✕</button>
           <motion.button
-            className={`pdm-fav-btn ${isFavorite(product.id) ? 'active' : ''}`}
-            onClick={() => toggleFavorite(product)}
+            className={`pdm-fav-btn ${isFavorite(currentProduct.id) ? 'active' : ''}`}
+            onClick={() => toggleFavorite(currentProduct)}
             whileTap={{ scale: 0.8 }}
-            animate={isFavorite(product.id) ? { scale: [1, 1.3, 1] } : { scale: 1 }}
+            animate={isFavorite(currentProduct.id) ? { scale: [1, 1.3, 1] } : { scale: 1 }}
             transition={{ duration: 0.3 }}
-            title={isFavorite(product.id) ? 'Remove from Favorites' : 'Save to Favorites'}
+            title={isFavorite(currentProduct.id) ? 'Remove from Favorites' : 'Save to Favorites'}
           >
-            <span className="pdm-fav-icon">{isFavorite(product.id) ? '❤️' : '🤍'}</span>
-            <span className="pdm-fav-label">{isFavorite(product.id) ? 'Saved' : 'Save'}</span>
+            <span className="pdm-fav-icon">{isFavorite(currentProduct.id) ? '❤️' : '🤍'}</span>
+            <span className="pdm-fav-label">{isFavorite(currentProduct.id) ? 'Saved' : 'Save'}</span>
           </motion.button>
         </div>
 
@@ -153,7 +186,7 @@ export default function ProductDetailsModal({ product, onClose, mrp }) {
                   return u ? `${b} ${u}` : b
                 })()}
               </h1>
-              <p className="pdm-subtitle">{product.category} · {activeVariant.unit}</p>
+              <p className="pdm-subtitle">{currentProduct.category} · {activeVariant.unit}</p>
               
               {/* If single choice, show price prominently. If multiple, it's shown in the list below. */}
               {!hasMultipleVariants && (
@@ -263,6 +296,49 @@ export default function ProductDetailsModal({ product, onClose, mrp }) {
               ))}
             </ul>
           </div>
+
+          {/* Similar Products Grid */}
+          {similarProducts.length > 0 && (
+            <div className="pdm-section pdm-similar-section">
+              <h2 className="pdm-section-title">Similar Products</h2>
+              <div className="pdm-similar-grid">
+                {similarProducts.map(prod => {
+                  const sPrice = prod.price || (prod.variants && prod.variants[0]?.price) || 0
+                  const sMrp = getMRP(sPrice, prod.id || 1)
+                  return (
+                    <div
+                      key={prod.id}
+                      className="pdm-similar-card"
+                      onClick={() => setCurrentProduct(prod)}
+                    >
+                      <div className="pdm-similar-img-wrap">
+                        <img
+                          src={prod.image_url}
+                          alt={prod.name}
+                          className="pdm-similar-img"
+                          onError={e => e.target.src = PLACEHOLDER_IMAGE}
+                        />
+                      </div>
+                      <div className="pdm-similar-name">{prod.name}</div>
+                      <div className="pdm-similar-price-row">
+                        <span className="pdm-similar-price">₹{sPrice}</span>
+                        <span className="pdm-similar-mrp">₹{sMrp}</span>
+                      </div>
+                      <button
+                        className="pdm-similar-add-btn"
+                        onClick={e => {
+                          e.stopPropagation()
+                          addToCart(prod, 1)
+                        }}
+                      >
+                        + ADD
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </motion.div>
     </div>

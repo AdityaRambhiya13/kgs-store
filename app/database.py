@@ -4,6 +4,7 @@ import os
 import json
 import time
 import html
+import re
 from datetime import datetime
 from typing import Optional
 
@@ -784,10 +785,19 @@ def get_category_preferences(phone: str) -> dict:
     finally:
         release_connection(conn)
 
+_trending_cache = {
+    "products": None,
+    "timestamp": 0.0
+}
+TRENDING_CACHE_TTL = 3600  # 1 hour cache TTL
+
 def get_trending_products(limit: int = 12) -> list:
-    """Return most-ordered products for trending/guest recommendations."""
+    """Return most-ordered products for trending/guest recommendations with high-performance caching."""
+    current_time = time.time()
+    if _trending_cache["products"] is not None and (current_time - _trending_cache["timestamp"] < TRENDING_CACHE_TTL):
+        return _trending_cache["products"][:limit]
+
     all_products = {p['id']: p for p in get_all_products()}
-    
     conn = get_connection()
     try:
         cursor = conn.cursor()
@@ -821,9 +831,11 @@ def get_trending_products(limit: int = 12) -> list:
                 if cat not in seen_cats:
                     result.append(p)
                     seen_cats.add(cat)
-                if len(result) >= limit:
+                if len(result) >= limit * 2:
                     break
 
+        _trending_cache["products"] = result
+        _trending_cache["timestamp"] = current_time
         return result[:limit]
     finally:
         release_connection(conn)
@@ -864,3 +876,185 @@ def get_personalized_recommendations(phone: str, limit: int = 12) -> list:
                 break
 
     return result[:limit]
+
+_orders_fbt_cache = {
+    "orders": None,
+    "timestamp": 0.0
+}
+ORDERS_FBT_CACHE_TTL = 3600
+
+def get_frequently_bought_together(product_ids: list, limit: int = 4) -> list:
+    """Analyze co-occurrence in orders of given product_ids to find highly associated cross-sell items."""
+    if not product_ids:
+        return []
+    
+    product_ids_set = set(int(pid) for pid in product_ids)
+    all_products = {p['id']: p for p in get_all_products()}
+    
+    current_time = time.time()
+    if _orders_fbt_cache["orders"] is not None and (current_time - _orders_fbt_cache["timestamp"] < ORDERS_FBT_CACHE_TTL):
+        orders = _orders_fbt_cache["orders"]
+    else:
+        conn = get_connection()
+        try:
+            cursor = conn.cursor()
+            # Fetch last 500 orders to construct high-quality associations
+            cursor.execute("SELECT items_json FROM orders WHERE status != 'Cancelled' ORDER BY id DESC LIMIT 500")
+            orders = cursor.fetchall()
+            _orders_fbt_cache["orders"] = orders
+            _orders_fbt_cache["timestamp"] = current_time
+        except Exception:
+            orders = []
+        finally:
+            release_connection(conn)
+
+    co_occurrences = {}
+    for order in orders:
+        try:
+            items = json.loads(order['items_json'])
+            order_pids = set(int(item.get('product_id')) for item in items if item.get('product_id'))
+            
+            # Check if this order contains any of the input product_ids
+            if order_pids.intersection(product_ids_set):
+                # Count other items in this order
+                for other_pid in order_pids:
+                    if other_pid not in product_ids_set and other_pid in all_products:
+                        co_occurrences[other_pid] = co_occurrences.get(other_pid, 0) + 1
+        except Exception:
+            pass
+
+    sorted_pids = sorted(co_occurrences.keys(), key=lambda x: co_occurrences[x], reverse=True)
+    
+    # Return matched products
+    result = [all_products[pid] for pid in sorted_pids if all_products[pid].get('is_visible') and all_products[pid].get('in_stock')]
+    
+    # If not enough, pad with trending
+    if len(result) < limit:
+        trending = get_trending_products(limit * 2)
+        for p in trending:
+            if p['id'] not in product_ids_set and p['id'] not in co_occurrences:
+                result.append(p)
+            if len(result) >= limit:
+                break
+                
+    return result[:limit]
+
+def get_smart_reorder_reminders(phone: str, limit: int = 6) -> list:
+    """Analyze client order history to calculate product repurchase intervals and identify replenishment items."""
+    all_products = {p['id']: p for p in get_all_products()}
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        # Fetch up to 50 historical orders for this client
+        cursor.execute(
+            "SELECT items_json, timestamp FROM orders WHERE phone = %s AND status != 'Cancelled' ORDER BY id DESC LIMIT 50",
+            (phone,)
+        )
+        orders = cursor.fetchall()
+        if not orders:
+            return []
+
+        # Map product_id to purchase timestamps
+        product_purchase_dates = {}
+        for order in orders:
+            try:
+                items = json.loads(order['items_json'])
+                ts_str = order['timestamp']
+                try:
+                    dt = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+                except ValueError:
+                    dt = datetime.strptime(ts_str[:19], "%Y-%m-%d %H:%M:%S")
+                
+                for item in items:
+                    pid = item.get('product_id')
+                    if pid and pid in all_products:
+                        if pid not in product_purchase_dates:
+                            product_purchase_dates[pid] = []
+                        product_purchase_dates[pid].append(dt)
+            except Exception:
+                pass
+
+        now = datetime.now()
+        reorder_candidates = []
+
+        for pid, dates in product_purchase_dates.items():
+            if len(dates) < 1:
+                continue
+            
+            # Sort chronologically
+            dates.sort()
+            last_purchase = dates[-1]
+            days_since_last_purchase = (now - last_purchase).days
+
+            # Calculate average interval if bought multiple times
+            if len(dates) >= 2:
+                intervals = []
+                for i in range(len(dates) - 1):
+                    intervals.append((dates[i+1] - dates[i]).days)
+                avg_interval = max(3, sum(intervals) / len(intervals))
+            else:
+                # Default grocery replenishment cycle (14 days)
+                avg_interval = 14.0
+
+            # If within replenishment window: (interval - 3 days) to (interval + 14 days)
+            if avg_interval - 3 <= days_since_last_purchase <= avg_interval + 14:
+                # Calculate urgency score
+                urgency = days_since_last_purchase / avg_interval
+                reorder_candidates.append((pid, urgency))
+
+        # Sort by highest urgency score
+        reorder_candidates.sort(key=lambda x: x[1], reverse=True)
+        
+        result = [all_products[pid] for pid, _ in reorder_candidates if all_products[pid].get('is_visible') and all_products[pid].get('in_stock')]
+        return result[:limit]
+    except Exception as e:
+        print(f"Error computing reorders: {e}")
+        return []
+    finally:
+        release_connection(conn)
+
+def get_similar_products(product_id: int, limit: int = 6) -> list:
+    """Find products in the same category/sub-category with high keyword/n-gram title similarity."""
+    all_products = get_all_products()
+    ref_product = None
+    for p in all_products:
+        if p['id'] == product_id:
+            ref_product = p
+            break
+            
+    if not ref_product:
+        return []
+
+    ref_name = (ref_product.get('base_name') or ref_product.get('name') or "").lower()
+    ref_words = set(re.findall(r'\w+', ref_name))
+    
+    # Filter products in the same category, excluding the product itself
+    candidates = [
+        p for p in all_products 
+        if p.get('category') == ref_product.get('category') 
+        and p['id'] != product_id 
+        and p.get('is_visible') 
+        and p.get('in_stock')
+    ]
+
+    scored_candidates = []
+    for p in candidates:
+        name = (p.get('base_name') or p.get('name') or "").lower()
+        words = set(re.findall(r'\w+', name))
+        
+        # Calculate Jaccard similarity coefficient: Intersection / Union
+        intersection = ref_words.intersection(words)
+        union = ref_words.union(words)
+        similarity = len(intersection) / len(union) if union else 0.0
+        
+        # Boost similarity score if subcategory matches
+        if p.get('sub_category') and p.get('sub_category') == ref_product.get('sub_category'):
+            similarity += 0.25
+            
+        scored_candidates.append((p, similarity))
+
+    # Sort by similarity descending
+    scored_candidates.sort(key=lambda x: x[1], reverse=True)
+    
+    # Return similar products
+    return [p for p, _ in scored_candidates][:limit]
