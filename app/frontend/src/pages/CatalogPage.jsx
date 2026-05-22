@@ -438,7 +438,11 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
       </AnimatePresence>
 
       {/* Hero Banner — only when not searching and on home page */}
-      {!isSearchMode && activeCategory === 'All' && <HeroBanner />}
+      {!isSearchMode && activeCategory === 'All' && (
+        <div className="hero-banner-container container">
+          <HeroBanner />
+        </div>
+      )}
 
       {/* ── Reorder Essentials Section ── */}
       {!isSearchMode && activeCategory === 'All' && user && reorderItems.length > 0 && (

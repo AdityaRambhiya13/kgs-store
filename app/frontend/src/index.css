@@ -425,11 +425,17 @@ p { line-height: 1.6; }
 /* ================================================================
    HERO BANNER
    ================================================================ */
+.hero-banner-container {
+  margin-top: 16px;
+  margin-bottom: 8px;
+}
+
 .hero-banner {
   position: relative;
   width: 100%;
   overflow: hidden;
-  border-radius: 0;
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
 }
 
 .hero-slide {
@@ -444,7 +450,7 @@ p { line-height: 1.6; }
 }
 
 @media (min-width: 768px) {
-  .hero-slide { min-height: 260px; padding: 40px 48px; }
+  .hero-slide { min-height: 380px; padding: 40px 48px; }
 }
 
 /* Glow blob decoration */
