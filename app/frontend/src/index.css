@@ -972,16 +972,18 @@ p { line-height: 1.6; }
 /* Variants badge */
 .pc-variants-badge {
   position: absolute;
-  top: 8px;
+  bottom: 8px;
   right: 8px;
-  background: rgba(37, 99, 235, 0.1);
-  color: var(--primary);
+  background: rgba(37, 99, 235, 0.95);
+  color: #ffffff;
   font-size: 10px;
   font-weight: 800;
-  padding: 3px 8px;
-  border-radius: var(--r-sm);
-  border: 1px solid rgba(37, 99, 235, 0.25);
-  backdrop-filter: blur(4px);
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+  z-index: 3;
 }
 
 /* Delivery badge (bottom of image) */
@@ -1019,8 +1021,24 @@ p { line-height: 1.6; }
   overflow: hidden;
 }
 
+.pc-pack-size {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-top: 2px;
+  margin-bottom: 4px;
+  background: var(--bg-body, #f3f4f6);
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  padding: 1px 6px;
+  border-radius: var(--r-xs, 4px);
+  width: fit-content;
+  display: inline-block;
+  letter-spacing: 0.02em;
+}
+
 @media (min-width: 768px) {
   .pc-name { font-size: 14px; }
+  .pc-pack-size { font-size: 11px; }
   .pc-body { padding: 12px; }
 }
 
@@ -1284,7 +1302,7 @@ p { line-height: 1.6; }
   flex-direction: row;
   gap: 10px;
   overflow-x: auto;
-  padding: 0 16px 16px;
+  padding: 0 72px 16px 16px !important;
   -ms-overflow-style: none;
   scrollbar-width: none;
   align-items: stretch;
@@ -1292,7 +1310,7 @@ p { line-height: 1.6; }
 .rec-scroll-track::-webkit-scrollbar { display: none; }
 
 @media (min-width: 768px) {
-  .rec-scroll-track { gap: 14px; padding: 0 24px 20px; }
+  .rec-scroll-track { gap: 14px; padding: 0 80px 20px 24px !important; }
 }
 
 /* Recommendation Card */
@@ -1523,14 +1541,14 @@ p { line-height: 1.6; }
   flex-direction: row;
   overflow-x: auto;
   gap: 10px;
-  padding: 0 16px 14px;
+  padding: 0 72px 14px 16px !important;
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
 .smart-section-scroll::-webkit-scrollbar { display: none; }
 
 @media (min-width: 768px) {
-  .smart-section-scroll { padding: 0 24px 16px; gap: 14px; }
+  .smart-section-scroll { padding: 0 80px 16px 24px !important; gap: 14px; }
 }
 
 .smart-card-wrap {
@@ -3440,6 +3458,10 @@ p { line-height: 1.6; }
   flex-wrap: nowrap !important;
   overflow-x: auto !important;
   display: flex !important;
+  padding: 0 72px 4px 16px !important;
+}
+@media (min-width: 768px) {
+  .zepto-product-scroll { padding: 0 80px 4px 24px !important; }
 }
 
 /* --- Product Details Modal - Variant List --- */
@@ -4609,7 +4631,10 @@ p { line-height: 1.6; }
 .reorder-scroll-track {
   display: flex;
   gap: 12px;
-  padding: 4px 0;
+  padding: 4px 72px 4px 16px !important;
+}
+@media (min-width: 768px) {
+  .reorder-scroll-track { padding: 4px 80px 4px 24px !important; }
 }
 .reorder-card {
   flex-shrink: 0;

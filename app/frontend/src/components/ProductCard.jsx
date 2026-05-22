@@ -4,6 +4,82 @@ import { useCart } from '../CartContext'
 import { useFavorites } from '../FavoritesContext'
 import { getMRP, getDiscount } from '../utils/pricing'
 
+// Clean and standardize product titles and packaging details dynamically on the client side
+export function cleanProductDetails(product) {
+  if (!product) return { title: '', subtitle: '1 Unit' };
+
+  let name = product.name || '';
+  let baseName = product.base_name || '';
+  let unit = product.unit || '';
+
+  // 1. Choose base name as base if it exists, otherwise name
+  let title = baseName.trim() || name.trim();
+
+  // 2. Remove double rating pattern "4.6 (51)" or "4.6(51)" or "4.6 (51 Reviews)"
+  const ratingPattern = /\s*\d\.\d\s*\(\d+(?:\s*reviews)?\)/gi;
+  title = title.replace(ratingPattern, '');
+  unit = unit.replace(ratingPattern, '');
+
+  // 3. Remove newlines and replace multiple spaces with single space
+  title = title.replace(/\r?\n|\r/g, ' ').replace(/\s+/g, ' ').trim();
+  unit = unit.replace(/\r?\n|\r/g, ' ').replace(/\s+/g, ' ').trim();
+
+  // 4. Identify suffix packaging descriptors from the title itself
+  const suffixPattern = /\s+(?:pcs|1pic|1\s*pic|fl\s*fl|fl\.?\s*fl\.?|fl|1\s*unit|1\s*pc|1\s*kg|500\s*g|250\s*g|100\s*g|50\s*g|1\s*l|1\s*lit|1\s*litre|1\s*piece|1\s*pk|1\s*pack|pack\s*of\s*\d+)\s*$/i;
+  
+  let extractedSuffix = '';
+  const suffixMatch = title.match(suffixPattern);
+  if (suffixMatch) {
+    extractedSuffix = suffixMatch[0].trim();
+    title = title.substring(0, suffixMatch.index).trim();
+  }
+
+  // 5. Clean up any trailing punctuation/whitespace from title
+  title = title.replace(/[\s,\-\/\\|]+$/g, '').trim();
+
+  // 6. Select the best display unit: prioritize database unit, fallback to extracted suffix
+  let displayUnit = unit || extractedSuffix;
+
+  // 7. Standardize the subtitle to be extremely premium
+  let subtitle = '1 Unit';
+  if (displayUnit) {
+    const lowUnit = displayUnit.toLowerCase();
+    if (lowUnit === 'pcs' || lowUnit === 'pc' || lowUnit === '1pc' || lowUnit === '1 pc' || lowUnit === '1 unit') {
+      subtitle = '1 Unit';
+    } else if (lowUnit === '1pic' || lowUnit === '1 pic' || lowUnit === '1piece' || lowUnit === '1 piece') {
+      subtitle = '1 Piece';
+    } else if (lowUnit === 'fl fl' || lowUnit === 'fl' || lowUnit === 'fl.fl.' || lowUnit === 'fl. fl.') {
+      subtitle = '1 Unit';
+    } else if (lowUnit === '1l' || lowUnit === '1 l' || lowUnit === '1lit' || lowUnit === '1 lit' || lowUnit === '1litre' || lowUnit === '1 litre') {
+      subtitle = '1 Litre';
+    } else {
+      subtitle = displayUnit.charAt(0).toUpperCase() + displayUnit.slice(1);
+    }
+  }
+
+  // 8. Make sure the subtitle isn't duplicated at the end of the title
+  if (subtitle) {
+    const escapedSub = subtitle.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    const subRegex = new RegExp(`\\s+${escapedSub}\\s*$`, 'i');
+    if (subRegex.test(title)) {
+      title = title.replace(subRegex, '').trim();
+    }
+  }
+  if (displayUnit) {
+    const escapedUnit = displayUnit.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    const unitRegex = new RegExp(`\\s+${escapedUnit}\\s*$`, 'i');
+    if (unitRegex.test(title)) {
+      title = title.replace(unitRegex, '').trim();
+    }
+  }
+
+  // Double check trailing punctuation/whitespace again
+  title = title.replace(/[\s,\-\/\\|]+$/g, '').trim();
+
+  return { title, subtitle };
+}
+
+
 // Seeded pseudo-random rating based on product id
 function getRating(id) {
   const seed = (id * 7 + 13) % 10
@@ -101,17 +177,7 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
     toggleFavorite(product)
   }
 
-  let base = product.base_name || product.name
-  let unit = product.unit || ''
-  
-  if (unit && base.toLowerCase().endsWith(unit.toLowerCase().trim())) {
-    unit = ''
-  }
-  if (unit && unit.toLowerCase() === '1l' && base.toLowerCase().endsWith('1lit')) {
-    unit = ''
-  }
-
-  const displayName = unit ? `${base} ${unit}` : base
+  const { title: cleanName, subtitle: cleanSubtitle } = cleanProductDetails(product)
   const displayPrice = product.displayPrice || minPrice
   const displayMrp = product.displayPrice ? getMRP(product.displayPrice, product.id || 1) : mrp
 
@@ -146,7 +212,7 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
         )}
         <img
           src={product.image_url?.includes('supabase.co') ? `${product.image_url}?width=300` : product.image_url}
-          alt={displayName}
+          alt={cleanName}
           loading="lazy"
           className="pc-img"
           onError={e => {
@@ -164,7 +230,8 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
 
       {/* Card Body */}
       <div className="pc-body">
-        <p className="pc-name">{displayName}</p>
+        <p className="pc-name" title={cleanName}>{cleanName}</p>
+        <p className="pc-pack-size">{cleanSubtitle}</p>
 
         {/* Rating — 5-star visual component with review count */}
         <div className="pc-rating-row">

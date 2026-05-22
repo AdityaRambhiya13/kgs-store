@@ -4,6 +4,8 @@ import { useCart } from '../CartContext'
 import { useFavorites } from '../FavoritesContext'
 import { getMRP } from '../utils/pricing'
 import { getSimilarProducts } from '../api'
+import { cleanProductDetails } from './ProductCard'
+
 
 // Helper to generate AI-style metadata if missing
 function getAiMetadata(product) {
@@ -174,16 +176,12 @@ export default function ProductDetailsModal({ product: propProduct, onClose, mrp
 
             </div>
             <div className="pdm-main-info">
-              <h1 className="pdm-title">
-                {(() => {
-                  let b = activeVariant.base_name || activeVariant.name
-                  let u = activeVariant.unit || ''
-                  if (u && b.toLowerCase().endsWith(u.toLowerCase().trim())) u = ''
-                  if (u && u.toLowerCase() === '1l' && b.toLowerCase().endsWith('1lit')) u = ''
-                  return u ? `${b} ${u}` : b
-                })()}
+               <h1 className="pdm-title">
+                {cleanProductDetails(activeVariant).title}
               </h1>
-              <p className="pdm-subtitle">{currentProduct.category} · {activeVariant.unit}</p>
+              <p className="pdm-subtitle">
+                {currentProduct.category} · {cleanProductDetails(activeVariant).subtitle}
+              </p>
               
               {/* If single choice, show price prominently. If multiple, it's shown in the list below. */}
               {!hasMultipleVariants && (

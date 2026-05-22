@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getAdminProducts, updateProduct, adminLogin } from '../api'
+import { cleanProductDetails } from '../components/ProductCard'
+
 
 export default function ProductRenamer() {
   const [token, setToken] = useState(localStorage.getItem('adminToken') || '')
@@ -155,6 +157,7 @@ export default function ProductRenamer() {
             <tr>
               <th>ID</th>
               <th>Current Name</th>
+              <th>Website Preview</th>
               <th>Base Name (Grouping)</th>
               <th>Category</th>
               <th>Price (₹)</th>
@@ -174,6 +177,18 @@ export default function ProductRenamer() {
                       if (e.target.value !== p.name) handleUpdate(p.id, 'name', e.target.value)
                     }}
                   />
+                </td>
+                <td>
+                  {(() => {
+                    const { title, subtitle } = cleanProductDetails(p);
+                    return (
+                      <div style={{ fontSize: '13px', lineHeight: '1.3' }}>
+                        <span style={{ fontWeight: '600', color: '#3b82f6' }}>{title}</span>
+                        <br />
+                        <span style={{ fontSize: '10px', color: '#94a3b8', background: '#334155', padding: '2px 8px', borderRadius: '4px', display: 'inline-block', marginTop: '4px', fontWeight: '500' }}>{subtitle}</span>
+                      </div>
+                    );
+                  })()}
                 </td>
                 <td>
                   <input 
