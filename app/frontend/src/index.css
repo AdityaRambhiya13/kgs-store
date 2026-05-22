@@ -453,6 +453,26 @@ p { line-height: 1.6; }
   .hero-slide { min-height: 380px; padding: 40px 48px; }
 }
 
+.hero-slide-blur-bg {
+  position: absolute;
+  inset: -20px; /* Stretch slightly beyond borders to hide clean edges of blur */
+  background-size: cover;
+  background-position: center;
+  filter: blur(25px) brightness(0.6) saturate(1.2);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.hero-slide-fg-image {
+  position: absolute;
+  inset: 0;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 2;
+  pointer-events: none;
+}
+
 /* Glow blob decoration */
 .hero-blob {
   position: absolute;
