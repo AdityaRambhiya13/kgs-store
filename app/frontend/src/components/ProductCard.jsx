@@ -139,6 +139,11 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
 
       {/* Product Image */}
       <div className="pc-img-wrap">
+        {product.is_newly_launched && (
+          <div style={{ position: 'absolute', top: 8, left: 8, background: '#fbbf24', color: '#78350f', padding: '4px 8px', borderRadius: 8, fontSize: 10, fontWeight: 800, zIndex: 10, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+            ⭐ NEWLY LAUNCHED
+          </div>
+        )}
         <img
           src={product.image_url?.includes('supabase.co') ? `${product.image_url}?width=300` : product.image_url}
           alt={displayName}

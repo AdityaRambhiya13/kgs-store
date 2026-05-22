@@ -12,6 +12,7 @@ import { getMRP } from '../utils/pricing'
 
 // ── Zepto category definitions ──────────────────────────────────
 const CATEGORY_CONFIG = [
+  { name: 'Newly Launched',             emoji: '⭐', color: '#fbbf24' },
   { name: 'Atta, Rice & Dal',           emoji: '🌾', color: '#f59e0b' },
   { name: 'Masala & Dry Fruits',        emoji: '🌶️', color: '#ef4444' },
   { name: 'Snacks & Munchies',          emoji: '🍿', color: '#8b5cf6' },
@@ -196,6 +197,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
       if (!p.category) return
       const cat = unescapeHTML(p.category)
       if (!BLOCKED_CATEGORIES.has(cat)) set.add(cat)
+      if (p.is_newly_launched) set.add('Newly Launched')
     })
     
     // Robust matching: handle potential name changes (e.g. Dairy, Bread & Eggs -> Dairy & Bread)
@@ -238,6 +240,8 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
       const key = (p.base_name || p.name) + '|' + cat
       if (!groups[key]) {
         groups[key] = { ...p, category: cat, sub_category: unescapeHTML(p.sub_category), variants: [] }
+      } else if (p.is_newly_launched) {
+        groups[key].is_newly_launched = true;
       }
       groups[key].variants.push({ ...p, category: cat, sub_category: unescapeHTML(p.sub_category) })
       groups[key].variants.sort((a, b) => a.price - b.price)
@@ -326,10 +330,14 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
 
     // Category filter
     if (activeCategory !== 'All') {
-      result = result.filter(g => g && g.category === activeCategory)
-      // Sub-category filter
-      if (activeSubCategory !== 'All') {
-        result = result.filter(g => g && g.sub_category === activeSubCategory)
+      if (activeCategory === 'Newly Launched') {
+        result = result.filter(g => g && g.is_newly_launched === true)
+      } else {
+        result = result.filter(g => g && g.category === activeCategory)
+        // Sub-category filter
+        if (activeSubCategory !== 'All') {
+          result = result.filter(g => g && g.sub_category === activeSubCategory)
+        }
       }
     }
 

@@ -106,7 +106,8 @@ def init_db():
                 base_name TEXT NOT NULL DEFAULT '',
                 unit TEXT NOT NULL DEFAULT 'kg',
                 is_visible BOOLEAN NOT NULL DEFAULT TRUE,
-                in_stock BOOLEAN NOT NULL DEFAULT TRUE
+                in_stock BOOLEAN NOT NULL DEFAULT TRUE,
+                is_newly_launched BOOLEAN NOT NULL DEFAULT FALSE
             );
 
             -- Migrations for products
@@ -122,6 +123,9 @@ def init_db():
                 END IF;
                 IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='in_stock') THEN
                     ALTER TABLE products ADD COLUMN in_stock BOOLEAN NOT NULL DEFAULT TRUE;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='is_newly_launched') THEN
+                    ALTER TABLE products ADD COLUMN is_newly_launched BOOLEAN NOT NULL DEFAULT FALSE;
                 END IF;
             END $$;
 
@@ -339,7 +343,7 @@ def _seed_products(cursor):
     if final_products:
         try:
             cursor.executemany(
-                "INSERT INTO products (name, price, mrp, description, image_url, category, sub_category, base_name, unit, is_visible, in_stock) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s, TRUE, TRUE)",
+                "INSERT INTO products (name, price, mrp, description, image_url, category, sub_category, base_name, unit, is_visible, in_stock, is_newly_launched) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s, TRUE, TRUE, FALSE)",
                 final_products,
             )
             print(f"Successfully seeded {len(final_products)} products into database.")
@@ -628,7 +632,7 @@ def clean_html_entities(text: str) -> str:
         curr = html.unescape(prev)
     return curr.strip()
 
-def add_product(name: str, price: float, mrp: float, description: str, image_url: str, category: str, sub_category: str = "", base_name: str = "", unit: str = "kg") -> Optional[int]:
+def add_product(name: str, price: float, mrp: float, description: str, image_url: str, category: str, sub_category: str = "", base_name: str = "", unit: str = "kg", is_newly_launched: bool = False) -> Optional[int]:
     """Add a new product to the database."""
     category = clean_html_entities(category)
     sub_category = clean_html_entities(sub_category)
@@ -636,8 +640,8 @@ def add_product(name: str, price: float, mrp: float, description: str, image_url
     try:
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO products (name, price, mrp, description, image_url, category, sub_category, base_name, unit, is_visible, in_stock) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE, TRUE) RETURNING id",
-            (name, price, mrp, description, image_url, category, sub_category, base_name, unit)
+            "INSERT INTO products (name, price, mrp, description, image_url, category, sub_category, base_name, unit, is_visible, in_stock, is_newly_launched) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE, TRUE, %s) RETURNING id",
+            (name, price, mrp, description, image_url, category, sub_category, base_name, unit, is_newly_launched)
         )
         product_id = cursor.fetchone()['id']
         conn.commit()

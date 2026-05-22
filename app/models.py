@@ -90,6 +90,7 @@ class ProductOut(BaseModel):
     unit: str = "kg"
     is_visible: bool = True
     in_stock: bool = True
+    is_newly_launched: bool = False
 
 class ProductCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
@@ -103,6 +104,7 @@ class ProductCreate(BaseModel):
     unit: str = Field("kg", max_length=20)
     is_visible: bool = True
     in_stock: bool = True
+    is_newly_launched: bool = False
 
     @field_validator("name", "description", "category", "sub_category", "base_name", "unit")
     @classmethod
@@ -121,6 +123,7 @@ class ProductUpdate(BaseModel):
     unit: Optional[str] = Field(None, max_length=20)
     is_visible: Optional[bool] = None
     in_stock: Optional[bool] = None
+    is_newly_launched: Optional[bool] = None
 
     @field_validator("name", "description", "category", "sub_category", "base_name", "unit")
     @classmethod

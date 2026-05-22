@@ -37,6 +37,7 @@ export default function AdminPage() {
     const [togglingToken, setTogglingToken] = useState(null)
     const [cardError, setCardError] = useState({})   // per-token inline errors
     const [productForm, setProductForm] = useState(null) // null or { id?, name, price, ... }
+    const [searchQuery, setSearchQuery] = useState('') // Search state for products
     const intervalRef = useRef(null)
 
     // Poll data every 8s when authed
@@ -50,7 +51,7 @@ export default function AdminPage() {
                 } else if (activeTab === 'customers') {
                     const data = await listCustomers(adminToken)
                     setCustomers(Array.isArray(data) ? data : [])
-                } else if (activeTab === 'products' || activeTab === 'visibility' || activeTab === 'inventory') {
+                } else if (activeTab === 'products' || activeTab === 'new_products' || activeTab === 'visibility' || activeTab === 'inventory') {
                     const data = await getAdminProducts(adminToken)
                     const cleanedData = (Array.isArray(data) ? data : []).map(p => ({
                         ...p,
@@ -166,6 +167,12 @@ export default function AdminPage() {
     const ready = orders.filter(o => o.status === 'Ready for Pickup')
     const revenue = orders.reduce((sum, o) => sum + (o.total || 0), 0)
 
+    const filteredProducts = products.filter(p => {
+        if (activeTab === 'new_products' && !p.is_newly_launched) return false;
+        if (!searchQuery) return true;
+        return p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.category.toLowerCase().includes(searchQuery.toLowerCase());
+    });
+
     return (
         <motion.div className="admin-page" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             {/* Nav Header */}
@@ -175,13 +182,13 @@ export default function AdminPage() {
                     <p>Store Management System</p>
                 </div>
                 <div className="admin-nav-tabs">
-                    {['orders', 'products', 'visibility', 'inventory', 'customers'].map(tab => (
+                    {['orders', 'products', 'new_products', 'visibility', 'inventory', 'customers'].map(tab => (
                         <button
                             key={tab}
                             className={`nav-tab ${activeTab === tab ? 'active' : ''}`}
-                            onClick={() => setActiveTab(tab)}
+                            onClick={() => { setActiveTab(tab); setSearchQuery(''); }}
                         >
-                            {tab === 'visibility' ? 'Displayer' : tab === 'inventory' ? 'Stock' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                            {tab === 'visibility' ? 'Displayer' : tab === 'inventory' ? 'Stock' : tab === 'new_products' ? 'Newly Launched' : tab.charAt(0).toUpperCase() + tab.slice(1)}
                         </button>
                     ))}
                 </div>
@@ -228,13 +235,21 @@ export default function AdminPage() {
                     <div className="products-view">
                         <div className="section-header">
                             <h3>Catalog Management ({products.length})</h3>
-                            <button className="btn btn-primary" onClick={() => setProductForm({ name: '', price: 0, description: '', category: '', image_url: '', unit: 'kg', is_visible: true, in_stock: true })}>
+                            <button className="btn btn-primary" onClick={() => setProductForm({ name: '', price: 0, description: '', category: '', image_url: '', unit: 'kg', is_visible: true, in_stock: true, is_newly_launched: false })}>
                                 + Add New Product
                             </button>
                         </div>
+                        <input
+                            type="text"
+                            placeholder="Search products..."
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                            className="input search-bar"
+                            style={{ width: '100%', marginBottom: 20, padding: 12, borderRadius: 10, border: '1px solid #e2e8f0' }}
+                        />
 
                         <div className="products-grid">
-                            {products.map(p => (
+                            {filteredProducts.map(p => (
                                 <div key={p.id} className="product-admin-card card">
                                     <img src={p.image_url} alt="" className="p-img" onError={(e) => e.target.style.display='none'} />
                                     <div className="p-info">
@@ -256,14 +271,65 @@ export default function AdminPage() {
                     </div>
                 )}
 
+                {activeTab === 'new_products' && (
+                    <div className="products-view">
+                        <div className="section-header">
+                            <h3>Newly Launched ({filteredProducts.length})</h3>
+                            <button className="btn btn-primary" onClick={() => setProductForm({ name: '', price: 0, description: '', category: '', image_url: '', unit: 'kg', is_visible: true, in_stock: true, is_newly_launched: true })}>
+                                + Add New Product
+                            </button>
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Search newly launched..."
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                            className="input search-bar"
+                            style={{ width: '100%', marginBottom: 20, padding: 12, borderRadius: 10, border: '1px solid #e2e8f0' }}
+                        />
+
+                        <div className="products-grid">
+                            {filteredProducts.map(p => (
+                                <div key={p.id} className="product-admin-card card">
+                                    <img src={p.image_url} alt="" className="p-img" onError={(e) => e.target.style.display='none'} />
+                                    <div className="p-info">
+                                        <div className="p-cat">{p.category}</div>
+                                        <div className="p-name">{p.name}</div>
+                                        <div className="p-price">₹{p.price} / {p.unit}</div>
+                                    </div>
+                                    <div className="p-actions">
+                                        <button className="btn-icon" onClick={() => setProductForm(p)}>✏️</button>
+                                        <button className="btn-icon" onClick={async () => {
+                                            try {
+                                                await updateProduct(p.id, { is_newly_launched: false }, adminToken);
+                                                setProducts(prev => prev.map(item => item.id === p.id ? { ...item, is_newly_launched: false } : item));
+                                            } catch (err) { alert(err.message) }
+                                        }} style={{ fontSize: 12, padding: '4px 8px', background: '#fef3c7', color: '#b45309', borderRadius: 6, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                            Remove Star
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {activeTab === 'visibility' && (
                     <div className="products-view">
                         <div className="section-header">
                             <h3>Product Displayer (Visibility)</h3>
                             <p style={{ fontSize: 13, color: '#64748b' }}>Choose which products are shown to customers</p>
                         </div>
+                        <input
+                            type="text"
+                            placeholder="Search products..."
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                            className="input search-bar"
+                            style={{ width: '100%', marginBottom: 20, padding: 12, borderRadius: 10, border: '1px solid #e2e8f0' }}
+                        />
                         <div className="products-grid">
-                            {products.map(p => (
+                            {filteredProducts.map(p => (
                                 <div key={p.id} className="product-admin-card card">
                                     <img src={p.image_url} alt="" className="p-img" onError={(e) => e.target.style.display='none'} />
                                     <div className="p-info">
@@ -297,8 +363,16 @@ export default function AdminPage() {
                             <h3>Stock Inventory</h3>
                             <p style={{ fontSize: 13, color: '#64748b' }}>Manage product availability</p>
                         </div>
+                        <input
+                            type="text"
+                            placeholder="Search products..."
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                            className="input search-bar"
+                            style={{ width: '100%', marginBottom: 20, padding: 12, borderRadius: 10, border: '1px solid #e2e8f0' }}
+                        />
                         <div className="products-grid">
-                            {products.map(p => (
+                            {filteredProducts.map(p => (
                                 <div key={p.id} className="product-admin-card card">
                                     <img src={p.image_url} alt="" className="p-img" onError={(e) => e.target.style.display='none'} />
                                     <div className="p-info">
@@ -380,6 +454,10 @@ export default function AdminPage() {
                                     <div className="form-check">
                                         <input type="checkbox" id="in_stock" checked={productForm.in_stock} onChange={e => setProductForm({ ...productForm, in_stock: e.target.checked })} />
                                         <label htmlFor="in_stock" style={{ marginTop: 0, marginLeft: 8, display: 'inline' }}>In Stock</label>
+                                    </div>
+                                    <div className="form-check" style={{ gridColumn: 'span 2' }}>
+                                        <input type="checkbox" id="is_newly_launched" checked={!!productForm.is_newly_launched} onChange={e => setProductForm({ ...productForm, is_newly_launched: e.target.checked })} />
+                                        <label htmlFor="is_newly_launched" style={{ marginTop: 0, marginLeft: 8, display: 'inline' }}>⭐ Newly Launched</label>
                                     </div>
                                 </div>
 
