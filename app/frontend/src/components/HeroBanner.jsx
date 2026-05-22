@@ -107,6 +107,9 @@ export default function HeroBanner() {
           className="hero-slide"
           style={{
             background: slide.gradient || 'none',
+            backgroundImage: slide.image ? `url(${slide.image})` : 'none',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center 20%', // Shorter concisely cropped view favoring the top branding/text
             cursor: 'pointer'
           }}
           onClick={() => handleBannerClick(slide)}
@@ -123,29 +126,15 @@ export default function HeroBanner() {
         >
           {/* For full image banners */}
           {slide.image && (
-            <>
-              {/* Blurred background layer to fill empty sides on wide screens */}
-              <div 
-                className="hero-slide-blur-bg" 
-                style={{ backgroundImage: `url(${slide.image})` }} 
-              />
-              
-              {/* Crisp centered foreground image */}
-              <div 
-                className="hero-slide-fg-image" 
-                style={{ backgroundImage: `url(${slide.image})` }} 
-              />
-
-              <div className="hero-image-overlay">
-                <motion.button
-                  className="hero-overlay-cta"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  {slide.cta} →
-                </motion.button>
-              </div>
-            </>
+            <div className="hero-image-overlay">
+              <motion.button
+                className="hero-overlay-cta"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                {slide.cta} →
+              </motion.button>
+            </div>
           )}
 
           {/* For designed banners like Ketan General Store */}
