@@ -564,7 +564,7 @@ function ProductRow({ product, onDrop, isMapped, onClick, selectedImage }) {
         <p>{product.name}</p>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>{product.category}</span>
-          {product.mrp && <span className="mrp-badge">₹{product.mrp}</span>}
+          {product.mrp > 0 && <span className="mrp-badge">₹{product.mrp}</span>}
         </div>
       </div>
       {isMapped ? (

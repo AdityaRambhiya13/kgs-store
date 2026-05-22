@@ -129,6 +129,9 @@ def init_db():
                 END IF;
             END $$;
 
+            -- Fix any 0.0 or null MRPs to match price
+            UPDATE products SET mrp = price WHERE mrp = 0.0 OR mrp IS NULL;
+
             -- Orders table
             CREATE TABLE IF NOT EXISTS orders (
                 id SERIAL PRIMARY KEY,
@@ -636,6 +639,8 @@ def add_product(name: str, price: float, mrp: float, description: str, image_url
     """Add a new product to the database."""
     category = clean_html_entities(category)
     sub_category = clean_html_entities(sub_category)
+    if mrp is None or mrp <= 0.0:
+        mrp = price
     conn = get_connection()
     try:
         cursor = conn.cursor()
@@ -658,6 +663,13 @@ def update_product(product_id: int, updates: dict) -> bool:
     if not updates:
         return False
     
+    # Ensure MRP is not updated to 0.0 or <= 0
+    if 'mrp' in updates and (updates['mrp'] is None or updates['mrp'] <= 0.0):
+        if 'price' in updates:
+            updates['mrp'] = updates['price']
+        else:
+            updates.pop('mrp', None)
+            
     # Clean HTML entities if category or sub_category are updated
     if 'category' in updates and updates['category']:
         updates['category'] = clean_html_entities(updates['category'])

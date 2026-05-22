@@ -441,16 +441,30 @@ p { line-height: 1.6; }
 .hero-slide {
   position: relative;
   width: 100%;
+  aspect-ratio: 3 / 2; /* Perfectly matches the 1536x1024 (3:2) banner image ratio on phone! Zero cropping! */
   min-height: 200px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 28px 24px;
+  padding: 24px 20px;
   overflow: hidden;
 }
 
-@media (min-width: 768px) {
-  .hero-slide { min-height: 260px; padding: 40px 48px; }
+@media (min-width: 640px) {
+  .hero-slide {
+    aspect-ratio: 2.1 / 1; /* Slightly wider layout for tablet viewports */
+    min-height: 240px;
+    padding: 32px 36px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero-slide {
+    aspect-ratio: 2.8 / 1; /* Beautiful landscape aspect ratio for laptop screens (keeps it concise, not taking up too much vertical space, but tall enough to display products clearly) */
+    min-height: 380px;
+    max-height: 440px; /* Caps the height on extremely wide screens to remain sleek and elegant */
+    padding: 40px 48px;
+  }
 }
 
 /* Glow blob decoration */

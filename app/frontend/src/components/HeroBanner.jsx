@@ -14,18 +14,6 @@ const SLIDES = [
     image: '/dehaat-banner.png',
     targetCategory: 'Dehaat Products',
     cta: 'Check Out Now',
-  },
-  {
-    id: 3,
-    gradient: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #1d4ed8 100%)',
-    badge: '🏪 KETAN GENERAL STORE',
-    heading: 'Your Trusted Neighborhood Grocer',
-    sub: 'Serving quality daily essentials and fresh groceries in Dombivali.',
-    cta: 'Explore Catalog',
-    targetCategory: 'All',
-    logo: '/icon-512.png',
-    pill1: '✨ 100% Quality',
-    pill2: '🚚 Fast Delivery',
   }
 ]
 
