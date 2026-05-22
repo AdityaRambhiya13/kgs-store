@@ -13,6 +13,8 @@ import { getMRP } from '../utils/pricing'
 // ── Zepto category definitions ──────────────────────────────────
 const CATEGORY_CONFIG = [
   { name: 'Newly Launched',             emoji: '⭐', color: '#fbbf24' },
+  { name: 'Parachute New',              emoji: '✨', color: '#3b82f6', displayName: 'Parachute New Arrivals' },
+  { name: 'Dehaat Products',            emoji: '🌾', color: '#10b981', displayName: 'Dehaat Farm Fresh Products' },
   { name: 'Atta, Rice & Dal',           emoji: '🌾', color: '#f59e0b' },
   { name: 'Masala & Dry Fruits',        emoji: '🌶️', color: '#ef4444' },
   { name: 'Snacks & Munchies',          emoji: '🍿', color: '#8b5cf6' },
@@ -332,6 +334,10 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
     if (activeCategory !== 'All') {
       if (activeCategory === 'Newly Launched') {
         result = result.filter(g => g && g.is_newly_launched === true)
+      } else if (activeCategory === 'Parachute New') {
+        result = result.filter(g => g && g.is_newly_launched === true && /parachute/i.test(g.name || g.base_name))
+      } else if (activeCategory === 'Dehaat Products') {
+        result = result.filter(g => g && /dehaat|deehat/i.test(g.name || g.base_name))
       } else {
         result = result.filter(g => g && g.category === activeCategory)
         // Sub-category filter
@@ -657,7 +663,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
           <div style={{ padding: '0 16px', marginTop: '8px' }}>
             <div className="section-header" style={{ marginBottom: '16px' }}>
               <h2 className="section-title" style={{ color: CATEGORY_MAP[activeCategory]?.color }}>
-                {CATEGORY_MAP[activeCategory]?.emoji} {activeCategory}
+                {CATEGORY_MAP[activeCategory]?.emoji} {CATEGORY_MAP[activeCategory]?.displayName || activeCategory}
                 {activeSubCategory !== 'All' && <span style={{ fontSize: '0.8em', marginLeft: '8px', opacity: 0.7 }}>› {activeSubCategory}</span>}
               </h2>
               <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{filtered.length} items</span>

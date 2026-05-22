@@ -1,46 +1,39 @@
 import { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const SLIDES = [
   {
     id: 1,
-    gradient: 'linear-gradient(135deg, #2563EB 0%, #3B82F6 50%, #60A5FA 100%)',
-    badge: '⚡ Express Delivery',
-    heading: 'Fresh Groceries,\nIn Minutes',
-    sub: 'Order before 10 PM — delivered to your door blazing fast',
-    cta: 'Shop Now',
-    pill1: '🎉 ₹50 OFF',
-    pill2: '🚚 Free Delivery',
-    emoji: '🥬',
+    image: '/hero-banner.png',
+    targetCategory: 'Parachute New',
+    cta: 'Check Out Now',
   },
   {
     id: 2,
-    gradient: 'linear-gradient(135deg, #FF6B35 0%, #F7931E 60%, #FFD700 100%)',
-    badge: 'Deals of the Day',
-    heading: 'Staples &\nGrain Goodness',
-    sub: 'Best quality rice, wheat, daals — straight from the source',
-    cta: 'Explore Deals',
-    pill1: '💸 Up to 30% Off',
-    pill2: '⭐ Top Rated',
-    emoji: '🌾',
+    image: '/dehaat-banner.png',
+    targetCategory: 'Dehaat Products',
+    cta: 'Check Out Now',
   },
   {
     id: 3,
-    gradient: 'linear-gradient(135deg, #6C63FF 0%, #a855f7 60%, #ec4899 100%)',
-    badge: '✨ New Arrivals',
-    heading: 'Premium\nOrganic Range',
-    sub: 'Handpicked organic products for a healthier lifestyle',
-    cta: 'Discover',
-    pill1: '🌿 100% Organic',
-    pill2: '📦 Free Box',
-    emoji: '🍎',
-  },
+    gradient: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #1d4ed8 100%)',
+    badge: '🏪 KETAN GENERAL STORE',
+    heading: 'Your Trusted Neighborhood Grocer',
+    sub: 'Serving quality daily essentials and fresh groceries in Dombivali.',
+    cta: 'Explore Catalog',
+    targetCategory: 'All',
+    logo: '/icon-512.png',
+    pill1: '✨ 100% Quality',
+    pill2: '🚚 Fast Delivery',
+  }
 ]
 
 export default function HeroBanner() {
   const [current, setCurrent] = useState(0)
   const [paused, setPaused] = useState(false)
   const [direction, setDirection] = useState(1)
+  const [searchParams, setSearchParams] = useSearchParams()
   const touchStartX = useRef(null)
   const touchStartY = useRef(null)
 
@@ -49,7 +42,7 @@ export default function HeroBanner() {
     const timer = setInterval(() => {
       setDirection(1)
       setCurrent(c => (c + 1) % SLIDES.length)
-    }, 3500)
+    }, 4500)
     return () => clearInterval(timer)
   }, [paused])
 
@@ -68,7 +61,6 @@ export default function HeroBanner() {
     if (touchStartX.current === null) return
     const dx = e.changedTouches[0].clientX - touchStartX.current
     const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current)
-    // Only swipe if horizontal movement > 50px and more horizontal than vertical
     if (Math.abs(dx) > 50 && Math.abs(dx) > dy) {
       if (dx < 0) {
         setDirection(1)
@@ -81,6 +73,22 @@ export default function HeroBanner() {
     touchStartX.current = null
     touchStartY.current = null
     setPaused(false)
+  }
+
+  const handleBannerClick = (slide) => {
+    if (slide.targetCategory) {
+      if (slide.targetCategory === 'All') {
+        setSearchParams({})
+      } else {
+        setSearchParams({ category: slide.targetCategory })
+      }
+      setTimeout(() => {
+        const target = document.getElementById('catalog-main') || document.querySelector('.main-content')
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      }, 100)
+    }
   }
 
   const slide = SLIDES[current]
@@ -97,84 +105,123 @@ export default function HeroBanner() {
         <motion.div
           key={slide.id}
           className="hero-slide"
-          style={{ background: slide.gradient }}
+          style={{
+            background: slide.gradient || 'none',
+            backgroundImage: slide.image ? `url(${slide.image})` : 'none',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            cursor: 'pointer'
+          }}
+          onClick={() => handleBannerClick(slide)}
           custom={direction}
           variants={{
-            enter: (d) => ({ opacity: 0, x: d > 0 ? 40 : -40 }),
+            enter: (d) => ({ opacity: 0, x: d > 0 ? 50 : -50 }),
             center: { opacity: 1, x: 0 },
-            exit: (d) => ({ opacity: 0, x: d > 0 ? -40 : 40 }),
+            exit: (d) => ({ opacity: 0, x: d > 0 ? -50 : 50 }),
           }}
           initial="enter"
           animate="center"
           exit="exit"
-          transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
         >
-          {/* Glow blob */}
-          <div className="hero-blob" />
+          {/* For full image banners */}
+          {slide.image && (
+            <div className="hero-image-overlay">
+              <motion.button
+                className="hero-overlay-cta"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                {slide.cta} →
+              </motion.button>
+            </div>
+          )}
 
-          <div className="hero-content">
-            {/* Badge — use a proper badge component, not raw emoji as the only design element */}
-            <motion.div
-              className="hero-badge"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              {slide.badge}
-            </motion.div>
+          {/* For designed banners like Ketan General Store */}
+          {!slide.image && (
+            <>
+              <div className="hero-blob" />
+              <div className="hero-content">
+                <motion.div
+                  className="hero-badge"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                >
+                  {slide.badge}
+                </motion.div>
 
-            {/* Heading */}
-            <motion.h1
-              className="hero-heading"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.18 }}
-            >
-              {slide.heading.split('\n').map((line, i) => (
-                <span key={i}>{line}<br /></span>
-              ))}
-            </motion.h1>
+                <motion.h1
+                  className="hero-heading"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.18 }}
+                >
+                  {slide.heading.split('\n').map((line, i) => (
+                    <span key={i}>{line}<br /></span>
+                  ))}
+                </motion.h1>
 
-            <motion.p
-              className="hero-sub"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.28 }}
-            >
-              {slide.sub}
-            </motion.p>
+                <motion.p
+                  className="hero-sub"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.28 }}
+                >
+                  {slide.sub}
+                </motion.p>
 
-            {/* Pills */}
-            <motion.div
-              className="hero-pills"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35 }}
-            >
-              <span className="hero-pill">{slide.pill1}</span>
-              <span className="hero-pill">{slide.pill2}</span>
-            </motion.div>
-          </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '16px' }}>
+                  <motion.button
+                    className="btn btn-secondary"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    style={{ fontSize: '13px', padding: '8px 18px' }}
+                  >
+                    {slide.cta}
+                  </motion.button>
+                  {slide.pill1 && (
+                    <span className="hero-pill" style={{ opacity: 0.9, fontSize: '11px', padding: '4px 10px' }}>
+                      {slide.pill1}
+                    </span>
+                  )}
+                </div>
+              </div>
 
-          {/* Big emoji decoration */}
-          <motion.div
-            className="hero-emoji-deco"
-            initial={{ opacity: 0, scale: 0.7 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.15, type: 'spring', stiffness: 200 }}
-          >
-            {slide.emoji}
-          </motion.div>
+              {slide.logo && (
+                <motion.div
+                  className="hero-logo-deco"
+                  initial={{ opacity: 0, scale: 0.7 }}
+                  animate={{ opacity: 0.18, scale: 1 }}
+                  transition={{ delay: 0.15, type: 'spring', stiffness: 120 }}
+                  style={{
+                    position: 'absolute',
+                    right: '24px',
+                    bottom: '24px',
+                    width: '120px',
+                    height: '120px',
+                    backgroundImage: `url(${slide.logo})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    pointerEvents: 'none',
+                    borderRadius: '24px'
+                  }}
+                />
+              )}
+            </>
+          )}
         </motion.div>
       </AnimatePresence>
 
-      {/* Dot navigation — visible swipe affordance */}
       <div className="hero-dots">
         {SLIDES.map((s, i) => (
           <button
             key={s.id}
             className={`hero-dot${i === current ? ' active' : ''}`}
-            onClick={() => goTo(i)}
+            onClick={(e) => {
+              e.stopPropagation()
+              goTo(i)
+            }}
             aria-label={`Slide ${i + 1}`}
           />
         ))}

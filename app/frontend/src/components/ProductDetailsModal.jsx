@@ -171,10 +171,7 @@ export default function ProductDetailsModal({ product: propProduct, onClose, mrp
                   onError={e => { e.target.src = PLACEHOLDER_IMAGE }}
                 />
               </AnimatePresence>
-              <div className="pc-return-badge" style={{ position: 'absolute', top: 12, left: 12 }}>
-                <span className="pc-return-badge-icon">🔄</span>
-                <span>Easy Return</span>
-              </div>
+
             </div>
             <div className="pdm-main-info">
               <h1 className="pdm-title">
