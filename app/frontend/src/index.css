@@ -853,13 +853,14 @@ p { line-height: 1.6; }
 .product-grid::-webkit-scrollbar { display: none; }
 
 .product-grid .product-card {
-  min-width: 140px;
-  max-width: 156px;
+  width: 152px;
+  min-width: 152px;
+  max-width: 152px;
   flex-shrink: 0;
 }
 
 @media (min-width: 768px) {
-  .product-grid .product-card { min-width: 180px; max-width: 210px; }
+  .product-grid .product-card { width: 192px; min-width: 192px; max-width: 192px; }
   .product-grid { gap: 14px; }
 }
 
@@ -1317,8 +1318,9 @@ p { line-height: 1.6; }
 
 /* Recommendation Card */
 .rec-card {
-  min-width: 140px;
-  max-width: 156px;
+  width: 152px;
+  min-width: 152px;
+  max-width: 152px;
   flex-shrink: 0;
   background: var(--bg-card);
   border-radius: var(--r);
@@ -1333,7 +1335,7 @@ p { line-height: 1.6; }
 }
 
 @media (min-width: 768px) {
-  .rec-card { min-width: 170px; max-width: 190px; }
+  .rec-card { width: 192px; min-width: 192px; max-width: 192px; }
 }
 
 .rec-fav-btn {
@@ -1555,11 +1557,13 @@ p { line-height: 1.6; }
 
 .smart-card-wrap {
   flex-shrink: 0;
-  width: 148px;
+  width: 152px;
+  min-width: 152px;
+  max-width: 152px;
 }
 
 @media (min-width: 768px) {
-  .smart-card-wrap { width: 190px; }
+  .smart-card-wrap { width: 192px; min-width: 192px; max-width: 192px; }
 }
 
 /* ================================================================
