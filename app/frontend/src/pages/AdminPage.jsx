@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { listOrders, updateStatus, listCustomers, adminLogin, getProducts, getAdminProducts, addProduct, updateProduct, deleteProduct, confirmPayment, rejectPayment } from '../api'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import ProductRenamer from './ProductRenamer'
 
 const unescapeHTML = (str) => {
   if (!str) return ''
@@ -14,6 +15,19 @@ const unescapeHTML = (str) => {
     val = txt.value
   }
   return val.trim()
+}
+
+const getWebsiteDisplayName = (name = '', base_name = '', unit = '') => {
+  let base = base_name || name || ''
+  let u = unit || ''
+  
+  if (u && base.toLowerCase().endsWith(u.toLowerCase().trim())) {
+    u = ''
+  }
+  if (u && u.toLowerCase() === '1l' && base.toLowerCase().endsWith('1lit')) {
+    u = ''
+  }
+  return u ? `${base} ${u}` : base
 }
 
 export default function AdminPage() {
@@ -182,13 +196,13 @@ export default function AdminPage() {
                     <p>Store Management System</p>
                 </div>
                 <div className="admin-nav-tabs">
-                    {['orders', 'products', 'new_products', 'visibility', 'inventory', 'customers'].map(tab => (
+                    {['orders', 'products', 'new_products', 'visibility', 'inventory', 'renamer', 'customers'].map(tab => (
                         <button
                             key={tab}
                             className={`nav-tab ${activeTab === tab ? 'active' : ''}`}
                             onClick={() => { setActiveTab(tab); setSearchQuery(''); }}
                         >
-                            {tab === 'visibility' ? 'Displayer' : tab === 'inventory' ? 'Stock' : tab === 'new_products' ? 'Newly Launched' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                            {tab === 'visibility' ? 'Displayer' : tab === 'inventory' ? 'Stock' : tab === 'new_products' ? 'Newly Launched' : tab === 'renamer' ? 'Product Names' : tab.charAt(0).toUpperCase() + tab.slice(1)}
                         </button>
                     ))}
                 </div>
@@ -235,7 +249,7 @@ export default function AdminPage() {
                     <div className="products-view">
                         <div className="section-header">
                             <h3>Catalog Management ({products.length})</h3>
-                            <button className="btn btn-primary" onClick={() => setProductForm({ name: '', price: 0, description: '', category: '', image_url: '', unit: 'kg', is_visible: true, in_stock: true, is_newly_launched: false })}>
+                            <button className="btn btn-primary" onClick={() => setProductForm({ name: '', base_name: '', price: 0, description: '', category: '', image_url: '', unit: 'kg', is_visible: true, in_stock: true, is_newly_launched: false })}>
                                 + Add New Product
                             </button>
                         </div>
@@ -275,7 +289,7 @@ export default function AdminPage() {
                     <div className="products-view">
                         <div className="section-header">
                             <h3>Newly Launched ({filteredProducts.length})</h3>
-                            <button className="btn btn-primary" onClick={() => setProductForm({ name: '', price: 0, description: '', category: '', image_url: '', unit: 'kg', is_visible: true, in_stock: true, is_newly_launched: true })}>
+                            <button className="btn btn-primary" onClick={() => setProductForm({ name: '', base_name: '', price: 0, description: '', category: '', image_url: '', unit: 'kg', is_visible: true, in_stock: true, is_newly_launched: true })}>
                                 + Add New Product
                             </button>
                         </div>
@@ -414,6 +428,12 @@ export default function AdminPage() {
                         </div>
                     </div>
                 )}
+
+                {activeTab === 'renamer' && (
+                    <div className="renamer-view" style={{ borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+                        <ProductRenamer />
+                    </div>
+                )}
             </div>
 
             {/* Product Modal */}
@@ -423,10 +443,25 @@ export default function AdminPage() {
                         <motion.div className="modal-content" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}>
                             <h3>{productForm.id ? 'Edit Product' : 'Add New Product'}</h3>
                             <form onSubmit={handleSaveProduct} className="admin-form">
-                                <label>Name</label>
-                                <input required value={productForm.name} onChange={e => setProductForm({ ...productForm, name: e.target.value })} />
-                                
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                    <div>
+                                        <label>Product Name (System)</label>
+                                        <input required value={productForm.name} onChange={e => setProductForm({ ...productForm, name: e.target.value })} placeholder="e.g. Parachute Coconut Oil 500ml" />
+                                    </div>
+                                    <div>
+                                        <label>Base Name (Website Grouping)</label>
+                                        <input value={productForm.base_name || ''} onChange={e => setProductForm({ ...productForm, base_name: e.target.value })} placeholder="e.g. Parachute Coconut Oil" />
+                                    </div>
+                                </div>
+
+                                <div className="live-preview-box">
+                                    <span className="live-preview-title">🌐 Website Display Preview:</span>
+                                    <span className="live-preview-text">
+                                        {getWebsiteDisplayName(productForm.name, productForm.base_name, productForm.unit)}
+                                    </span>
+                                </div>
+                                
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
                                     <div>
                                         <label>Price (₹)</label>
                                         <input type="number" step="0.01" required value={productForm.price} onChange={e => setProductForm({ ...productForm, price: parseFloat(e.target.value) })} />
@@ -541,6 +576,31 @@ export default function AdminPage() {
                 .stock-text { font-size: 13px; font-weight: 600; color: #10b981; }
                 .stock-text.out { color: #ef4444; }
                 .form-check { display: flex; align-items: center; }
+
+                .live-preview-box {
+                    background: #f0fdf4;
+                    border: 1px solid #bbf7d0;
+                    border-radius: 8px;
+                    padding: 10px 14px;
+                    margin-top: 14px;
+                    margin-bottom: 8px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2px;
+                    text-align: left;
+                }
+                .live-preview-title {
+                    font-size: 10px;
+                    font-weight: 800;
+                    color: #166534;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                }
+                .live-preview-text {
+                    font-size: 14px;
+                    font-weight: 700;
+                    color: #14532d;
+                }
             `}</style>
         </motion.div>
     )

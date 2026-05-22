@@ -931,9 +931,9 @@ p { line-height: 1.6; }
   width: 100%;
   aspect-ratio: 1 / 1;
   overflow: hidden;
-  background: #F8FAFC;
+  background: var(--bg-card); /* Perfect white background matching the card */
   flex-shrink: 0;
-  padding: 10px;
+  padding: 16px; /* Clean, generous spacing so grocery items never touch the borders */
   display: flex;
   align-items: center;
   justify-content: center;
