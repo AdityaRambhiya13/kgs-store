@@ -1000,13 +1000,14 @@ p { line-height: 1.6; }
   backdrop-filter: blur(6px);
 }
 
-/* Card body */
+/* Card body — fixed height ensures every card's pricing footer sits at the same vertical position */
 .pc-body {
   padding: 10px 10px 10px;
   display: flex;
   flex-direction: column;
-  flex: 1;
-  gap: 4px;
+  height: 118px; /* fixed: name(2 lines) + pack-size + rating + price row */
+  justify-content: space-between;
+  overflow: hidden;
 }
 
 .pc-name {
@@ -1019,6 +1020,7 @@ p { line-height: 1.6; }
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .pc-pack-size {
@@ -1026,7 +1028,7 @@ p { line-height: 1.6; }
   color: var(--text-muted);
   font-weight: 600;
   margin-top: 2px;
-  margin-bottom: 4px;
+  margin-bottom: 0;
   background: var(--bg-body, #f3f4f6);
   border: 1px solid rgba(0, 0, 0, 0.03);
   padding: 1px 6px;
@@ -1034,12 +1036,13 @@ p { line-height: 1.6; }
   width: fit-content;
   display: inline-block;
   letter-spacing: 0.02em;
+  flex-shrink: 0;
 }
 
 @media (min-width: 768px) {
   .pc-name { font-size: 14px; }
   .pc-pack-size { font-size: 11px; }
-  .pc-body { padding: 12px; }
+  .pc-body { padding: 12px; height: 126px; }
 }
 
 /* Rating row */
@@ -1062,8 +1065,8 @@ p { line-height: 1.6; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: auto;
-  padding-top: 6px;
+  padding-top: 4px;
+  flex-shrink: 0;
 }
 
 .pc-price-block {
@@ -3355,8 +3358,16 @@ p { line-height: 1.6; }
 .zepto-cat-pill:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-glow); }
 .zepto-cat-pill.active { background: var(--primary-glow); font-weight: 700; }
 
-/* -- Sub-category Strip ---------------------------------------- */
-.zepto-subcat-bar { background: var(--bg); border-bottom: 1px solid var(--border); }
+/* -- Sub-category Strip — sticky directly below the category pill bar ---- */
+.zepto-subcat-bar {
+  position: sticky;
+  /* sticky category pill bar is ~42px tall; stack sub-bar right below it */
+  top: calc(var(--navbar-h) + 42px);
+  z-index: 99;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
 
 .zepto-subcat-pills {
   display: flex;
