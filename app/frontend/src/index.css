@@ -1005,9 +1005,8 @@ p { line-height: 1.6; }
   padding: 10px 10px 10px;
   display: flex;
   flex-direction: column;
-  height: 118px; /* fixed: name(2 lines) + pack-size + rating + price row */
+  height: 140px; /* name(2 lines ~34px) + pack-size(~21px) + rating(~18px) + footer(~36px) + gaps */
   justify-content: space-between;
-  overflow: hidden;
 }
 
 .pc-name {
@@ -1042,7 +1041,7 @@ p { line-height: 1.6; }
 @media (min-width: 768px) {
   .pc-name { font-size: 14px; }
   .pc-pack-size { font-size: 11px; }
-  .pc-body { padding: 12px; height: 126px; }
+  .pc-body { padding: 12px; height: 150px; }
 }
 
 /* Rating row */
