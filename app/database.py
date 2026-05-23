@@ -273,7 +273,18 @@ def _seed_products(cursor):
                     name = (row.get('name') or '').strip()
                     standardized = (row.get('Standardized_Name') or name).strip()
                     base_name = standardized if standardized else name
-                    size_weight = (row.get('Size_Weight') or '').strip()
+                    
+                    # Try to extract weight/size from product name first (e.g., "Good Day Pista Badam 45G" -> "45G")
+                    # to prevent bugs where different priced variants get the same weight due to faulty CSV Size_Weight fields.
+                    name_weight_match = re.search(
+                        r'(\d+(?:\.\d+)?)\s*(kg|kgs|g|gm|gms|gram|grams|ml|l|ltr|ltrs|litre|litres|pc|pcs|piece|pieces)\b',
+                        name,
+                        re.IGNORECASE
+                    )
+                    if name_weight_match:
+                        size_weight = name_weight_match.group(0).strip()
+                    else:
+                        size_weight = (row.get('Size_Weight') or '').strip()
 
                     try:
                         mrp = float(row.get('mrp') or 0)
