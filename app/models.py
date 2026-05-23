@@ -91,6 +91,7 @@ class ProductOut(BaseModel):
     is_visible: bool = True
     in_stock: bool = True
     is_newly_launched: bool = False
+    display_order: int = 0
 
 class ProductCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
@@ -105,6 +106,7 @@ class ProductCreate(BaseModel):
     is_visible: bool = True
     in_stock: bool = True
     is_newly_launched: bool = False
+    display_order: int = 0
 
     @field_validator("name", "description", "category", "sub_category", "base_name", "unit")
     @classmethod
@@ -124,6 +126,7 @@ class ProductUpdate(BaseModel):
     is_visible: Optional[bool] = None
     in_stock: Optional[bool] = None
     is_newly_launched: Optional[bool] = None
+    display_order: Optional[int] = None
 
     @field_validator("name", "description", "category", "sub_category", "base_name", "unit")
     @classmethod

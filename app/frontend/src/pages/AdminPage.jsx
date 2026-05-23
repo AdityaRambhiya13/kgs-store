@@ -65,7 +65,7 @@ export default function AdminPage() {
                 } else if (activeTab === 'customers') {
                     const data = await listCustomers(adminToken)
                     setCustomers(Array.isArray(data) ? data : [])
-                } else if (activeTab === 'products' || activeTab === 'new_products' || activeTab === 'visibility' || activeTab === 'inventory') {
+                } else if (activeTab === 'products' || activeTab === 'ordering' || activeTab === 'new_products' || activeTab === 'visibility' || activeTab === 'inventory') {
                     const data = await getAdminProducts(adminToken)
                     const cleanedData = (Array.isArray(data) ? data : []).map(p => ({
                         ...p,
@@ -196,13 +196,13 @@ export default function AdminPage() {
                     <p>Store Management System</p>
                 </div>
                 <div className="admin-nav-tabs">
-                    {['orders', 'products', 'new_products', 'visibility', 'inventory', 'renamer', 'customers'].map(tab => (
+                    {['orders', 'products', 'ordering', 'new_products', 'visibility', 'inventory', 'renamer', 'customers'].map(tab => (
                         <button
                             key={tab}
                             className={`nav-tab ${activeTab === tab ? 'active' : ''}`}
                             onClick={() => { setActiveTab(tab); setSearchQuery(''); }}
                         >
-                            {tab === 'visibility' ? 'Displayer' : tab === 'inventory' ? 'Stock' : tab === 'new_products' ? 'Newly Launched' : tab === 'renamer' ? 'Product Names' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                            {tab === 'ordering' ? 'Sort Display' : tab === 'visibility' ? 'Displayer' : tab === 'inventory' ? 'Stock' : tab === 'new_products' ? 'Newly Launched' : tab === 'renamer' ? 'Product Names' : tab.charAt(0).toUpperCase() + tab.slice(1)}
                         </button>
                     ))}
                 </div>
@@ -422,6 +422,54 @@ export default function AdminPage() {
                                                 <span className="stock-text out">Out of Stock</span>
                                             </label>
                                         </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'ordering' && (
+                    <div className="products-view">
+                        <div className="section-header">
+                            <h3>Custom Display Order</h3>
+                            <p style={{ fontSize: 13, color: '#64748b' }}>Pin products to the top. Lowest numbers (1, 2, 3...) appear first. Default is 0 (bottom).</p>
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Search products..."
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                            className="input search-bar"
+                            style={{ width: '100%', marginBottom: 20, padding: 12, borderRadius: 10, border: '1px solid #e2e8f0' }}
+                        />
+                        <div className="products-grid">
+                            {filteredProducts.map(p => (
+                                <div key={p.id} className="product-admin-card card">
+                                    <img src={p.image_url} alt="" className="p-img" onError={(e) => e.target.style.display='none'} />
+                                    <div className="p-info">
+                                        <div className="p-name">{p.name}</div>
+                                        <div className="p-cat">{p.category}</div>
+                                    </div>
+                                    <div className="p-actions" style={{ minWidth: 80 }}>
+                                        <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 4, textAlign: 'center' }}>RANK (1=TOP)</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            className="input"
+                                            style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '2px solid #e2e8f0', textAlign: 'center', fontWeight: 'bold' }}
+                                            value={p.display_order || ''}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setProducts(prev => prev.map(item => item.id === p.id ? { ...item, display_order: val ? parseInt(val) : 0 } : item));
+                                            }}
+                                            onBlur={async (e) => {
+                                                const val = parseInt(e.target.value || 0);
+                                                try {
+                                                    await updateProduct(p.id, { display_order: val }, adminToken);
+                                                } catch (err) { alert(err.message) }
+                                            }}
+                                        />
                                     </div>
                                 </div>
                             ))}

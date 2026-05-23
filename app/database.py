@@ -107,7 +107,8 @@ def init_db():
                 unit TEXT NOT NULL DEFAULT 'kg',
                 is_visible BOOLEAN NOT NULL DEFAULT TRUE,
                 in_stock BOOLEAN NOT NULL DEFAULT TRUE,
-                is_newly_launched BOOLEAN NOT NULL DEFAULT FALSE
+                is_newly_launched BOOLEAN NOT NULL DEFAULT FALSE,
+                display_order INTEGER NOT NULL DEFAULT 0
             );
 
             -- Migrations for products
@@ -126,6 +127,9 @@ def init_db():
                 END IF;
                 IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='is_newly_launched') THEN
                     ALTER TABLE products ADD COLUMN is_newly_launched BOOLEAN NOT NULL DEFAULT FALSE;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='display_order') THEN
+                    ALTER TABLE products ADD COLUMN display_order INTEGER NOT NULL DEFAULT 0;
                 END IF;
             END $$;
 
@@ -362,7 +366,7 @@ def _seed_products(cursor):
     if final_products:
         try:
             cursor.executemany(
-                "INSERT INTO products (name, price, mrp, description, image_url, category, sub_category, base_name, unit, is_visible, in_stock, is_newly_launched) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s, TRUE, TRUE, FALSE)",
+                "INSERT INTO products (name, price, mrp, description, image_url, category, sub_category, base_name, unit, is_visible, in_stock, is_newly_launched, display_order) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s, TRUE, TRUE, FALSE, 0)",
                 final_products,
             )
             print(f"Successfully seeded {len(final_products)} products into database.")
@@ -380,7 +384,7 @@ def get_all_products():
     conn = get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM products ORDER BY category, base_name, price")
+        cursor.execute("SELECT * FROM products ORDER BY CASE WHEN display_order > 0 THEN 0 ELSE 1 END, display_order ASC, category, base_name, price")
         rows = cursor.fetchall()
         _products_cache = [dict(row) for row in rows]
         _products_cache_time = now
@@ -661,7 +665,7 @@ def add_product(name: str, price: float, mrp: float, description: str, image_url
     try:
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO products (name, price, mrp, description, image_url, category, sub_category, base_name, unit, is_visible, in_stock, is_newly_launched) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE, TRUE, %s) RETURNING id",
+            "INSERT INTO products (name, price, mrp, description, image_url, category, sub_category, base_name, unit, is_visible, in_stock, is_newly_launched, display_order) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE, TRUE, %s, 0) RETURNING id",
             (name, price, mrp, description, image_url, category, sub_category, base_name, unit, is_newly_launched)
         )
         product_id = cursor.fetchone()['id']
