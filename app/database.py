@@ -285,26 +285,31 @@ def _seed_products(cursor):
                     if price <= 0 or not name:
                         continue
 
-                    # Derive unit from Size_Weight
-                    sw_lower = size_weight.lower()
-                    if any(x in sw_lower for x in ['kg', 'kgs']):
-                        unit = size_weight
-                    elif any(x in sw_lower for x in ['500g', '500gm']):
-                        unit = '500g'
-                    elif any(x in sw_lower for x in ['250g', '250gm']):
-                        unit = '250g'
-                    elif any(x in sw_lower for x in ['100g', '100gm']):
-                        unit = '100g'
-                    elif any(x in sw_lower for x in ['50g', '50gm']):
-                        unit = '50g'
-                    elif 'ltr' in sw_lower or 'litre' in sw_lower:
-                        unit = 'ltr'
-                    elif 'ml' in sw_lower:
-                        unit = 'ml'
-                    elif 'pc' in sw_lower or 'pcs' in sw_lower or 'piece' in sw_lower:
-                        unit = 'pcs'
-                    elif size_weight and size_weight.lower() not in ('nan', ''):
-                        unit = size_weight
+                    # Derive unit from Size_Weight using regex for robustness
+                    # Handles values like: 100g, 200G, 1kg, 500ml, 1L, 250Gm, pc, etc.
+                    sw_stripped = size_weight.strip()
+                    sw_lower = sw_stripped.lower()
+                    _unit_match = re.match(
+                        r'^(\d+(?:\.\d+)?)\s*(kg|kgs|g|gm|gms|gram|grams|ml|l|ltr|ltrs|litre|litres|pc|pcs|piece|pieces)$',
+                        sw_lower
+                    )
+                    if _unit_match:
+                        qty, utype = _unit_match.group(1), _unit_match.group(2)
+                        # Normalise unit labels
+                        if utype in ('kg', 'kgs'):
+                            unit = f'{qty}kg'
+                        elif utype in ('g', 'gm', 'gms', 'gram', 'grams'):
+                            unit = f'{qty}g'
+                        elif utype in ('l', 'ltr', 'ltrs', 'litre', 'litres'):
+                            unit = f'{qty}L'
+                        elif utype == 'ml':
+                            unit = f'{qty}ml'
+                        else:  # pc / pcs / piece / pieces
+                            unit = f'{qty} pcs' if qty != '1' else 'pc'
+                    elif sw_lower in ('pc', 'pcs', 'piece', 'pieces'):
+                        unit = 'pc'
+                    elif sw_stripped and sw_lower not in ('nan', ''):
+                        unit = sw_stripped  # raw fallback (e.g. "Assorted")
                     else:
                         unit = 'pcs'
 
