@@ -41,39 +41,10 @@ function getAiMetadata(product) {
   return { highlights, description }
 }
 
-// Helper to calculate price per 100g/100ml
+// Helper to calculate price per weight/unit
 function getPricePerUnit(price, unit) {
   if (!unit || !price) return null
-  
-  // Extract number and unit (e.g., "500 ml" -> [500, "ml"])
-  const match = unit.match(/(\d+(\.\d+)?)\s*([a-zA-Z]+)/)
-  if (!match) return null
-
-  const value = parseFloat(match[1])
-  const unitStr = match[3].toLowerCase()
-
-  if (isNaN(value) || value === 0) return null
-
-  let pricePer100 = 0
-  let label = "100g"
-
-  if (unitStr === 'g') {
-    pricePer100 = (price / value) * 100
-    label = "100g"
-  } else if (unitStr === 'kg') {
-    pricePer100 = (price / (value * 1000)) * 100
-    label = "100g"
-  } else if (unitStr === 'ml') {
-    pricePer100 = (price / value) * 100
-    label = "100ml"
-  } else if (unitStr === 'l' || unitStr === 'ltr' || unitStr === 'litre') {
-    pricePer100 = (price / (value * 1000)) * 100
-    label = "100ml"
-  } else {
-    return null
-  }
-
-  return `₹${pricePer100.toFixed(1)} / ${label}`
+  return `₹${price} / ${unit}`
 }
 
 const PLACEHOLDER_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNmM2Y0ZjYiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjgwIiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj4/PC90ZXh0Pjwvc3ZnPg==';
@@ -243,7 +214,12 @@ export default function ProductDetailsModal({ product: propProduct, onClose, mrp
                       </div>
                       <div className="pdm-vr-price-col">
                         <div className="pdm-vr-price">₹{variant.price}</div>
-                        <div className="pdm-vr-mrp">₹{variant.mrp || getMRP(variant.price, variant.id)}</div>
+                        {(() => {
+                          const mrpVal = variant.mrp || getMRP(variant.price, variant.id);
+                          return mrpVal > variant.price ? (
+                            <div className="pdm-vr-mrp">₹{mrpVal}</div>
+                          ) : null;
+                        })()}
                       </div>
                       <div className="pdm-vr-action" onClick={e => e.stopPropagation()}>
                         {qty > 0 ? (
