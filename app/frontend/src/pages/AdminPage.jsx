@@ -272,8 +272,6 @@ export default function AdminPage() {
 
     const availableProducts = useMemo(() => {
         return products.filter(p => {
-            if (pinnedIds.has(p.id)) return false;
-            
             const matchSearch = !searchQuery || 
                 p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                 p.category.toLowerCase().includes(searchQuery.toLowerCase());
@@ -282,7 +280,7 @@ export default function AdminPage() {
             
             return matchSearch && matchCat;
         });
-    }, [products, pinnedIds, searchQuery, categoryFilter]);
+    }, [products, searchQuery, categoryFilter]);
 
     return (
         <motion.div className="admin-page" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -605,13 +603,19 @@ export default function AdminPage() {
                                                         <span className="ordering-item-name">{p.name}</span>
                                                     </div>
                                                 </div>
-                                                <button 
-                                                    className="btn btn-ghost"
-                                                    onClick={() => handlePinProduct(p)}
-                                                    style={{ color: 'var(--secondary)', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', borderRadius: 8, background: '#ecfdf5' }}
-                                                >
-                                                    Pin ➕
-                                                </button>
+                                                {pinnedIds.has(p.id) ? (
+                                                    <span style={{ color: '#059669', fontWeight: 800, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', borderRadius: 8, background: '#d1fae5', border: '1px solid #10b981' }}>
+                                                        Pinned ✓
+                                                    </span>
+                                                ) : (
+                                                    <button 
+                                                        className="btn btn-ghost"
+                                                        onClick={() => handlePinProduct(p)}
+                                                        style={{ color: 'var(--secondary)', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', borderRadius: 8, background: '#ecfdf5' }}
+                                                    >
+                                                        Pin ➕
+                                                    </button>
+                                                )}
                                             </div>
                                         ))
                                     )}
