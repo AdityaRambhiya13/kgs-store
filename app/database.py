@@ -711,8 +711,9 @@ def update_product(product_id: int, updates: dict) -> bool:
         cursor.execute(query, tuple(params))
         updated = cursor.rowcount > 0
         conn.commit()
-        # Instead of clearing everything, just update the one item
+        # Instead of clearing everything, just update the one item and invalidate to re-sort
         _update_cache_item(product_id, updates)
+        _invalidate_products_cache()
     except Exception as e:
         print(f"Error updating product {product_id}: {e}")
         updated = False
