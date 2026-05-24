@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { listOrders, updateStatus, listCustomers, adminLogin, getProducts, getAdminProducts, addProduct, updateProduct, deleteProduct, confirmPayment, rejectPayment } from '../api'
+import { listOrders, updateStatus, listCustomers, adminLogin, getProducts, getAdminProducts, addProduct, updateProduct, deleteProduct, confirmPayment, rejectPayment, bulkReorderProducts } from '../api'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import ProductRenamer from './ProductRenamer'
@@ -52,9 +52,22 @@ export default function AdminPage() {
     const [cardError, setCardError] = useState({})   // per-token inline errors
     const [productForm, setProductForm] = useState(null) // null or { id?, name, price, ... }
     const [searchQuery, setSearchQuery] = useState('') // Search state for products
+    const [pinnedList, setPinnedList] = useState([])
+    const [saveOrderingLoading, setSaveOrderingLoading] = useState(false)
+    const [categoryFilter, setCategoryFilter] = useState('All')
     const intervalRef = useRef(null)
 
-    // Poll data every 8s when authed
+    // Sync pinnedList with loaded products on ordering tab enter
+    useEffect(() => {
+        if (activeTab === 'ordering' && products && products.length > 0) {
+            const initialPinned = products
+                .filter(p => p.display_order > 0)
+                .sort((a, b) => a.display_order - b.display_order)
+            setPinnedList(initialPinned)
+        }
+    }, [activeTab, products])
+
+    // Poll data every 8s when authed (only poll orders in real-time)
     useEffect(() => {
         if (!authed || !adminToken) return
         const fetchData = async () => {
@@ -79,8 +92,12 @@ export default function AdminPage() {
             }
         }
         fetchData()
-        intervalRef.current = setInterval(fetchData, 8000)
-        return () => clearInterval(intervalRef.current)
+        if (activeTab === 'orders') {
+            intervalRef.current = setInterval(fetchData, 8000)
+        }
+        return () => {
+            if (intervalRef.current) clearInterval(intervalRef.current)
+        }
     }, [authed, adminToken, activeTab])
 
     const handleLogin = async () => {
@@ -142,6 +159,65 @@ export default function AdminPage() {
         }
     }
 
+    // --- Visual Ordering Handlers ---
+    const handlePinProduct = (prod) => {
+        setPinnedList(prev => [...prev, prod])
+    }
+
+    const handleUnpinProduct = (productId) => {
+        setPinnedList(prev => prev.filter(p => p.id !== productId))
+    }
+
+    const handleMoveUp = (index) => {
+        if (index === 0) return
+        setPinnedList(prev => {
+            const next = [...prev]
+            const temp = next[index]
+            next[index] = next[index - 1]
+            next[index - 1] = temp
+            return next
+        })
+    }
+
+    const handleMoveDown = (index) => {
+        if (index === pinnedList.length - 1) return
+        setPinnedList(prev => {
+            const next = [...prev]
+            const temp = next[index]
+            next[index] = next[index + 1]
+            next[index + 1] = temp
+            return next
+        })
+    }
+
+    const handleSaveOrdering = async () => {
+        setSaveOrderingLoading(true)
+        try {
+            const orderedIds = pinnedList.map(p => p.id)
+            await bulkReorderProducts(orderedIds, adminToken)
+            
+            // Re-fetch products from DB to get the new ordering updated everywhere
+            const data = await getAdminProducts(adminToken)
+            const cleanedData = (Array.isArray(data) ? data : []).map(p => ({
+                ...p,
+                category: unescapeHTML(p.category),
+                sub_category: unescapeHTML(p.sub_category)
+            }))
+            setProducts(cleanedData)
+            alert("✓ Custom display rankings saved successfully!")
+        } catch (err) {
+            alert("FAIL: " + (err.message || "Failed to save ranks"))
+        } finally {
+            setSaveOrderingLoading(false)
+        }
+    }
+
+    const handleResetOrdering = () => {
+        if (window.confirm("Are you sure you want to unpin all products? This will reset custom ranks for everything on save.")) {
+            setPinnedList([])
+        }
+    }
+
     const handleDeleteProduct = async (id) => {
         if (!window.confirm('Are you sure you want to delete this product?')) return
         try {
@@ -186,6 +262,27 @@ export default function AdminPage() {
         if (!searchQuery) return true;
         return p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.category.toLowerCase().includes(searchQuery.toLowerCase());
     });
+
+    const uniqueCategories = useMemo(() => {
+        const cats = new Set(products.map(p => p.category));
+        return ['All', ...Array.from(cats).sort()];
+    }, [products]);
+
+    const pinnedIds = useMemo(() => new Set(pinnedList.map(p => p.id)), [pinnedList]);
+
+    const availableProducts = useMemo(() => {
+        return products.filter(p => {
+            if (pinnedIds.has(p.id)) return false;
+            
+            const matchSearch = !searchQuery || 
+                p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                p.category.toLowerCase().includes(searchQuery.toLowerCase());
+                
+            const matchCat = categoryFilter === 'All' || p.category === categoryFilter;
+            
+            return matchSearch && matchCat;
+        });
+    }, [products, pinnedIds, searchQuery, categoryFilter]);
 
     return (
         <motion.div className="admin-page" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -431,48 +528,161 @@ export default function AdminPage() {
 
                 {activeTab === 'ordering' && (
                     <div className="products-view">
-                        <div className="section-header">
-                            <h3>Custom Display Order</h3>
-                            <p style={{ fontSize: 13, color: '#64748b' }}>Pin products to the top. Lowest numbers (1, 2, 3...) appear first. Default is 0 (bottom).</p>
+                        <div className="section-header" style={{ marginBottom: 16 }}>
+                            <div>
+                                <h3>Visual Product Sorting</h3>
+                                <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
+                                    Pin products from the left catalog. Drag or reorder them on the right. 
+                                    Top products appear first on the customer side.
+                                </p>
+                            </div>
+                            <div style={{ display: 'flex', gap: 12 }}>
+                                <button 
+                                    className="btn btn-outline" 
+                                    onClick={handleResetOrdering}
+                                    style={{ padding: '10px 18px', borderRadius: '10px' }}
+                                >
+                                    Clear Pinned
+                                </button>
+                                <button 
+                                    className="btn btn-primary" 
+                                    onClick={handleSaveOrdering}
+                                    disabled={saveOrderingLoading}
+                                    style={{ padding: '10px 24px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: 8 }}
+                                >
+                                    {saveOrderingLoading ? 'Saving Ranks...' : 'Save Rankings ✓'}
+                                </button>
+                            </div>
                         </div>
-                        <input
-                            type="text"
-                            placeholder="Search products..."
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                            className="input search-bar"
-                            style={{ width: '100%', marginBottom: 20, padding: 12, borderRadius: 10, border: '1px solid #e2e8f0' }}
-                        />
-                        <div className="products-grid">
-                            {filteredProducts.map(p => (
-                                <div key={p.id} className="product-admin-card card">
-                                    <img src={p.image_url} alt="" className="p-img" onError={(e) => e.target.style.display='none'} />
-                                    <div className="p-info">
-                                        <div className="p-name">{p.name}</div>
-                                        <div className="p-cat">{p.category}</div>
-                                    </div>
-                                    <div className="p-actions" style={{ minWidth: 80 }}>
-                                        <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 4, textAlign: 'center' }}>RANK (1=TOP)</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            className="input"
-                                            style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '2px solid #e2e8f0', textAlign: 'center', fontWeight: 'bold' }}
-                                            value={p.display_order || ''}
-                                            onChange={(e) => {
-                                                const val = e.target.value;
-                                                setProducts(prev => prev.map(item => item.id === p.id ? { ...item, display_order: val ? parseInt(val) : 0 } : item));
-                                            }}
-                                            onBlur={async (e) => {
-                                                const val = parseInt(e.target.value || 0);
-                                                try {
-                                                    await updateProduct(p.id, { display_order: val }, adminToken);
-                                                } catch (err) { alert(err.message) }
-                                            }}
-                                        />
-                                    </div>
+
+                        <div className="ordering-dual-layout">
+                            {/* LEFT COLUMN: Available Products */}
+                            <div className="ordering-column">
+                                <div className="ordering-column-title">
+                                    <span>Available Catalog ({availableProducts.length})</span>
                                 </div>
-                            ))}
+                                
+                                <div className="ordering-search-row">
+                                    <input
+                                        type="text"
+                                        placeholder="Search products..."
+                                        value={searchQuery}
+                                        onChange={e => setSearchQuery(e.target.value)}
+                                        className="input"
+                                        style={{ flex: 1, padding: '10px 14px', borderRadius: '10px' }}
+                                    />
+                                    <select
+                                        value={categoryFilter}
+                                        onChange={e => setCategoryFilter(e.target.value)}
+                                        className="input"
+                                        style={{ width: '160px', padding: '10px 14px', borderRadius: '10px', cursor: 'pointer' }}
+                                    >
+                                        {uniqueCategories.map(cat => (
+                                            <option key={cat} value={cat}>{cat}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="ordering-list">
+                                    {availableProducts.length === 0 ? (
+                                        <div style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b' }}>
+                                            <div style={{ fontSize: 32, marginBottom: 8 }}>🌾</div>
+                                            <strong>No products match filters</strong>
+                                            <p style={{ fontSize: 12, marginTop: 4 }}>Try adjusting your search terms or category selection.</p>
+                                        </div>
+                                    ) : (
+                                        availableProducts.map(p => (
+                                            <div key={p.id} className="ordering-item-card">
+                                                <div className="ordering-item-details">
+                                                    <img 
+                                                        src={p.image_url} 
+                                                        alt="" 
+                                                        className="ordering-item-img" 
+                                                        onError={e => e.target.style.display = 'none'} 
+                                                    />
+                                                    <div className="ordering-item-meta">
+                                                        <span className="ordering-item-cat">{p.category}</span>
+                                                        <span className="ordering-item-name">{p.name}</span>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    className="btn btn-ghost"
+                                                    onClick={() => handlePinProduct(p)}
+                                                    style={{ color: 'var(--secondary)', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', borderRadius: 8, background: '#ecfdf5' }}
+                                                >
+                                                    Pin ➕
+                                                </button>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* RIGHT COLUMN: Pinned / Ranked Display */}
+                            <div className="ordering-column" style={{ borderLeft: '2px dashed #e2e8f0' }}>
+                                <div className="ordering-column-title">
+                                    <span>Ranked Display Order ({pinnedList.length})</span>
+                                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--secondary)', textTransform: 'uppercase', background: 'var(--primary-glow)', padding: '4px 8px', borderRadius: 6 }}>Ranked (1=Top)</span>
+                                </div>
+
+                                <div className="ordering-list">
+                                    {pinnedList.length === 0 ? (
+                                        <div style={{ textAlign: 'center', padding: '80px 20px', color: '#64748b' }}>
+                                            <div style={{ fontSize: 40, marginBottom: 12 }}>⭐</div>
+                                            <strong>No products pinned yet</strong>
+                                            <p style={{ fontSize: 13, marginTop: 6, maxWidth: 260, margin: '6px auto 0' }}>
+                                                Select products from the left side. They will appear here in order, pinning them to the top of the store page.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        pinnedList.map((p, idx) => (
+                                            <div key={p.id} className="ordering-item-card" style={{ border: '1px solid #cbd5e1', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                                                <div className="ordering-rank-badge">{idx + 1}</div>
+                                                <div className="ordering-item-details">
+                                                    <img 
+                                                        src={p.image_url} 
+                                                        alt="" 
+                                                        className="ordering-item-img" 
+                                                        onError={e => e.target.style.display = 'none'} 
+                                                    />
+                                                    <div className="ordering-item-meta">
+                                                        <span className="ordering-item-cat">{p.category}</span>
+                                                        <span className="ordering-item-name">{p.name}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="ordering-actions">
+                                                    <button 
+                                                        className="btn-action-small"
+                                                        onClick={() => handleMoveUp(idx)}
+                                                        disabled={idx === 0}
+                                                        style={{ opacity: idx === 0 ? 0.3 : 1, cursor: idx === 0 ? 'not-allowed' : 'pointer' }}
+                                                        title="Move Up"
+                                                    >
+                                                        ▲
+                                                    </button>
+                                                    <button 
+                                                        className="btn-action-small"
+                                                        onClick={() => handleMoveDown(idx)}
+                                                        disabled={idx === pinnedList.length - 1}
+                                                        style={{ opacity: idx === pinnedList.length - 1 ? 0.3 : 1, cursor: idx === pinnedList.length - 1 ? 'not-allowed' : 'pointer' }}
+                                                        title="Move Down"
+                                                    >
+                                                        ▼
+                                                    </button>
+                                                    <button 
+                                                        className="btn-action-small"
+                                                        onClick={() => handleUnpinProduct(p.id)}
+                                                        style={{ color: 'var(--danger)', borderColor: '#fee2e2', background: '#fef2f2' }}
+                                                        title="Remove / Unpin"
+                                                    >
+                                                        ❌
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -558,6 +768,132 @@ export default function AdminPage() {
 
             <style>{`
                 .admin-page { min-height: 100vh; background: #f8fafc; font-family: 'Inter', sans-serif; }
+                
+                /* Custom Ordering Dual Column Layout */
+                .ordering-dual-layout {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 24px;
+                    margin-top: 16px;
+                }
+                @media (max-width: 1024px) {
+                    .ordering-dual-layout {
+                        grid-template-columns: 1fr;
+                    }
+                }
+                .ordering-column {
+                    background: white;
+                    border-radius: 16px;
+                    padding: 20px;
+                    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+                    border: 1px solid #e2e8f0;
+                }
+                .ordering-column-title {
+                    font-size: 16px;
+                    font-weight: 800;
+                    color: #1e293b;
+                    margin-bottom: 16px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+                .ordering-search-row {
+                    display: flex;
+                    gap: 12px;
+                    margin-bottom: 16px;
+                }
+                .ordering-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    max-height: 600px;
+                    overflow-y: auto;
+                    padding-right: 6px;
+                }
+                .ordering-item-card {
+                    background: #f8fafc;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 12px;
+                    padding: 10px 12px;
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    transition: all 0.2s;
+                }
+                .ordering-item-card:hover {
+                    border-color: #cbd5e1;
+                    background: #f1f5f9;
+                }
+                .ordering-rank-badge {
+                    background: #1e3a8a;
+                    color: white;
+                    font-weight: 800;
+                    font-size: 12px;
+                    width: 24px;
+                    height: 24px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                }
+                .ordering-item-details {
+                    flex: 1;
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    overflow: hidden;
+                }
+                .ordering-item-img {
+                    width: 40px;
+                    height: 40px;
+                    object-fit: cover;
+                    border-radius: 8px;
+                    background: #f1f5f9;
+                    flex-shrink: 0;
+                }
+                .ordering-item-meta {
+                    display: flex;
+                    flex-direction: column;
+                    overflow: hidden;
+                }
+                .ordering-item-name {
+                    font-size: 13.5px;
+                    font-weight: 700;
+                    color: #1e293b;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+                .ordering-item-cat {
+                    font-size: 10px;
+                    font-weight: 700;
+                    color: #64748b;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                }
+                .ordering-actions {
+                    display: flex;
+                    gap: 6px;
+                    flex-shrink: 0;
+                }
+                .btn-action-small {
+                    background: white;
+                    border: 1px solid #cbd5e1;
+                    border-radius: 8px;
+                    width: 28px;
+                    height: 28px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    font-size: 10px;
+                    transition: all 0.2s;
+                }
+                .btn-action-small:hover {
+                    background: #f1f5f9;
+                    border-color: #94a3b8;
+                }
                 .admin-header { background: #1e3a8a; color: white; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; }
                 .admin-header h1 { font-size: 24px; font-weight: 800; }
                 .admin-header p { font-size: 13px; opacity: 0.8; }

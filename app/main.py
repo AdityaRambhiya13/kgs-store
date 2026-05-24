@@ -74,7 +74,7 @@ from database import (
     get_all_orders, get_order_by_token, update_order_status, mark_delivered,
     get_orders_by_phone, get_customer, create_or_update_customer, get_all_customers,
     get_customer_by_email, update_customer_cancels,
-    add_product, update_product, delete_product,
+    add_product, update_product, delete_product, bulk_reorder_products,
     get_favorites, add_favorite, remove_favorite,
     get_trending_products, get_personalized_recommendations,
     confirm_payment_and_generate_otp, reject_order_payment,
@@ -906,6 +906,21 @@ def admin_delete_product(product_id: int, admin: dict = Depends(get_current_admi
     invalidate_products_cache()
 
     return {"message": "Product deleted successfully"}
+
+
+
+class BulkReorderRequest(BaseModel):
+    product_ids: List[int]
+
+
+@app.post("/api/admin/products/bulk-reorder")
+def admin_bulk_reorder(body: BulkReorderRequest, request: Request, admin: dict = Depends(get_current_admin)):
+    check_rate_limit(request, limit=60, window=60, scope="admin-bulk-reorder")
+    success = bulk_reorder_products(body.product_ids)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to reorder products")
+    invalidate_products_cache()
+    return {"message": "Products reordered successfully"}
 
 
 

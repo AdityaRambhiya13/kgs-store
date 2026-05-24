@@ -737,6 +737,33 @@ def delete_product(product_id: int) -> bool:
         release_connection(conn)
     return deleted
 
+def bulk_reorder_products(ordered_ids: list) -> bool:
+    """Set display_order of specified product IDs sequentially, and reset others to 0."""
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        
+        # 1. Reset all products to display_order = 0
+        cursor.execute("UPDATE products SET display_order = 0")
+        
+        # 2. Update display_order for specified IDs in order
+        if ordered_ids:
+            for index, pid in enumerate(ordered_ids):
+                cursor.execute(
+                    "UPDATE products SET display_order = %s WHERE id = %s",
+                    (index + 1, pid)
+                )
+                
+        conn.commit()
+        _invalidate_products_cache()
+        return True
+    except Exception as e:
+        print(f"Error in bulk reordering products: {e}")
+        if conn: conn.rollback()
+        return False
+    finally:
+        release_connection(conn)
+
 # ── Favorites ────────────────────────────────────────────
 
 def get_favorites(phone: str) -> list:
