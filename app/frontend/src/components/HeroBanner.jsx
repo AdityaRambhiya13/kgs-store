@@ -14,6 +14,12 @@ const SLIDES = [
     image: '/dehaat-banner.png',
     targetCategory: 'Dehaat Products',
     cta: 'Check Out Now',
+  },
+  {
+    id: 3,
+    image: '/organic-india-banner.png',
+    targetCategory: 'Organic India',
+    cta: 'Check Out Now',
   }
 ]
 

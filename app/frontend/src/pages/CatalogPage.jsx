@@ -15,6 +15,7 @@ const CATEGORY_CONFIG = [
   { name: 'Newly Launched',             emoji: '⭐', color: '#fbbf24' },
   { name: 'Parachute New',              emoji: '✨', color: '#3b82f6', displayName: 'Parachute New Arrivals' },
   { name: 'Dehaat Products',            emoji: '🌾', color: '#10b981', displayName: 'Dehaat Farm Fresh Products' },
+  { name: 'Organic India',              emoji: '🌿', color: '#10b981', displayName: 'Organic India Products' },
   { name: 'Atta, Rice & Dal',           emoji: '🌾', color: '#f59e0b' },
   { name: 'Masala & Dry Fruits',        emoji: '🌶️', color: '#ef4444' },
   { name: 'Snacks & Munchies',          emoji: '🍿', color: '#8b5cf6' },
@@ -195,12 +196,25 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
   // All unique top-level categories that have products
   const availableCategories = useMemo(() => {
     const set = new Set()
+    let hasParachute = false
+    let hasDehaat = false
+    let hasOrganic = false
+
     products.forEach(p => {
       if (!p.category) return
       const cat = unescapeHTML(p.category)
       if (!BLOCKED_CATEGORIES.has(cat)) set.add(cat)
       if (p.is_newly_launched) set.add('Newly Launched')
+
+      const name = p.name || p.base_name || ''
+      if (p.is_newly_launched && /parachute/i.test(name)) hasParachute = true
+      if (/dehaat|deehat/i.test(name)) hasDehaat = true
+      if (/organic\s*india/i.test(name)) hasOrganic = true
     })
+
+    if (hasParachute) set.add('Parachute New')
+    if (hasDehaat) set.add('Dehaat Products')
+    if (hasOrganic) set.add('Organic India')
     
     // Robust matching: handle potential name changes (e.g. Dairy, Bread & Eggs -> Dairy & Bread)
     return CATEGORY_CONFIG.filter(c => {
@@ -338,6 +352,8 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
         result = result.filter(g => g && g.is_newly_launched === true && /parachute/i.test(g.name || g.base_name))
       } else if (activeCategory === 'Dehaat Products') {
         result = result.filter(g => g && /dehaat|deehat/i.test(g.name || g.base_name))
+      } else if (activeCategory === 'Organic India') {
+        result = result.filter(g => g && /organic\s*india/i.test(g.name || g.base_name))
       } else {
         result = result.filter(g => g && g.category === activeCategory)
         // Sub-category filter
