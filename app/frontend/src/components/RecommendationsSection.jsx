@@ -17,7 +17,7 @@ function RecommendationCard({ product, onDetailClick }) {
   const { isFavorite, toggleFavorite } = useFavorites()
   const variants = product.variants ?? [product]
   const minPrice = Math.min(...variants.map(v => v.price))
-  const mrp = getMRP(minPrice, product.id || 1)
+  const mrp = getMRP(minPrice, product.id || 1, product.mrp)
   const cartItem = cartItems.find(item => item.id === product.id)
   const qtyInCart = cartItem?.quantity || 0
   const fav = isFavorite(product.id)
@@ -61,7 +61,7 @@ function RecommendationCard({ product, onDetailClick }) {
         </div>
         <div className="rec-price-row">
           <span className="rec-price">₹{minPrice}</span>
-          <span className="rec-mrp">₹{mrp}</span>
+          {mrp > minPrice && <span className="rec-mrp">₹{mrp}</span>}
         </div>
         <div className="rec-add-zone" onClick={e => e.stopPropagation()}>
           <AnimatePresence mode="wait" initial={false}>

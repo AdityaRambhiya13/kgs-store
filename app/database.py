@@ -189,6 +189,15 @@ def init_db():
                 added_at TEXT NOT NULL,
                 PRIMARY KEY (phone, product_id)
             );
+
+            -- Sorting Index for fast product retrieval
+            CREATE INDEX IF NOT EXISTS idx_products_sorting ON products (
+                (CASE WHEN display_order > 0 THEN 0 ELSE 1 END),
+                display_order,
+                category,
+                base_name,
+                price
+            );
         """
         cursor.execute(setup_sql)
         

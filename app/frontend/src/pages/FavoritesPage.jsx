@@ -117,7 +117,7 @@ export default function FavoritesPage() {
         >
           <AnimatePresence>
             {visibleProducts.map(product => {
-              const mrp = getMRP(product.price, product.id)
+              const mrp = getMRP(product.price, product.id, product.mrp)
               const cartItem = cartItems.find(i => i.id === product.id)
               const qty = cartItem?.quantity || 0
 
@@ -163,7 +163,7 @@ export default function FavoritesPage() {
                       <div className="pc-footer-row">
                         <div className="pc-price-block">
                           <span className="pc-price">₹{product.price}</span>
-                          <span className="pc-mrp">₹{mrp}</span>
+                          {mrp > product.price && <span className="pc-mrp">₹{mrp}</span>}
                         </div>
                         <div className="pc-add-zone" onClick={e => e.stopPropagation()}>
                           <AnimatePresence mode="wait" initial={false}>

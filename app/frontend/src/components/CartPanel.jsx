@@ -44,7 +44,7 @@ export default function CartPanel() {
 
   // Compute savings vs MRP
   const totalSavings = cartItems.reduce((acc, item) => {
-    const mrp = getMRP(item.price, item.id || 1)
+    const mrp = getMRP(item.price, item.id || 1, item.mrp)
     return acc + (mrp - item.price) * item.quantity
   }, 0)
 
@@ -159,7 +159,7 @@ export default function CartPanel() {
                     <h3 className="cart-fbt-title">🏷️ Frequently Bought Together</h3>
                     <div className="cart-fbt-scroll">
                       {fbtProducts.map(prod => {
-                        const mrp = getMRP(prod.price, prod.id)
+                        const mrp = getMRP(prod.price, prod.id, prod.mrp)
                         return (
                           <div key={prod.id} className="cart-fbt-card">
                             <img
@@ -172,7 +172,7 @@ export default function CartPanel() {
                               <div className="cart-fbt-name" title={prod.name}>{prod.name}</div>
                               <div className="cart-fbt-price-row">
                                 <span className="cart-fbt-price">₹{prod.price.toFixed(0)}</span>
-                                <span className="cart-fbt-mrp">₹{mrp.toFixed(0)}</span>
+                                {mrp > prod.price && <span className="cart-fbt-mrp">₹{mrp.toFixed(0)}</span>}
                               </div>
                             </div>
                             <button className="cart-fbt-add-btn" onClick={() => addToCart(prod, 1)}>+ Add</button>

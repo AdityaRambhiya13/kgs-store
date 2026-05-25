@@ -159,7 +159,12 @@ export default function ProductDetailsModal({ product: propProduct, onClose, mrp
                 <div className="pdm-price-row">
                   <div className="pdm-price-block">
                     <span className="pdm-price">₹{activeVariant.price}</span>
-                    <span className="pdm-mrp">₹{getMRP(activeVariant.price, activeVariant.id || 1)}</span>
+                    {(() => {
+                      const displayMrp = getMRP(activeVariant.price, activeVariant.id || 1, activeVariant.mrp);
+                      return displayMrp > activeVariant.price ? (
+                        <span className="pdm-mrp">₹{displayMrp}</span>
+                      ) : null;
+                    })()}
                   </div>
 
                   <div className="pdm-add-action">
@@ -215,7 +220,7 @@ export default function ProductDetailsModal({ product: propProduct, onClose, mrp
                       <div className="pdm-vr-price-col">
                         <div className="pdm-vr-price">₹{variant.price}</div>
                         {(() => {
-                          const mrpVal = variant.mrp || getMRP(variant.price, variant.id);
+                          const mrpVal = getMRP(variant.price, variant.id, variant.mrp);
                           return mrpVal > variant.price ? (
                             <div className="pdm-vr-mrp">₹{mrpVal}</div>
                           ) : null;
@@ -275,7 +280,7 @@ export default function ProductDetailsModal({ product: propProduct, onClose, mrp
               <div className="pdm-similar-grid">
                 {similarProducts.map(prod => {
                   const sPrice = prod.price || (prod.variants && prod.variants[0]?.price) || 0
-                  const sMrp = getMRP(sPrice, prod.id || 1)
+                  const sMrp = getMRP(sPrice, prod.id || 1, prod.mrp)
                   return (
                     <div
                       key={prod.id}
@@ -293,7 +298,7 @@ export default function ProductDetailsModal({ product: propProduct, onClose, mrp
                       <div className="pdm-similar-name">{prod.name}</div>
                       <div className="pdm-similar-price-row">
                         <span className="pdm-similar-price">₹{sPrice}</span>
-                        <span className="pdm-similar-mrp">₹{sMrp}</span>
+                        {sMrp > sPrice && <span className="pdm-similar-mrp">₹{sMrp}</span>}
                       </div>
                       <button
                         className="pdm-similar-add-btn"

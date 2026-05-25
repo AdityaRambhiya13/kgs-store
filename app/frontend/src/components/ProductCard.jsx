@@ -143,7 +143,7 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
 
   const rating = getRating(product.id || 1)
   const reviewCount = getReviewCount(product.id || 1)
-  const mrp = getMRP(minPrice, product.id || 1)
+  const mrp = getMRP(minPrice, product.id || 1, product.mrp)
   const discount = getDiscount(minPrice, mrp)
   const fav = isFavorite(product.id)
   const isOutOfStock = product.in_stock === false
@@ -179,7 +179,7 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
 
   const { title: cleanName, subtitle: cleanSubtitle } = cleanProductDetails(product)
   const displayPrice = product.displayPrice || minPrice
-  const displayMrp = product.displayPrice ? getMRP(product.displayPrice, product.id || 1) : mrp
+  const displayMrp = product.displayPrice ? getMRP(product.displayPrice, product.id || 1, product.mrp) : mrp
 
   return (
     <motion.div
@@ -243,7 +243,7 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
         <div className="pc-footer-row">
           <div className="pc-price-block">
             <span className="pc-price">₹{displayPrice}</span>
-            <span className="pc-mrp">₹{displayMrp}</span>
+            {displayMrp > displayPrice && <span className="pc-mrp">₹{displayMrp}</span>}
           </div>
 
           <div className="pc-add-zone" onClick={e => e.stopPropagation()}>

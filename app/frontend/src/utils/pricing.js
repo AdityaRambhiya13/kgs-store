@@ -10,7 +10,16 @@
  * @param {number} id
  * @returns {number}
  */
-export function getMRP(price, id = 1) {
+export function getMRP(price, id = 1, dbMrp = 0) {
+  if (dbMrp !== undefined && dbMrp !== null) {
+    const numMrp = parseFloat(dbMrp);
+    if (numMrp > price) {
+      return numMrp;
+    } else if (numMrp > 0) {
+      // If dbMrp is set but <= price, it means there's no discount, so return price
+      return price;
+    }
+  }
   // 10% to 35% markup based on product ID
   const pct = 10 + ((id * 3 + 7) % 26);
   return Math.ceil((price * (1 + pct / 100)) / 5) * 5;

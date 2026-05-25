@@ -55,7 +55,13 @@ export default function AdminPage() {
     const [pinnedList, setPinnedList] = useState([])
     const [saveOrderingLoading, setSaveOrderingLoading] = useState(false)
     const [categoryFilter, setCategoryFilter] = useState('All')
+    const [productLimit, setProductLimit] = useState(50)
     const intervalRef = useRef(null)
+
+    // Reset product limit on filter, search, or tab changes to keep DOM lightweight
+    useEffect(() => {
+        setProductLimit(50)
+    }, [searchQuery, categoryFilter, activeTab])
 
     // Sync pinnedList with loaded products on ordering tab enter
     useEffect(() => {
@@ -67,7 +73,28 @@ export default function AdminPage() {
         }
     }, [activeTab, products])
 
-    // Poll data every 8s when authed (only poll orders in real-time)
+    // Load initial products list once when authed to avoid continuous slow fetches
+    useEffect(() => {
+        if (!authed || !adminToken) return
+        const loadInitialProducts = async () => {
+            try {
+                const data = await getAdminProducts(adminToken)
+                const cleanedData = (Array.isArray(data) ? data : []).map(p => ({
+                    ...p,
+                    category: unescapeHTML(p.category),
+                    sub_category: unescapeHTML(p.sub_category)
+                }))
+                setProducts(cleanedData)
+            } catch (err) {
+                console.error("Failed to load initial products:", err)
+            }
+        }
+        if (products.length === 0) {
+            loadInitialProducts()
+        }
+    }, [authed, adminToken])
+
+    // Poll orders/customers every 8s when authed (only poll orders in real-time)
     useEffect(() => {
         if (!authed || !adminToken) return
         const fetchData = async () => {
@@ -78,14 +105,6 @@ export default function AdminPage() {
                 } else if (activeTab === 'customers') {
                     const data = await listCustomers(adminToken)
                     setCustomers(Array.isArray(data) ? data : [])
-                } else if (activeTab === 'products' || activeTab === 'ordering' || activeTab === 'new_products' || activeTab === 'visibility' || activeTab === 'inventory') {
-                    const data = await getAdminProducts(adminToken)
-                    const cleanedData = (Array.isArray(data) ? data : []).map(p => ({
-                        ...p,
-                        category: unescapeHTML(p.category),
-                        sub_category: unescapeHTML(p.sub_category)
-                    }))
-                    setProducts(cleanedData)
                 }
             } catch (err) { 
                 console.error("Admin fetch error:", err)
@@ -358,7 +377,7 @@ export default function AdminPage() {
                         />
 
                         <div className="products-grid">
-                            {filteredProducts.map(p => (
+                            {filteredProducts.slice(0, productLimit).map(p => (
                                 <div key={p.id} className="product-admin-card card">
                                     <img src={p.image_url} alt="" className="p-img" onError={(e) => e.target.style.display='none'} />
                                     <div className="p-info">
@@ -377,6 +396,13 @@ export default function AdminPage() {
                                 </div>
                             ))}
                         </div>
+                        {filteredProducts.length > productLimit && (
+                            <div style={{ textAlign: 'center', marginTop: 24, width: '100%', gridColumn: '1 / -1' }}>
+                                <button className="btn btn-outline" onClick={() => setProductLimit(prev => prev + 50)} style={{ minWidth: 200, padding: '10px 20px', borderRadius: 10 }}>
+                                    Load More Products ({filteredProducts.length - productLimit} left)
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -438,7 +464,7 @@ export default function AdminPage() {
                             style={{ width: '100%', marginBottom: 20, padding: 12, borderRadius: 10, border: '1px solid #e2e8f0' }}
                         />
                         <div className="products-grid">
-                            {filteredProducts.map(p => (
+                            {filteredProducts.slice(0, productLimit).map(p => (
                                 <div key={p.id} className="product-admin-card card">
                                     <img src={p.image_url} alt="" className="p-img" onError={(e) => e.target.style.display='none'} />
                                     <div className="p-info">
@@ -463,6 +489,13 @@ export default function AdminPage() {
                                 </div>
                             ))}
                         </div>
+                        {filteredProducts.length > productLimit && (
+                            <div style={{ textAlign: 'center', marginTop: 24, width: '100%', gridColumn: '1 / -1' }}>
+                                <button className="btn btn-outline" onClick={() => setProductLimit(prev => prev + 50)} style={{ minWidth: 200, padding: '10px 20px', borderRadius: 10 }}>
+                                    Load More Products ({filteredProducts.length - productLimit} left)
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -481,7 +514,7 @@ export default function AdminPage() {
                             style={{ width: '100%', marginBottom: 20, padding: 12, borderRadius: 10, border: '1px solid #e2e8f0' }}
                         />
                         <div className="products-grid">
-                            {filteredProducts.map(p => (
+                            {filteredProducts.slice(0, productLimit).map(p => (
                                 <div key={p.id} className="product-admin-card card">
                                     <img src={p.image_url} alt="" className="p-img" onError={(e) => e.target.style.display='none'} />
                                     <div className="p-info">
@@ -521,6 +554,13 @@ export default function AdminPage() {
                                 </div>
                             ))}
                         </div>
+                        {filteredProducts.length > productLimit && (
+                            <div style={{ textAlign: 'center', marginTop: 24, width: '100%', gridColumn: '1 / -1' }}>
+                                <button className="btn btn-outline" onClick={() => setProductLimit(prev => prev + 50)} style={{ minWidth: 200, padding: '10px 20px', borderRadius: 10 }}>
+                                    Load More Products ({filteredProducts.length - productLimit} left)
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -589,35 +629,46 @@ export default function AdminPage() {
                                             <p style={{ fontSize: 12, marginTop: 4 }}>Try adjusting your search terms or category selection.</p>
                                         </div>
                                     ) : (
-                                        availableProducts.map(p => (
-                                            <div key={p.id} className="ordering-item-card">
-                                                <div className="ordering-item-details">
-                                                    <img 
-                                                        src={p.image_url} 
-                                                        alt="" 
-                                                        className="ordering-item-img" 
-                                                        onError={e => e.target.style.display = 'none'} 
-                                                    />
-                                                    <div className="ordering-item-meta">
-                                                        <span className="ordering-item-cat">{p.category}</span>
-                                                        <span className="ordering-item-name">{p.name}</span>
+                                        <>
+                                            {availableProducts.slice(0, productLimit).map(p => (
+                                                <div key={p.id} className="ordering-item-card">
+                                                    <div className="ordering-item-details">
+                                                        <img 
+                                                            src={p.image_url} 
+                                                            alt="" 
+                                                            className="ordering-item-img" 
+                                                            onError={e => e.target.style.display = 'none'} 
+                                                        />
+                                                        <div className="ordering-item-meta">
+                                                            <span className="ordering-item-cat">{p.category}</span>
+                                                            <span className="ordering-item-name">{p.name}</span>
+                                                        </div>
                                                     </div>
+                                                    {pinnedIds.has(p.id) ? (
+                                                        <span style={{ color: '#059669', fontWeight: 800, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', borderRadius: 8, background: '#d1fae5', border: '1px solid #10b981' }}>
+                                                            Pinned ✓
+                                                        </span>
+                                                    ) : (
+                                                        <button 
+                                                            className="btn btn-ghost"
+                                                            onClick={() => handlePinProduct(p)}
+                                                            style={{ color: 'var(--secondary)', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', borderRadius: 8, background: '#ecfdf5' }}
+                                                        >
+                                                            Pin ➕
+                                                        </button>
+                                                    )}
                                                 </div>
-                                                {pinnedIds.has(p.id) ? (
-                                                    <span style={{ color: '#059669', fontWeight: 800, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', borderRadius: 8, background: '#d1fae5', border: '1px solid #10b981' }}>
-                                                        Pinned ✓
-                                                    </span>
-                                                ) : (
-                                                    <button 
-                                                        className="btn btn-ghost"
-                                                        onClick={() => handlePinProduct(p)}
-                                                        style={{ color: 'var(--secondary)', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', borderRadius: 8, background: '#ecfdf5' }}
-                                                    >
-                                                        Pin ➕
-                                                    </button>
-                                                )}
-                                            </div>
-                                        ))
+                                            ))}
+                                            {availableProducts.length > productLimit && (
+                                                <button 
+                                                    className="btn btn-outline" 
+                                                    onClick={() => setProductLimit(prev => prev + 50)} 
+                                                    style={{ width: '100%', marginTop: 10, padding: 10, borderRadius: 10 }}
+                                                >
+                                                    Load More ({availableProducts.length - productLimit} left)
+                                                </button>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             </div>
