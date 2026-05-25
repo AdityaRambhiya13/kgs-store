@@ -405,30 +405,15 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
   const sectionedData = useMemo(() => {
     if (activeCategory !== 'All' || (debouncedSearch && debouncedSearch.trim())) return null
     const catMap = {}
-    const topPicks = []
     filtered.forEach(g => {
-      if (g.display_order > 0) {
-        topPicks.push(g)
-      }
       const cat = g.category || 'Other'
       if (!catMap[cat]) catMap[cat] = []
       catMap[cat].push(g)
     })
     
-    const sections = availableCategories
+    return availableCategories
       .filter(c => catMap[c.name] && catMap[c.name].length > 0)
       .map(c => ({ ...c, items: catMap[c.name] }))
-      
-    if (topPicks.length > 0) {
-      sections.unshift({
-        name: 'Top Picks',
-        emoji: '⭐',
-        color: '#f59e0b',
-        items: topPicks
-      })
-    }
-    
-    return sections
   }, [filtered, activeCategory, searchQuery, availableCategories])
 
 
