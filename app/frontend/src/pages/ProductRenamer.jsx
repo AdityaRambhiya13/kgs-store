@@ -176,6 +176,9 @@ export default function ProductRenamer() {
                     onBlur={(e) => {
                       if (e.target.value !== p.name) handleUpdate(p.id, 'name', e.target.value)
                     }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') e.target.blur()
+                    }}
                   />
                 </td>
                 <td>
@@ -198,6 +201,9 @@ export default function ProductRenamer() {
                     onBlur={(e) => {
                       if (e.target.value !== (p.base_name || '')) handleUpdate(p.id, 'base_name', e.target.value)
                     }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') e.target.blur()
+                    }}
                   />
                 </td>
                 <td className="td-cat">{p.category}</td>
@@ -209,6 +215,9 @@ export default function ProductRenamer() {
                     onBlur={(e) => {
                       const val = parseFloat(e.target.value)
                       if (!isNaN(val) && val !== p.price) handleUpdate(p.id, 'price', val)
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') e.target.blur()
                     }}
                   />
                 </td>
@@ -222,6 +231,9 @@ export default function ProductRenamer() {
                       const val = parseFloat(e.target.value)
                       if (!isNaN(val) && val !== p.mrp) handleUpdate(p.id, 'mrp', val)
                     }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') e.target.blur()
+                    }}
                   />
                 </td>
                 <td>
@@ -230,6 +242,9 @@ export default function ProductRenamer() {
                     defaultValue={p.unit || 'kg'}
                     onBlur={(e) => {
                       if (e.target.value !== p.unit) handleUpdate(p.id, 'unit', e.target.value)
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') e.target.blur()
                     }}
                   />
                 </td>
