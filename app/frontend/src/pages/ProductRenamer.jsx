@@ -160,7 +160,7 @@ export default function ProductRenamer() {
               <th>Website Preview</th>
               <th>Base Name (Grouping)</th>
               <th>Category</th>
-              <th>Price (₹)</th>
+              <th>KSP Price (₹)</th>
               <th>MRP (₹)</th>
               <th>Unit</th>
             </tr>
