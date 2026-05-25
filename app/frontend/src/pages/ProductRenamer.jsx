@@ -13,6 +13,7 @@ export default function ProductRenamer() {
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [limit, setLimit] = useState(100)
+  const [selectedCategory, setSelectedCategory] = useState('All')
   
   // Bulk Replace State
   const [findText, setFindText] = useState('')
@@ -58,14 +59,22 @@ export default function ProductRenamer() {
     }
   }
 
+  const uniqueCategories = useMemo(() => {
+    const cats = new Set(products.map(p => p.category).filter(Boolean))
+    return ['All', ...Array.from(cats).sort()]
+  }, [products])
+
   const filtered = useMemo(() => {
     const lq = debouncedSearch.toLowerCase()
-    return products.filter(p => 
-      p.name.toLowerCase().includes(lq) || 
-      (p.base_name && p.base_name.toLowerCase().includes(lq)) ||
-      p.category.toLowerCase().includes(lq)
-    )
-  }, [products, debouncedSearch])
+    return products.filter(p => {
+      if (selectedCategory !== 'All' && p.category !== selectedCategory) return false
+      return (
+        p.name.toLowerCase().includes(lq) || 
+        (p.base_name && p.base_name.toLowerCase().includes(lq)) ||
+        p.category.toLowerCase().includes(lq)
+      )
+    })
+  }, [products, debouncedSearch, selectedCategory])
 
   const handleUpdate = async (productId, field, value) => {
     try {
@@ -126,7 +135,19 @@ export default function ProductRenamer() {
           <h1>Product Renamer</h1>
           <p>{products.length} Products Loaded</p>
         </div>
-        <div className="header-right">
+        <div className="header-right" style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+          <select 
+            className="category-select"
+            value={selectedCategory}
+            onChange={(e) => {
+              setSelectedCategory(e.target.value)
+              setLimit(100)
+            }}
+          >
+            {uniqueCategories.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
           <input 
             type="text" 
             placeholder="Search products..." 
@@ -274,6 +295,8 @@ export default function ProductRenamer() {
         .renamer-header h1 { margin: 0; font-size: 2rem; color: #3b82f6; }
         
         .search-input { background: #1e293b; border: 1px solid #334155; color: white; padding: 10px 20px; border-radius: 10px; width: 300px; }
+        .category-select { background: #1e293b; border: 1px solid #334155; color: white; padding: 10px 20px; border-radius: 10px; outline: none; cursor: pointer; font-size: 14px; font-weight: 500; transition: border-color 0.2s; }
+        .category-select:focus { border-color: #3b82f6; }
         
         .bulk-tools { background: #1e293b; padding: 20px; border-radius: 15px; margin-bottom: 30px; border: 1px solid #334155; }
         .tools-row { display: flex; gap: 15px; align-items: center; margin-top: 10px; }
