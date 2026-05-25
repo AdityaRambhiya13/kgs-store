@@ -63,6 +63,16 @@ export default function AdminPage() {
         setProductLimit(50)
     }, [searchQuery, categoryFilter, activeTab])
 
+    useEffect(() => {
+        const handleAdminAuthError = () => {
+            setAuthed(false)
+            setAdminToken(null)
+            localStorage.removeItem('adminToken')
+        }
+        window.addEventListener('admin-auth-error', handleAdminAuthError)
+        return () => window.removeEventListener('admin-auth-error', handleAdminAuthError)
+    }, [])
+
     // Sync pinnedList with loaded products on ordering tab enter
     useEffect(() => {
         if (activeTab === 'ordering' && products && products.length > 0) {

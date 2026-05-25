@@ -243,36 +243,71 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
   // Grouped products (base_name collapsing)
   const grouped = useMemo(() => {
     const groups = {}
+    
+    // 1. Group all variants by their standardized base key to collect all options
+    const allVariantsMap = {}
     products.forEach(p => {
       if (!p.category) return
       const unescapedCat = unescapeHTML(p.category)
       if (BLOCKED_CATEGORIES.has(unescapedCat)) return
       
-      // Standardize category name for grouping
       let cat = unescapedCat
       if (cat === 'Dairy, Bread & Eggs') cat = 'Dairy & Bread'
       if (cat === 'Pharma & Wellness' || cat === '& Wellness') cat = 'Wellness'
 
-      const key = (p.base_name || p.name) + '|' + cat
+      const baseKey = (p.base_name || p.name) + '|' + cat
+      if (!allVariantsMap[baseKey]) {
+        allVariantsMap[baseKey] = []
+      }
+      allVariantsMap[baseKey].push({ ...p, category: cat, sub_category: unescapeHTML(p.sub_category) })
+    })
+
+    // Sort variants in each group by price
+    Object.keys(allVariantsMap).forEach(key => {
+      allVariantsMap[key].sort((a, b) => a.price - b.price)
+    })
+
+    // 2. Build the final displayed catalog items
+    products.forEach(p => {
+      if (!p.category) return
+      const unescapedCat = unescapeHTML(p.category)
+      if (BLOCKED_CATEGORIES.has(unescapedCat)) return
+      
+      let cat = unescapedCat
+      if (cat === 'Dairy, Bread & Eggs') cat = 'Dairy & Bread'
+      if (cat === 'Pharma & Wellness' || cat === '& Wellness') cat = 'Wellness'
+
+      const baseKey = (p.base_name || p.name) + '|' + cat
+
+      // If a product is explicitly ranked/sorted (display_order > 0), display it as a separate card.
+      // Otherwise, group by its baseKey.
+      const isPinned = p.display_order > 0
+      const key = isPinned ? `${p.id}|${cat}` : baseKey
+
       if (!groups[key]) {
-        groups[key] = { ...p, category: cat, sub_category: unescapeHTML(p.sub_category), variants: [] }
+        groups[key] = { 
+          ...p, 
+          category: cat, 
+          sub_category: unescapeHTML(p.sub_category), 
+          variants: allVariantsMap[baseKey] 
+        }
       } else if (p.is_newly_launched) {
         groups[key].is_newly_launched = true;
       }
-      groups[key].variants.push({ ...p, category: cat, sub_category: unescapeHTML(p.sub_category) })
-      groups[key].variants.sort((a, b) => a.price - b.price)
     })
     
-    // Ensure all variants in a group share the group's main image
+    // Ensure all variants in a group share the group's main image,
+    // EXCEPT if a variant has its own custom image (which retains it).
     return Object.values(groups).map(group => {
       const mainImage = group.image_url
       group.variants = group.variants.map(v => ({
         ...v,
-        image_url: mainImage // Force same image for all variants as requested
+        image_url: v.image_url || mainImage
       }))
       return group
     })
   }, [products])
+
 
   // Filtered products by search / category / sub-category
   const filtered = useMemo(() => {
@@ -370,14 +405,30 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
   const sectionedData = useMemo(() => {
     if (activeCategory !== 'All' || (debouncedSearch && debouncedSearch.trim())) return null
     const catMap = {}
+    const topPicks = []
     filtered.forEach(g => {
+      if (g.display_order > 0) {
+        topPicks.push(g)
+      }
       const cat = g.category || 'Other'
       if (!catMap[cat]) catMap[cat] = []
       catMap[cat].push(g)
     })
-    return availableCategories
+    
+    const sections = availableCategories
       .filter(c => catMap[c.name] && catMap[c.name].length > 0)
       .map(c => ({ ...c, items: catMap[c.name] }))
+      
+    if (topPicks.length > 0) {
+      sections.unshift({
+        name: 'Top Picks',
+        emoji: '⭐',
+        color: '#f59e0b',
+        items: topPicks
+      })
+    }
+    
+    return sections
   }, [filtered, activeCategory, searchQuery, availableCategories])
 
 

@@ -29,7 +29,12 @@ async function request(method, path, body = null, signal = null, token = null) {
         
         if (!res.ok) {
             if (res.status === 401) {
-                window.dispatchEvent(new Event('auth-error'))
+                const isAdminRequest = path.includes('/api/admin') || activeToken === localStorage.getItem('adminToken');
+                if (isAdminRequest) {
+                    window.dispatchEvent(new Event('admin-auth-error'));
+                } else {
+                    window.dispatchEvent(new Event('auth-error'));
+                }
             }
             const err = await res.json().catch(() => ({ detail: res.statusText }))
             throw new Error(err.detail || 'Request failed')

@@ -64,11 +64,14 @@ export default function ProductDetailsModal({ product: propProduct, onClose, mrp
 
   // Ensure we have a variants array (handle single product case)
   const variants = currentProduct?.variants && currentProduct.variants.length > 0 ? currentProduct.variants : [currentProduct]
-  const [activeVariant, setActiveVariant] = useState(variants[0] || currentProduct)
+  const [activeVariant, setActiveVariant] = useState(
+    variants.find(v => v.id === currentProduct?.id) || variants[0] || currentProduct
+  )
   
   useEffect(() => {
     const freshVariants = currentProduct?.variants && currentProduct.variants.length > 0 ? currentProduct.variants : [currentProduct]
-    setActiveVariant(freshVariants[0] || currentProduct)
+    const defaultVariant = freshVariants.find(v => v.id === currentProduct?.id) || freshVariants[0] || currentProduct
+    setActiveVariant(defaultVariant)
   }, [currentProduct])
 
   const hasMultipleVariants = variants.length > 1
