@@ -1462,10 +1462,20 @@ if os.path.exists(DIST_PATH):
         # Check if requested file exists in dist (e.g. manifest.json, sw.js)
         file_path = os.path.join(DIST_PATH, full_path)
         if full_path and os.path.exists(file_path) and os.path.isfile(file_path):
-            return FileResponse(file_path)
+            headers = {}
+            if full_path == "sw.js":
+                headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+                headers["Pragma"] = "no-cache"
+                headers["Expires"] = "0"
+            return FileResponse(file_path, headers=headers)
             
         index_file = os.path.join(DIST_PATH, "index.html")
-        return FileResponse(index_file)
+        headers = {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+        return FileResponse(index_file, headers=headers)
 
 else:
 
