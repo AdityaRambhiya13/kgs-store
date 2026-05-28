@@ -190,11 +190,11 @@ def init_db():
                 PRIMARY KEY (phone, product_id)
             );
 
-            -- Sorting Index for fast product retrieval
+            -- Sorting Index for fast product retrieval (per-category rank ordering)
             CREATE INDEX IF NOT EXISTS idx_products_sorting ON products (
+                category,
                 (CASE WHEN display_order > 0 THEN 0 ELSE 1 END),
                 display_order,
-                category,
                 base_name,
                 price
             );
@@ -393,7 +393,17 @@ def get_all_products():
     conn = get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM products ORDER BY CASE WHEN display_order > 0 THEN 0 ELSE 1 END, display_order ASC, category, base_name, price")
+        # Sort by category first, then ranked products (display_order > 0) before unranked
+        # within each category, so rank 1 in Dairy is first IN Dairy, not first globally.
+        cursor.execute("""
+            SELECT * FROM products
+            ORDER BY
+                category,
+                CASE WHEN display_order > 0 THEN 0 ELSE 1 END,
+                display_order ASC,
+                base_name,
+                price
+        """)
         rows = cursor.fetchall()
         _products_cache = [dict(row) for row in rows]
         _products_cache_time = now
