@@ -254,17 +254,32 @@ export default function AdminPage() {
     }
 
     const handleResetOrdering = async () => {
-        if (!window.confirm("Are you sure you want to clear ALL rankings? This will immediately remove all custom sort orders from the database.")) return
+        const isCategoryScoped = categoryFilter && categoryFilter !== 'All'
+        const scopeLabel = isCategoryScoped ? `"${categoryFilter}"` : 'ALL'
+        if (!window.confirm(
+            isCategoryScoped
+                ? `Clear pinned rankings for category ${scopeLabel} only? Other categories will be untouched.`
+                : `Clear ALL rankings across every category? This cannot be undone.`
+        )) return
+
         setSaveOrderingLoading(true)
         try {
-            // Gather all IDs that currently have a rank so the additive backend can zero them
-            const rankedIds = products
-                .filter(p => p.display_order > 0)
+            // Determine which ranked products to zero out
+            const rankedIdsToRemove = products
+                .filter(p => p.display_order > 0 && (isCategoryScoped ? p.category === categoryFilter : true))
                 .map(p => p.id)
-            // Pass rankedIds as clear_ids (NOT product_ids) so backend zeros without re-ranking
-            await bulkReorderProducts([], adminToken, rankedIds)
-            setPinnedList([])
-            // Refresh local product state so display_order reflects the cleared ranks
+
+            // Pass as clear_ids — backend zeros them without re-ranking
+            await bulkReorderProducts([], adminToken, rankedIdsToRemove)
+
+            // Remove cleared items from the local pinned list (keep others if category-scoped)
+            setPinnedList(prev =>
+                isCategoryScoped
+                    ? prev.filter(p => p.category !== categoryFilter)
+                    : []
+            )
+
+            // Refresh local product state so display_order is up to date
             const data = await getAdminProducts(adminToken)
             const cleanedData = (Array.isArray(data) ? data : []).map(p => ({
                 ...p,
@@ -273,7 +288,7 @@ export default function AdminPage() {
             }))
             setProducts(cleanedData)
             orderingInitialisedRef.current = true
-            alert("✓ All rankings cleared successfully!")
+            alert(`✓ Rankings cleared for ${scopeLabel}!`)
         } catch (err) {
             alert("FAIL: " + (err.message || "Failed to clear ranks"))
         } finally {
@@ -622,9 +637,12 @@ export default function AdminPage() {
                                 <button 
                                     className="btn btn-outline" 
                                     onClick={handleResetOrdering}
+                                    disabled={saveOrderingLoading}
                                     style={{ padding: '10px 18px', borderRadius: '10px' }}
                                 >
-                                    Clear Pinned
+                                    {categoryFilter && categoryFilter !== 'All'
+                                        ? `Clear "${categoryFilter}" Pins`
+                                        : 'Clear All Pins'}
                                 </button>
                                 <button 
                                     className="btn btn-primary" 
