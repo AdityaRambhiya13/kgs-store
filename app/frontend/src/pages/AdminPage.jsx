@@ -257,6 +257,25 @@ export default function AdminPage() {
         }
     }
 
+    // --- Derived / memoised values ---
+    // IMPORTANT: all useMemo calls must be ABOVE any early return to satisfy React's Rules of Hooks
+    const uniqueCategories = useMemo(() => {
+        const cats = new Set(products.map(p => p.category));
+        return ['All', ...Array.from(cats).sort()];
+    }, [products]);
+
+    const pinnedIds = useMemo(() => new Set(pinnedList.map(p => p.id)), [pinnedList]);
+
+    const availableProducts = useMemo(() => {
+        return products.filter(p => {
+            const matchSearch = !searchQuery ||
+                p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                p.category.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchCat = categoryFilter === 'All' || p.category === categoryFilter;
+            return matchSearch && matchCat;
+        });
+    }, [products, searchQuery, categoryFilter]);
+
     if (!authed) {
         return (
             <motion.div className="admin-page" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -291,25 +310,6 @@ export default function AdminPage() {
         if (!searchQuery) return true;
         return p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.category.toLowerCase().includes(searchQuery.toLowerCase());
     });
-
-    const uniqueCategories = useMemo(() => {
-        const cats = new Set(products.map(p => p.category));
-        return ['All', ...Array.from(cats).sort()];
-    }, [products]);
-
-    const pinnedIds = useMemo(() => new Set(pinnedList.map(p => p.id)), [pinnedList]);
-
-    const availableProducts = useMemo(() => {
-        return products.filter(p => {
-            const matchSearch = !searchQuery || 
-                p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                p.category.toLowerCase().includes(searchQuery.toLowerCase());
-                
-            const matchCat = categoryFilter === 'All' || p.category === categoryFilter;
-            
-            return matchSearch && matchCat;
-        });
-    }, [products, searchQuery, categoryFilter]);
 
     return (
         <motion.div className="admin-page" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
