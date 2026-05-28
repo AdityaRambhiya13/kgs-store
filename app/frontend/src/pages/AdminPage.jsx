@@ -206,24 +206,28 @@ export default function AdminPage() {
         setPinnedList(prev => prev.filter(p => p.id !== productId))
     }
 
-    const handleMoveUp = (index) => {
-        if (index === 0) return
+    const handleMoveUp = (filteredIdx) => {
+        if (filteredIdx === 0) return
+        const itemA = displayedPinnedList[filteredIdx]
+        const itemB = displayedPinnedList[filteredIdx - 1]
         setPinnedList(prev => {
             const next = [...prev]
-            const temp = next[index]
-            next[index] = next[index - 1]
-            next[index - 1] = temp
+            const idxA = next.findIndex(p => p.id === itemA.id)
+            const idxB = next.findIndex(p => p.id === itemB.id)
+            ;[next[idxA], next[idxB]] = [next[idxB], next[idxA]]
             return next
         })
     }
 
-    const handleMoveDown = (index) => {
-        if (index === pinnedList.length - 1) return
+    const handleMoveDown = (filteredIdx) => {
+        if (filteredIdx === displayedPinnedList.length - 1) return
+        const itemA = displayedPinnedList[filteredIdx]
+        const itemB = displayedPinnedList[filteredIdx + 1]
         setPinnedList(prev => {
             const next = [...prev]
-            const temp = next[index]
-            next[index] = next[index + 1]
-            next[index + 1] = temp
+            const idxA = next.findIndex(p => p.id === itemA.id)
+            const idxB = next.findIndex(p => p.id === itemB.id)
+            ;[next[idxA], next[idxB]] = [next[idxB], next[idxA]]
             return next
         })
     }
@@ -314,6 +318,13 @@ export default function AdminPage() {
     }, [products]);
 
     const pinnedIds = useMemo(() => new Set(pinnedList.map(p => p.id)), [pinnedList]);
+
+    // Right-panel view: when a specific category is active show only that category's pins
+    // so ranks appear as 1, 2, 3… within the category instead of a global 116, 117…
+    const displayedPinnedList = useMemo(() => {
+        if (!categoryFilter || categoryFilter === 'All') return pinnedList
+        return pinnedList.filter(p => p.category === categoryFilter)
+    }, [pinnedList, categoryFilter]);
 
     const availableProducts = useMemo(() => {
         return products.filter(p => {
@@ -738,21 +749,31 @@ export default function AdminPage() {
                             {/* RIGHT COLUMN: Pinned / Ranked Display */}
                             <div className="ordering-column" style={{ borderLeft: '2px dashed #e2e8f0' }}>
                                 <div className="ordering-column-title">
-                                    <span>Ranked Display Order ({pinnedList.length})</span>
-                                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--secondary)', textTransform: 'uppercase', background: 'var(--primary-glow)', padding: '4px 8px', borderRadius: 6 }}>Ranked (1=Top)</span>
+                                    <span>
+                                        {categoryFilter && categoryFilter !== 'All'
+                                            ? `"${categoryFilter}" Order (${displayedPinnedList.length})`
+                                            : `Ranked Display Order (${pinnedList.length})`}
+                                    </span>
+                                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--secondary)', textTransform: 'uppercase', background: 'var(--primary-glow)', padding: '4px 8px', borderRadius: 6 }}>
+                                        {categoryFilter && categoryFilter !== 'All' && pinnedList.length > displayedPinnedList.length
+                                            ? `${displayedPinnedList.length} of ${pinnedList.length} total`
+                                            : 'Ranked (1=Top)'}
+                                    </span>
                                 </div>
 
                                 <div className="ordering-list">
-                                    {pinnedList.length === 0 ? (
+                                    {displayedPinnedList.length === 0 ? (
                                         <div style={{ textAlign: 'center', padding: '80px 20px', color: '#64748b' }}>
                                             <div style={{ fontSize: 40, marginBottom: 12 }}>⭐</div>
                                             <strong>No products pinned yet</strong>
                                             <p style={{ fontSize: 13, marginTop: 6, maxWidth: 260, margin: '6px auto 0' }}>
-                                                Select products from the left side. They will appear here in order, pinning them to the top of the store page.
+                                                {categoryFilter && categoryFilter !== 'All'
+                                                    ? `Pin products from "${categoryFilter}" on the left to rank them here.`
+                                                    : 'Select products from the left side. They will appear here in order, pinning them to the top of the store page.'}
                                             </p>
                                         </div>
                                     ) : (
-                                        pinnedList.map((p, idx) => (
+                                        displayedPinnedList.map((p, idx) => (
                                             <div key={p.id} className="ordering-item-card" style={{ border: '1px solid #cbd5e1', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
                                                 <div className="ordering-rank-badge">{idx + 1}</div>
                                                 <div className="ordering-item-details">
@@ -780,8 +801,8 @@ export default function AdminPage() {
                                                     <button 
                                                         className="btn-action-small"
                                                         onClick={() => handleMoveDown(idx)}
-                                                        disabled={idx === pinnedList.length - 1}
-                                                        style={{ opacity: idx === pinnedList.length - 1 ? 0.3 : 1, cursor: idx === pinnedList.length - 1 ? 'not-allowed' : 'pointer' }}
+                                                        disabled={idx === displayedPinnedList.length - 1}
+                                                        style={{ opacity: idx === displayedPinnedList.length - 1 ? 0.3 : 1, cursor: idx === displayedPinnedList.length - 1 ? 'not-allowed' : 'pointer' }}
                                                         title="Move Down"
                                                     >
                                                         ▼
