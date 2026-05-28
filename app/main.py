@@ -911,12 +911,13 @@ def admin_delete_product(product_id: int, admin: dict = Depends(get_current_admi
 
 class BulkReorderRequest(BaseModel):
     product_ids: List[int]
+    clear_ids: List[int] = []
 
 
 @app.post("/api/admin/products/bulk-reorder")
 def admin_bulk_reorder(body: BulkReorderRequest, request: Request, admin: dict = Depends(get_current_admin)):
     check_rate_limit(request, limit=60, window=60, scope="admin-bulk-reorder")
-    success = bulk_reorder_products(body.product_ids)
+    success = bulk_reorder_products(body.product_ids, body.clear_ids or [])
     if not success:
         raise HTTPException(status_code=500, detail="Failed to reorder products")
     invalidate_products_cache()

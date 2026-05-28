@@ -57,6 +57,7 @@ export default function AdminPage() {
     const [categoryFilter, setCategoryFilter] = useState('All')
     const [productLimit, setProductLimit] = useState(50)
     const intervalRef = useRef(null)
+    const orderingInitialisedRef = useRef(false) // tracks whether we've seeded pinnedList for this session
 
     // Reset product limit on filter, search, or tab changes to keep DOM lightweight
     useEffect(() => {
@@ -73,13 +74,21 @@ export default function AdminPage() {
         return () => window.removeEventListener('admin-auth-error', handleAdminAuthError)
     }, [])
 
-    // Sync pinnedList with loaded products on ordering tab enter
+    // Seed pinnedList from DB ranks the FIRST time the ordering tab is opened.
+    // We deliberately do NOT re-run this when `products` changes so that
+    // switching the category filter (which resets productLimit and re-renders)
+    // doesn't wipe the pins the admin has already selected in this session.
     useEffect(() => {
-        if (activeTab === 'ordering' && products && products.length > 0) {
+        if (activeTab === 'ordering' && products && products.length > 0 && !orderingInitialisedRef.current) {
             const initialPinned = products
                 .filter(p => p.display_order > 0)
                 .sort((a, b) => a.display_order - b.display_order)
             setPinnedList(initialPinned)
+            orderingInitialisedRef.current = true
+        }
+        // Reset the flag when leaving the ordering tab so next visit re-seeds from DB
+        if (activeTab !== 'ordering') {
+            orderingInitialisedRef.current = false
         }
     }, [activeTab, products])
 
@@ -233,6 +242,9 @@ export default function AdminPage() {
                 sub_category: unescapeHTML(p.sub_category)
             }))
             setProducts(cleanedData)
+            // Keep the initialised flag true so the re-fetch above doesn't
+            // overwrite the admin's in-progress pinned list
+            orderingInitialisedRef.current = true
             alert("✓ Custom display rankings saved successfully!")
         } catch (err) {
             alert("FAIL: " + (err.message || "Failed to save ranks"))
@@ -241,9 +253,31 @@ export default function AdminPage() {
         }
     }
 
-    const handleResetOrdering = () => {
-        if (window.confirm("Are you sure you want to unpin all products? This will reset custom ranks for everything on save.")) {
+    const handleResetOrdering = async () => {
+        if (!window.confirm("Are you sure you want to clear ALL rankings? This will immediately remove all custom sort orders from the database.")) return
+        setSaveOrderingLoading(true)
+        try {
+            // Gather all IDs that currently have a rank so the additive backend can zero them
+            const rankedIds = products
+                .filter(p => p.display_order > 0)
+                .map(p => p.id)
+            // Pass rankedIds as clear_ids (NOT product_ids) so backend zeros without re-ranking
+            await bulkReorderProducts([], adminToken, rankedIds)
             setPinnedList([])
+            // Refresh local product state so display_order reflects the cleared ranks
+            const data = await getAdminProducts(adminToken)
+            const cleanedData = (Array.isArray(data) ? data : []).map(p => ({
+                ...p,
+                category: unescapeHTML(p.category),
+                sub_category: unescapeHTML(p.sub_category)
+            }))
+            setProducts(cleanedData)
+            orderingInitialisedRef.current = true
+            alert("✓ All rankings cleared successfully!")
+        } catch (err) {
+            alert("FAIL: " + (err.message || "Failed to clear ranks"))
+        } finally {
+            setSaveOrderingLoading(false)
         }
     }
 

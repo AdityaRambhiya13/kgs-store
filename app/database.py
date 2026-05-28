@@ -746,23 +746,45 @@ def delete_product(product_id: int) -> bool:
         release_connection(conn)
     return deleted
 
-def bulk_reorder_products(ordered_ids: list) -> bool:
-    """Set display_order of specified product IDs sequentially, and reset others to 0."""
+def bulk_reorder_products(ordered_ids: list, clear_ids: list = None) -> bool:
+    """Set display_order of specified product IDs sequentially.
+
+    ADDITIVE behaviour: only the products in ordered_ids are touched.
+    Products NOT in ordered_ids keep whatever display_order they already have.
+    This means you can sort Category A, save, then sort Category B and save —
+    both sets of ranks survive independently.
+
+    Args:
+        ordered_ids: Products to rank in order (position 1, 2, 3...). Also zeroed first.
+        clear_ids:   Optional extra IDs to zero out WITHOUT re-ranking (used by Clear All).
+    """
     conn = get_connection()
     try:
         cursor = conn.cursor()
-        
-        # 1. Reset all products to display_order = 0
-        cursor.execute("UPDATE products SET display_order = 0")
-        
-        # 2. Update display_order for specified IDs in order
+
+        # Zero out any IDs explicitly requested to be cleared (Clear All Rankings action)
+        if clear_ids:
+            cursor.execute(
+                "UPDATE products SET display_order = 0 WHERE id = ANY(%s)",
+                (clear_ids,)
+            )
+
         if ordered_ids:
+            # 1. Reset display_order ONLY for products in this batch so that
+            #    any product the admin decided to unpin gets cleared, while
+            #    products from other categories keep their existing ranks.
+            cursor.execute(
+                "UPDATE products SET display_order = 0 WHERE id = ANY(%s)",
+                (ordered_ids,)
+            )
+
+            # 2. Re-apply sequential ranks (1 = top) for the ordered list
             for index, pid in enumerate(ordered_ids):
                 cursor.execute(
                     "UPDATE products SET display_order = %s WHERE id = %s",
                     (index + 1, pid)
                 )
-                
+
         conn.commit()
         _invalidate_products_cache()
         return True

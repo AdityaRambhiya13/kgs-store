@@ -78,8 +78,8 @@ export const updateProduct = (id, data, adminToken) =>
 export const deleteProduct = (id, adminToken) =>
     request('DELETE', `/api/admin/products/${id}`, null, null, adminToken)
 
-export const bulkReorderProducts = (productIds, adminToken) =>
-    request('POST', '/api/admin/products/bulk-reorder', { product_ids: productIds }, null, adminToken)
+export const bulkReorderProducts = (productIds, adminToken, clearIds = []) =>
+    request('POST', '/api/admin/products/bulk-reorder', { product_ids: productIds, clear_ids: clearIds }, null, adminToken)
 
 // ── Payment ────────────────────────────────────────────────────
 export const confirmPayment = (orderToken, adminToken) =>
