@@ -285,8 +285,9 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
       const key = isPinned ? `${p.id}|${cat}` : baseKey
 
       if (!groups[key]) {
+        const cheapestVariant = isPinned ? p : (allVariantsMap[baseKey][0] || p)
         groups[key] = { 
-          ...p, 
+          ...cheapestVariant, 
           category: cat, 
           sub_category: unescapeHTML(p.sub_category), 
           variants: allVariantsMap[baseKey] 
