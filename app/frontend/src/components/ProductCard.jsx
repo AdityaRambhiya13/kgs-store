@@ -143,8 +143,8 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
 
   const rating = getRating(product.id || 1)
   const reviewCount = getReviewCount(product.id || 1)
-  const mrp = getMRP(minPrice, product.id || 1, product.mrp)
-  const discount = getDiscount(minPrice, mrp)
+  const mrp = getMRP(product.price, product.id || 1, product.mrp)
+  const discount = getDiscount(product.price, mrp)
   const fav = isFavorite(product.id)
   const isOutOfStock = product.in_stock === false
 
@@ -178,8 +178,8 @@ export default function ProductCard({ product, onDetailClick, onVariantClick }) 
   }
 
   const { title: cleanName, subtitle: cleanSubtitle } = cleanProductDetails(product)
-  const displayPrice = product.displayPrice || minPrice
-  const displayMrp = product.displayPrice ? getMRP(product.displayPrice, product.id || 1, product.mrp) : mrp
+  const displayPrice = product.price
+  const displayMrp = mrp
 
   return (
     <motion.div
