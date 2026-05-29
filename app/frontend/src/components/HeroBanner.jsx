@@ -96,10 +96,19 @@ export default function HeroBanner() {
   return (
     <div
       className="hero-banner"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
+      onMouseEnter={() => {
+        if (window.matchMedia('(hover: hover)').matches) {
+          setPaused(true)
+        }
+      }}
+      onMouseLeave={() => {
+        if (window.matchMedia('(hover: hover)').matches) {
+          setPaused(false)
+        }
+      }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
     >
       <AnimatePresence mode="wait" custom={direction}>
         <motion.div
