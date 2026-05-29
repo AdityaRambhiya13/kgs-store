@@ -5,18 +5,24 @@ import { motion, AnimatePresence } from 'framer-motion'
 const SLIDES = [
   {
     id: 1,
+    image: '/banner-kgs.png',
+    targetCategory: 'All',
+    cta: 'Shop Now',
+  },
+  {
+    id: 2,
     image: '/hero-banner.png',
     targetCategory: 'Parachute New',
     cta: 'Check Out Now',
   },
   {
-    id: 2,
+    id: 3,
     image: '/dehaat-banner.png',
     targetCategory: 'Dehaat Products',
     cta: 'Check Out Now',
   },
   {
-    id: 3,
+    id: 4,
     image: '/organic-india-banner.png',
     targetCategory: 'Organic India',
     cta: 'Check Out Now',
