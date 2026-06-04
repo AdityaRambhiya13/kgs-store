@@ -437,14 +437,16 @@ export default function AdminPage() {
                                 + Add New Product
                             </button>
                         </div>
-                        <input
-                            type="text"
-                            placeholder="Search products..."
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                            className="input search-bar"
-                            style={{ width: '100%', marginBottom: 20, padding: 12, borderRadius: 10, border: '1px solid #e2e8f0' }}
-                        />
+                        <div style={{ position: 'sticky', top: 0, background: '#f8fafc', padding: '10px 0 20px', zIndex: 100 }}>
+                            <input
+                                type="text"
+                                placeholder="Search products..."
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                                className="input search-bar"
+                                style={{ width: '100%', padding: 12, borderRadius: 10, border: '1px solid #e2e8f0', background: 'white' }}
+                            />
+                        </div>
 
                         <div className="products-grid">
                             {filteredProducts.slice(0, productLimit).map(p => (
@@ -484,14 +486,16 @@ export default function AdminPage() {
                                 + Add New Product
                             </button>
                         </div>
-                        <input
-                            type="text"
-                            placeholder="Search newly launched..."
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                            className="input search-bar"
-                            style={{ width: '100%', marginBottom: 20, padding: 12, borderRadius: 10, border: '1px solid #e2e8f0' }}
-                        />
+                        <div style={{ position: 'sticky', top: 0, background: '#f8fafc', padding: '10px 0 20px', zIndex: 100 }}>
+                            <input
+                                type="text"
+                                placeholder="Search newly launched..."
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                                className="input search-bar"
+                                style={{ width: '100%', padding: 12, borderRadius: 10, border: '1px solid #e2e8f0', background: 'white' }}
+                            />
+                        </div>
 
                         <div className="products-grid">
                             {filteredProducts.map(p => (
@@ -525,14 +529,16 @@ export default function AdminPage() {
                             <h3>Product Displayer (Visibility)</h3>
                             <p style={{ fontSize: 13, color: '#64748b' }}>Choose which products are shown to customers</p>
                         </div>
-                        <input
-                            type="text"
-                            placeholder="Search products..."
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                            className="input search-bar"
-                            style={{ width: '100%', marginBottom: 20, padding: 12, borderRadius: 10, border: '1px solid #e2e8f0' }}
-                        />
+                        <div style={{ position: 'sticky', top: 0, background: '#f8fafc', padding: '10px 0 20px', zIndex: 100 }}>
+                            <input
+                                type="text"
+                                placeholder="Search products..."
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                                className="input search-bar"
+                                style={{ width: '100%', padding: 12, borderRadius: 10, border: '1px solid #e2e8f0', background: 'white' }}
+                            />
+                        </div>
                         <div className="products-grid">
                             {filteredProducts.slice(0, productLimit).map(p => (
                                 <div key={p.id} className="product-admin-card card">
@@ -575,14 +581,16 @@ export default function AdminPage() {
                             <h3>Stock Inventory</h3>
                             <p style={{ fontSize: 13, color: '#64748b' }}>Manage product availability</p>
                         </div>
-                        <input
-                            type="text"
-                            placeholder="Search products..."
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                            className="input search-bar"
-                            style={{ width: '100%', marginBottom: 20, padding: 12, borderRadius: 10, border: '1px solid #e2e8f0' }}
-                        />
+                        <div style={{ position: 'sticky', top: 0, background: '#f8fafc', padding: '10px 0 20px', zIndex: 100 }}>
+                            <input
+                                type="text"
+                                placeholder="Search products..."
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                                className="input search-bar"
+                                style={{ width: '100%', padding: 12, borderRadius: 10, border: '1px solid #e2e8f0', background: 'white' }}
+                            />
+                        </div>
                         <div className="products-grid">
                             {filteredProducts.slice(0, productLimit).map(p => (
                                 <div key={p.id} className="product-admin-card card">
@@ -839,7 +847,7 @@ export default function AdminPage() {
                         <motion.div className="modal-content" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}>
                             <h3>{productForm.id ? 'Edit Product' : 'Add New Product'}</h3>
                             <form onSubmit={handleSaveProduct} className="admin-form">
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                <div className="form-grid">
                                     <div>
                                         <label>Product Name (System)</label>
                                         <input required value={productForm.name} onChange={e => setProductForm({ ...productForm, name: e.target.value })} placeholder="e.g. Parachute Coconut Oil 500ml" />
@@ -857,7 +865,7 @@ export default function AdminPage() {
                                     </span>
                                 </div>
                                 
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
+                                <div className="form-grid" style={{ marginTop: 12 }}>
                                     <div>
                                         <label>Price (₹)</label>
                                         <input type="number" step="0.01" required value={productForm.price} onChange={e => setProductForm({ ...productForm, price: parseFloat(e.target.value) })} />
@@ -877,7 +885,7 @@ export default function AdminPage() {
                                 <label>Image URL</label>
                                 <input value={productForm.image_url} onChange={e => setProductForm({ ...productForm, image_url: e.target.value })} />
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
+                                <div className="form-grid" style={{ marginTop: 12 }}>
                                     <div className="form-check">
                                         <input type="checkbox" id="is_visible" checked={productForm.is_visible} onChange={e => setProductForm({ ...productForm, is_visible: e.target.checked })} />
                                         <label htmlFor="is_visible" style={{ marginTop: 0, marginLeft: 8, display: 'inline' }}>Visible in Store</label>
@@ -939,6 +947,15 @@ export default function AdminPage() {
                     display: flex;
                     gap: 12px;
                     margin-bottom: 16px;
+                }
+                @media (max-width: 480px) {
+                    .ordering-search-row {
+                        flex-direction: column;
+                        gap: 10px;
+                    }
+                    .ordering-search-row select {
+                        width: 100% !important;
+                    }
                 }
                 .ordering-list {
                     display: flex;
@@ -1122,6 +1139,104 @@ export default function AdminPage() {
                     font-size: 14px;
                     font-weight: 700;
                     color: #14532d;
+                }
+
+                /* Responsive & Mobile-friendly overrides */
+                .form-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 12px;
+                }
+                
+                @media (max-width: 900px) {
+                    .admin-header {
+                        padding: 15px 20px;
+                        flex-direction: column;
+                        align-items: stretch;
+                        gap: 15px;
+                    }
+                    .admin-header h1 {
+                        font-size: 20px;
+                        text-align: center;
+                    }
+                    .admin-header p {
+                        text-align: center;
+                    }
+                    .admin-nav-tabs {
+                        display: flex;
+                        gap: 8px;
+                        overflow-x: auto;
+                        white-space: nowrap;
+                        width: 100%;
+                        padding-bottom: 8px;
+                        -webkit-overflow-scrolling: touch;
+                    }
+                    .admin-nav-tabs::-webkit-scrollbar {
+                        display: none;
+                    }
+                    .nav-tab {
+                        padding: 8px 16px;
+                        font-size: 13px;
+                        flex-shrink: 0;
+                    }
+                    .admin-container {
+                        padding: 16px;
+                    }
+                    .admin-lanes {
+                        grid-template-columns: 1fr;
+                        gap: 20px;
+                    }
+                }
+
+                @media (max-width: 480px) {
+                    .admin-stats-grid {
+                        gap: 12px;
+                        margin-bottom: 20px;
+                    }
+                    .stat-card-inner {
+                        padding: 16px;
+                        gap: 12px;
+                    }
+                    .stat-icon-bg {
+                        width: 40px;
+                        height: 40px;
+                        font-size: 20px;
+                    }
+                    .products-grid {
+                        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+                        gap: 12px;
+                    }
+                    .product-admin-card {
+                        padding: 12px;
+                        gap: 12px;
+                    }
+                    .p-img {
+                        width: 56px;
+                        height: 56px;
+                    }
+                    .p-name {
+                        font-size: 13.5px;
+                    }
+                    .p-price {
+                        font-size: 12px;
+                    }
+                    .modal-content {
+                        padding: 20px;
+                        border-radius: 16px;
+                    }
+                    .modal-content h3 {
+                        margin-bottom: 16px;
+                        font-size: 18px;
+                    }
+                    .admin-form label {
+                        margin-top: 10px;
+                    }
+                    .modal-btns {
+                        margin-top: 20px;
+                    }
+                    .form-grid {
+                        grid-template-columns: 1fr;
+                    }
                 }
             `}</style>
         </motion.div>

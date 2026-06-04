@@ -290,8 +290,19 @@ export default function ProductRenamer() {
       </AnimatePresence>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .renamer-container { padding: 40px; background: #0f172a; min-height: 100vh; color: white; }
-        .renamer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .renamer-container { padding: 0 40px 40px 40px; background: #0f172a; min-height: 100vh; color: white; }
+        .renamer-header { 
+          position: sticky; 
+          top: 0; 
+          z-index: 100; 
+          background: #0f172a; 
+          padding: 40px 0 20px 0; 
+          margin-bottom: 30px; 
+          border-bottom: 1px solid #334155; 
+          display: flex; 
+          justify-content: space-between; 
+          align-items: center; 
+        }
         .renamer-header h1 { margin: 0; font-size: 2rem; color: #3b82f6; }
         
         .search-input { background: #1e293b; border: 1px solid #334155; color: white; padding: 10px 20px; border-radius: 10px; width: 300px; }
@@ -303,6 +314,7 @@ export default function ProductRenamer() {
         .tools-row input { background: #0f172a; border: 1px solid #334155; color: white; padding: 8px 15px; border-radius: 8px; flex: 1; }
         .btn-bulk { background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
         
+        .renamer-main { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
         .renamer-table { width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 15px; overflow: hidden; }
         .renamer-table th { text-align: left; padding: 15px; background: #334155; color: #94a3b8; font-size: 0.8rem; text-transform: uppercase; }
         .renamer-table td { padding: 10px 15px; border-bottom: 1px solid #334155; }
@@ -325,6 +337,39 @@ export default function ProductRenamer() {
         .login-card { background: #1e293b; padding: 40px; border-radius: 20px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
         .login-card input { width: 100%; padding: 15px; margin: 20px 0; background: #0f172a; border: 1px solid #334155; border-radius: 10px; color: white; }
         .login-card button { width: 100%; padding: 15px; background: #3b82f6; color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; }
+
+        @media (max-width: 768px) {
+          .renamer-header {
+            flex-direction: column;
+            gap: 15px;
+            align-items: stretch;
+          }
+          .header-right {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+          }
+          .search-input, .category-select {
+            width: 100% !important;
+          }
+          .tools-row {
+            flex-direction: column;
+            gap: 10px;
+            align-items: stretch;
+          }
+          .tools-row .arrow {
+            text-align: center;
+            transform: rotate(90deg);
+            margin: 5px 0;
+            display: inline-block;
+          }
+          .renamer-container {
+            padding: 0 15px 20px 15px;
+          }
+          .renamer-header {
+            padding: 20px 0 15px 0;
+          }
+        }
       `}} />
     </div>
   )

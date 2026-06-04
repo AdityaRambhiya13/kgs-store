@@ -568,9 +568,9 @@ def place_order(order: OrderCreate, request: Request, customer_token: dict = Dep
 
 
 
-    if order.delivery_type == "delivery" and calculated_total < 500.0:
+    if order.delivery_type == "delivery" and calculated_total < 1000.0:
 
-        calculated_total += 150.0
+        calculated_total += 40.0
 
 
 
