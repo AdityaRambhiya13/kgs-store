@@ -24,11 +24,24 @@ export const AuthProvider = ({ children }) => {
         setUser(prev => prev ? { ...prev, name } : prev);
     };
 
+    const updateAddress = (address) => {
+        const addressStr = typeof address === 'object' ? JSON.stringify(address) : address;
+        localStorage.setItem('kgsAddress', addressStr);
+        let parsedAddr = address;
+        if (typeof address === 'string') {
+            try { parsedAddr = JSON.parse(address) } catch { }
+        }
+        setUser(prev => prev ? { ...prev, address: parsedAddr } : prev);
+    };
+
     useEffect(() => {
         const phone = localStorage.getItem('kgsPhone');
         const token = localStorage.getItem('kgsToken');
         const name = localStorage.getItem('kgsName');
-        const address = localStorage.getItem('kgsAddress');
+        let address = localStorage.getItem('kgsAddress');
+        if (address) {
+            try { address = JSON.parse(address); } catch { }
+        }
 
         if (phone && token) {
             setUser({ phone, token, name, address });
@@ -37,8 +50,15 @@ export const AuthProvider = ({ children }) => {
             .then(data => {
                 if (data) {
                     if (data.name) localStorage.setItem('kgsName', data.name);
-                    if (data.address) localStorage.setItem('kgsAddress', data.address);
-                    setUser(prev => ({ ...prev, name: data.name || prev.name, address: data.address || prev.address }));
+                    if (data.address) {
+                        localStorage.setItem('kgsAddress', data.address);
+                        try {
+                            const parsed = JSON.parse(data.address);
+                            setUser(prev => ({ ...prev, name: data.name || prev.name, address: parsed }));
+                            return;
+                        } catch { }
+                    }
+                    setUser(prev => ({ ...prev, name: data.name || prev.name }));
                 }
             })
             .catch(() => {}) // Silently ignore network errors
@@ -53,9 +73,14 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('kgsPhone', res.phone);
         localStorage.setItem('kgsToken', res.access_token);
         if (res.name) localStorage.setItem('kgsName', res.name);
-        if (res.address) localStorage.setItem('kgsAddress', res.address);
+        
+        let parsedAddr = null;
+        if (res.address) {
+            localStorage.setItem('kgsAddress', res.address);
+            try { parsedAddr = JSON.parse(res.address); } catch { parsedAddr = res.address; }
+        }
 
-        setUser({ phone: res.phone, token: res.access_token, name: res.name, address: res.address });
+        setUser({ phone: res.phone, token: res.access_token, name: res.name, address: parsedAddr });
     };
 
     const loginFunc = async (identifier, pin) => {
@@ -69,7 +94,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login: loginFunc, logout, updateName, completeAuth }}>
+        <AuthContext.Provider value={{ user, loading, login: loginFunc, logout, updateName, updateAddress, completeAuth }}>
             {!loading && children}
         </AuthContext.Provider>
     );

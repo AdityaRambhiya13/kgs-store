@@ -53,7 +53,7 @@ function CheckmarkSVG() {
 
 export default function ConfirmPage() {
     const { cartItems, cartTotal, clearCart } = useCart()
-    const { user } = useAuth()
+    const { user, updateAddress } = useAuth()
     const navigate = useNavigate()
 
     const [error, setError] = useState('')
@@ -86,7 +86,16 @@ export default function ConfirmPage() {
     const [saveAsHome, setSaveAsHome] = useState(true)
 
     useEffect(() => {
-        if (user?.address) setAddressForm(prev => ({ ...prev, ...user.address }))
+        if (user?.address) {
+            try {
+                const parsed = typeof user.address === 'string' ? JSON.parse(user.address) : user.address;
+                if (parsed && typeof parsed === 'object') {
+                    setAddressForm(prev => ({ ...prev, ...parsed }));
+                }
+            } catch (e) {
+                console.error("Failed to parse address in ConfirmPage:", e);
+            }
+        }
     }, [user])
 
     const handleAddressChange = (e) => {
@@ -145,6 +154,10 @@ export default function ConfirmPage() {
             if (result.delivery_otp) setDeliveryOtp(result.delivery_otp)
             setOrderPlaced(true)
             clearCart()
+
+            if (saveAsHome && updateAddress) {
+                updateAddress(addressForm)
+            }
 
             if (effectivePayment === 'upi') {
                 // Redirect to UPI payment page — do NOT show success here
