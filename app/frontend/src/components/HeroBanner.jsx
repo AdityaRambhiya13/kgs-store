@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 const SLIDES = [
   {
     id: 1,
-    image: '/banner-kgs.png',
+    image: '/kgs-banner.png',
     targetCategory: 'All',
     cta: 'Shop Now',
   },
