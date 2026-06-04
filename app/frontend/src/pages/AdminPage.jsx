@@ -417,12 +417,18 @@ export default function AdminPage() {
                         </div>
                         <div className="customers-grid">
                             {customers.map(c => (
-                                <div key={c.phone} className="customer-row card">
-                                    <div className="customer-info">
-                                        <span className="cust-phone">📱 {maskPhone(c.phone)}</span>
-                                        <span className="cust-name">{c.name || 'Anonymous User'}</span>
+                                <div key={c.phone} className="customer-row card" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+                                    <div className="customer-info" style={{ flex: 1 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                                            <span className="cust-phone" style={{ fontSize: '15.5px' }}>📱 {c.phone}</span>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                <a href={`tel:${c.phone}`} className="admin-order-phone-btn" style={{ fontSize: '11px', padding: '3px 8px' }}>📞 Call</a>
+                                                <a href={`https://wa.me/${c.phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="admin-order-phone-btn" style={{ fontSize: '11px', padding: '3px 8px' }}>💬 WhatsApp</a>
+                                            </div>
+                                        </div>
+                                        <span className="cust-name" style={{ display: 'block', marginTop: '4px', fontWeight: 600, color: '#475569' }}>{c.name || 'Anonymous User'}</span>
                                     </div>
-                                    <div className="cust-meta">Joined: {c.created_at}</div>
+                                    <div className="cust-meta" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>Joined: {c.created_at}</div>
                                 </div>
                             ))}
                         </div>
@@ -1095,6 +1101,163 @@ export default function AdminPage() {
                 .cust-name { font-size: 14px; color: #64748b; }
                 .cust-meta { font-size: 12px; opacity: 0.6; }
 
+                /* Premium Admin Order Card styles */
+                .admin-order-card {
+                    background: white;
+                    border-radius: 16px;
+                    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.06);
+                    border: 1px solid #e2e8f0;
+                    margin-bottom: 16px;
+                    transition: all 0.25s ease;
+                }
+                .admin-order-card:hover {
+                    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.08);
+                    transform: translateY(-2px);
+                }
+                .admin-order-header {
+                    padding: 16px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    border-bottom: 1px solid #f1f5f9;
+                }
+                .admin-order-token {
+                    font-size: 15px;
+                    font-weight: 800;
+                    color: #1e3a8a;
+                    word-break: break-all;
+                }
+                .admin-order-time {
+                    font-size: 11px;
+                    color: #94a3b8;
+                    margin-top: 4px;
+                }
+                .admin-order-total {
+                    font-size: 18px;
+                    font-weight: 800;
+                    color: #10b981;
+                    text-align: right;
+                }
+                .admin-order-badge {
+                    display: inline-block;
+                    padding: 4px 8px;
+                    border-radius: 6px;
+                    font-size: 10px;
+                    font-weight: 800;
+                    text-transform: uppercase;
+                    margin-top: 4px;
+                }
+                .admin-order-badge.delivery {
+                    background: #dbeafe;
+                    color: #1e40af;
+                }
+                .admin-order-badge.pickup {
+                    background: #dcfce7;
+                    color: #166534;
+                }
+                .admin-order-body {
+                    padding: 16px;
+                }
+                .admin-order-phone {
+                    font-size: 14px;
+                    font-weight: 700;
+                    color: #334155;
+                    margin-bottom: 12px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    background: #f8fafc;
+                    padding: 8px 12px;
+                    border-radius: 8px;
+                    border: 1px solid #f1f5f9;
+                }
+                .admin-order-phone-link {
+                    color: #3b82f6 !important;
+                    text-decoration: none;
+                    font-weight: 700;
+                }
+                .admin-order-phone-actions {
+                    display: flex;
+                    gap: 8px;
+                }
+                .admin-order-phone-btn {
+                    padding: 4px 8px;
+                    border-radius: 6px;
+                    border: 1px solid #cbd5e1;
+                    background: white;
+                    font-size: 12px;
+                    cursor: pointer;
+                    text-decoration: none;
+                    color: #475569;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    transition: all 0.2s;
+                }
+                .admin-order-phone-btn:hover {
+                    background: #f1f5f9;
+                    border-color: #94a3b8;
+                    color: #1e293b;
+                }
+                .admin-order-address-box {
+                    background: #f0f9ff;
+                    border-left: 4px solid #0284c7;
+                    padding: 12px;
+                    border-radius: 8px;
+                    font-size: 13px;
+                    line-height: 1.5;
+                    color: #0369a1;
+                    margin-bottom: 12px;
+                }
+                .admin-order-pickup-box {
+                    background: #f0fdf4;
+                    border-left: 4px solid #16a34a;
+                    padding: 10px 12px;
+                    border-radius: 8px;
+                    font-size: 13px;
+                    line-height: 1.5;
+                    color: #15803d;
+                    margin-bottom: 12px;
+                    font-weight: 600;
+                }
+                .admin-order-items-btn {
+                    width: 100%;
+                    background: #f1f5f9;
+                    border: 1px solid #e2e8f0;
+                    padding: 10px 12px;
+                    border-radius: 8px;
+                    color: #475569;
+                    font-weight: 700;
+                    font-size: 12px;
+                    cursor: pointer;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    transition: all 0.2s;
+                }
+                .admin-order-items-btn:hover {
+                    background: #e2e8f0;
+                    color: #1e293b;
+                }
+                .admin-order-items-list {
+                    padding: 12px;
+                    background: #fafafa;
+                    border: 1px solid #e2e8f0;
+                    border-top: none;
+                    border-radius: 0 0 8px 8px;
+                }
+                .admin-order-item-row {
+                    display: flex;
+                    justify-content: space-between;
+                    font-size: 13px;
+                    color: #334155;
+                    padding: 6px 0;
+                    border-bottom: 1px dashed #e2e8f0;
+                }
+                .admin-order-item-row:last-child {
+                    border-bottom: none;
+                }
+
                 .admin-login { display: flex; align-items: center; justify-content: center; height: 100vh; }
                 .admin-login-card { background: white; padding: 40px; border-radius: 24px; width: 340px; text-align: center; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
                 .admin-avatar { font-size: 48px; margin-bottom: 16px; }
@@ -1365,55 +1528,117 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
         window.location.href = `/admin/print/${order.token}`
     }
 
+    let addressObj = null
+    if (order.address) {
+        try { addressObj = JSON.parse(order.address) } catch { addressObj = { raw: order.address } }
+    }
+
     return (
-        <motion.div className="card admin-order-card" style={{ padding: 0, overflow: 'hidden', borderLeft: `5px solid ${isProcessing ? '#f59e0b' : isReady ? '#3b82f6' : '#10b981'}` }}>
-            <div style={{ padding: 16, cursor: 'pointer' }} onClick={() => onExpand(order.token)}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                        <div style={{ fontWeight: 800, color: '#1e3a8a', fontSize: 16 }}>#{order.token}</div>
-                        <div style={{ fontSize: 13, color: '#64748b' }}>📱 +91 ****{order.phone.slice(-4)}</div>
+        <motion.div className="admin-order-card" style={{ borderLeft: `6px solid ${isProcessing ? '#f59e0b' : isReady ? '#3b82f6' : '#10b981'}` }}>
+            {/* Header section */}
+            <div className="admin-order-header">
+                <div>
+                    <div className="admin-order-token">#{order.token}</div>
+                    <div className="admin-order-time">⏱️ {order.timestamp || ''}</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                    <div className="admin-order-total">₹{order.total}</div>
+                    <div className={`admin-order-badge ${deliveryType}`}>
+                        {deliveryType === 'delivery' ? '🚚 Delivery' : '🏪 Pickup'}
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontWeight: 800, color: '#10b981' }}>₹{order.total}</div>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>
-                            {deliveryType.toUpperCase()}
-                            {paymentMethod === 'upi' && (
-                                <span style={{
-                                    marginLeft: 6, padding: '2px 6px', borderRadius: 6,
-                                    background: isUpiPending ? '#fef3c7' : '#dcfce7',
-                                    color: isUpiPending ? '#b45309' : '#15803d',
-                                    fontSize: 10, fontWeight: 800
-                                }}>
-                                    {isUpiPending ? '⏳ UPI Pending' : '✅ UPI Paid'}
-                                </span>
-                            )}
+                    {paymentMethod === 'upi' && (
+                        <div style={{
+                            display: 'inline-block', marginLeft: 6, padding: '2px 6px', borderRadius: 6,
+                            background: isUpiPending ? '#fef3c7' : '#dcfce7',
+                            color: isUpiPending ? '#b45309' : '#15803d',
+                            fontSize: 10, fontWeight: 800, textTransform: 'uppercase'
+                        }}>
+                            {isUpiPending ? '⏳ UPI Pending' : '✅ UPI Paid'}
                         </div>
-                    </div>
+                    )}
                 </div>
             </div>
-            
-            <AnimatePresence>
-                {expanded && (
-                    <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} style={{ overflow: 'hidden', background: '#f8fafc', padding: '0 16px' }}>
-                        <div style={{ padding: '12px 0', borderTop: '1px solid #e2e8f0' }}>
-                            {items.map((it, i) => (
-                                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
-                                    <span>{it.name} x {it.quantity}</span>
-                                    <span>₹{it.subtotal || it.price * it.quantity}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
 
-            {/* Generate Bill button — always visible */}
-            <div style={{ padding: '8px 12px 0', borderTop: '1px solid #e2e8f0' }}>
+            {/* Body Section */}
+            <div className="admin-order-body">
+                {/* Phone row with unmasked phone + WhatsApp and Call shortcuts */}
+                <div className="admin-order-phone">
+                    <span>📱 <a href={`tel:${order.phone}`} className="admin-order-phone-link">{order.phone}</a></span>
+                    <div className="admin-order-phone-actions">
+                        <a href={`tel:${order.phone}`} className="admin-order-phone-btn" title="Call Customer">📞 Call</a>
+                        <a href={`https://wa.me/${order.phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="admin-order-phone-btn" title="WhatsApp Customer">💬 WhatsApp</a>
+                    </div>
+                </div>
+
+                {/* Address block */}
+                {deliveryType === 'delivery' ? (
+                    addressObj ? (
+                        <div className="admin-order-address-box">
+                            <strong style={{ display: 'block', marginBottom: 4 }}>📍 Delivery Address:</strong>
+                            {addressObj.raw ? addressObj.raw : (
+                                <>
+                                    <strong>{addressObj.flat_no}, {addressObj.building_name}</strong><br />
+                                    <span>{addressObj.road_name}, {addressObj.area_name}</span><br />
+                                    {addressObj.landmark && <span style={{ fontStyle: 'italic', fontSize: 11 }}>Landmark: {addressObj.landmark}<br /></span>}
+                                    <strong>PIN: {addressObj.pincode}</strong>
+                                </>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="admin-order-address-box" style={{ background: '#fee2e2', color: '#b91c1c', borderLeftColor: '#ef4444' }}>
+                            ⚠️ Delivery requested but no address provided.
+                        </div>
+                    )
+                ) : (
+                    <div className="admin-order-pickup-box">
+                        🏪 Store Pickup Order
+                    </div>
+                )}
+
+                {/* Item List Toggle Accordion */}
+                <div style={{ marginBottom: 12 }}>
+                    <button className="admin-order-items-btn" onClick={() => onExpand(order.token)}>
+                        <span>📦 View Items ({items.length})</span>
+                        <span>{expanded ? '▲ Hide Details' : '▼ Show Details'}</span>
+                    </button>
+                    
+                    <AnimatePresence>
+                        {expanded && (
+                            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} style={{ overflow: 'hidden' }}>
+                                <div className="admin-order-items-list">
+                                    {items.map((it, i) => (
+                                        <div key={i} className="admin-order-item-row">
+                                            <span>{it.name} <strong style={{ color: '#64748b' }}>x{it.quantity}</strong></span>
+                                            <span style={{ fontWeight: 600 }}>₹{it.subtotal || it.price * it.quantity}</span>
+                                        </div>
+                                    ))}
+                                    {/* Cost breakdown */}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#64748b', marginTop: 10, paddingTop: 6, borderTop: '1px solid #e2e8f0' }}>
+                                        <span>Items Subtotal:</span>
+                                        <span>₹{items.reduce((s, it) => s + (it.price * it.quantity), 0)}</span>
+                                    </div>
+                                    {deliveryType === 'delivery' && (
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                                            <span>Delivery Charge:</span>
+                                            <span>₹{order.total - items.reduce((s, it) => s + (it.price * it.quantity), 0) > 0 ? (order.total - items.reduce((s, it) => s + (it.price * it.quantity), 0)) : 0}</span>
+                                        </div>
+                                    )}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 700, color: '#1e3a8a', marginTop: 4, paddingTop: 4, borderTop: '1px dotted #cbd5e1' }}>
+                                        <span>Grand Total:</span>
+                                        <span>₹{order.total}</span>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+
+                {/* Generate Bill button */}
                 <button
                     onClick={generateBill}
                     style={{
                         width: '100%',
-                        padding: '7px',
+                        padding: '10px',
                         fontSize: 12,
                         fontWeight: 700,
                         background: 'linear-gradient(135deg, #1e3a8a, #3b82f6)',
@@ -1426,6 +1651,7 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: 6,
+                        marginBottom: isDelivered ? 0 : 12
                     }}
                 >
                     🖨️ Generate Bill
@@ -1433,7 +1659,7 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
             </div>
 
             {!isDelivered && (
-                <div style={{ padding: 12, borderTop: '1px solid #e2e8f0' }}>
+                <div style={{ padding: '0 16px 16px 16px', borderTop: '1px solid #f1f5f9', paddingTop: 16 }}>
 
                     {/* Payment Received button for UPI orders */}
                     {isProcessing && isUpiPending && (
@@ -1507,7 +1733,7 @@ function AdminOrderCard({ order, onAction, onExpand, expanded, toggling, error, 
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         <button 
                             className={`btn ${isProcessing ? 'btn-secondary' : 'btn-primary'}`} 
-                            style={{ flex: 1, padding: '8px', fontSize: 13, fontWeight: 700 }} 
+                            style={{ flex: 1, padding: '10px', fontSize: 13, fontWeight: 700 }} 
                             onClick={handleAction}
                             disabled={toggling}
                         >
