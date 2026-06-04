@@ -56,6 +56,7 @@ export default function AdminPage() {
     const [saveOrderingLoading, setSaveOrderingLoading] = useState(false)
     const [categoryFilter, setCategoryFilter] = useState('All')
     const [productLimit, setProductLimit] = useState(50)
+    const [newOrderNotification, setNewOrderNotification] = useState(null)
     const intervalRef = useRef(null)
     const orderingInitialisedRef = useRef(false) // tracks whether we've seeded pinnedList for this session
 
@@ -137,6 +138,102 @@ export default function AdminPage() {
             if (intervalRef.current) clearInterval(intervalRef.current)
         }
     }, [authed, adminToken, activeTab])
+
+    // Real-time WebSocket Order Notifications
+    useEffect(() => {
+        if (!authed || !adminToken) return
+
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+        let host = window.location.host
+        
+        const envApiUrl = import.meta.env.VITE_API_URL
+        if (envApiUrl) {
+            try {
+                host = envApiUrl.replace(/^https?:\/\//, '').split('/')[0]
+            } catch (e) {
+                console.error("Failed to parse VITE_API_URL for WebSocket:", e)
+            }
+        } else if (window.location.hostname === 'localhost') {
+            host = 'localhost:8000'
+        }
+
+        let ws;
+        let reconnectTimeout;
+
+        const connectWS = () => {
+            ws = new WebSocket(`${protocol}//${host}/ws/admin`)
+
+            ws.onmessage = async (event) => {
+                try {
+                    const data = JSON.parse(event.data)
+                    if (data.type === 'new_order') {
+                        // Play synthesised audio alert chime using Web Audio API
+                        try {
+                            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                            const gainNode = audioCtx.createGain();
+                            const oscillator = audioCtx.createOscillator();
+                            oscillator.connect(gainNode);
+                            gainNode.connect(audioCtx.destination);
+                            oscillator.type = 'sine';
+                            oscillator.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+                            gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                            oscillator.start();
+                            oscillator.stop(audioCtx.currentTime + 0.12);
+                            setTimeout(() => {
+                                const osc2 = audioCtx.createOscillator();
+                                osc2.connect(gainNode);
+                                osc2.type = 'sine';
+                                osc2.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+                                osc2.start();
+                                osc2.stop(audioCtx.currentTime + 0.22);
+                            }, 120);
+                        } catch (soundErr) { }
+
+                        setNewOrderNotification({
+                            token: data.token,
+                            customerName: data.customer_name,
+                            phone: data.phone
+                        })
+
+                        // Refresh orders list immediately if currently viewing orders
+                        if (activeTab === 'orders') {
+                            try {
+                                const ordersData = await listOrders(adminToken)
+                                setOrders(Array.isArray(ordersData) ? ordersData : [])
+                            } catch (e) {
+                                console.error("Error reloading orders on new order event:", e)
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error("Admin WebSocket message parse error:", err)
+                }
+            }
+
+            ws.onclose = () => {
+                reconnectTimeout = setTimeout(connectWS, 3000)
+            }
+
+            ws.onerror = (err) => {
+                console.error("Admin WebSocket error:", err)
+                ws.close()
+            }
+        }
+
+        connectWS()
+
+        return () => {
+            if (ws) ws.close()
+            if (reconnectTimeout) clearTimeout(reconnectTimeout)
+        }
+    }, [authed, adminToken, activeTab])
+
+    // Dismiss order notification after 10s
+    useEffect(() => {
+        if (!newOrderNotification) return
+        const timer = setTimeout(() => setNewOrderNotification(null), 10000)
+        return () => clearTimeout(timer)
+    }, [newOrderNotification])
 
     const handleLogin = async () => {
         setLoginError('')
@@ -373,6 +470,91 @@ export default function AdminPage() {
 
     return (
         <motion.div className="admin-page" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            {/* Real-time Order Popup Notifications */}
+            <AnimatePresence>
+                {newOrderNotification && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: -50, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        style={{
+                            position: 'fixed',
+                            top: '24px',
+                            right: '24px',
+                            zIndex: 9999,
+                            background: 'linear-gradient(135deg, #1e3a8a, #3b82f6)',
+                            color: 'white',
+                            padding: '16px 20px',
+                            borderRadius: '16px',
+                            boxShadow: '0 10px 25px -5px rgba(59,130,246,0.4)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '10px',
+                            width: '320px',
+                            border: '1px solid rgba(255,255,255,0.2)'
+                        }}
+                    >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.9 }}>
+                                🔔 New Order Received!
+                            </span>
+                            <button 
+                                onClick={() => setNewOrderNotification(null)}
+                                style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '18px', fontWeight: 'bold', padding: 0 }}
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div>
+                            <div style={{ fontSize: '16px', fontWeight: 800, marginBottom: '2px' }}>
+                                #{newOrderNotification.token.slice(0, 10).toUpperCase()}
+                            </div>
+                            <div style={{ fontSize: '13px', opacity: 0.9 }}>
+                                Customer: <strong>{newOrderNotification.customerName}</strong>
+                            </div>
+                            <div style={{ fontSize: '12px', opacity: 0.8 }}>
+                                Phone: {newOrderNotification.phone}
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                            <button 
+                                onClick={() => {
+                                    setActiveTab('orders');
+                                    setNewOrderNotification(null);
+                                }}
+                                style={{
+                                    flex: 1,
+                                    background: 'white',
+                                    color: '#1e3a8a',
+                                    fontSize: '11px',
+                                    padding: '6px 12px',
+                                    fontWeight: '800',
+                                    borderRadius: '8px',
+                                    border: 'none',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                View Order
+                            </button>
+                            <button 
+                                onClick={() => setNewOrderNotification(null)}
+                                style={{
+                                    background: 'rgba(255,255,255,0.2)',
+                                    color: 'white',
+                                    fontSize: '11px',
+                                    padding: '6px 12px',
+                                    fontWeight: '800',
+                                    borderRadius: '8px',
+                                    border: 'none',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Dismiss
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
             {/* Nav Header */}
             <div className="admin-header">
                 <div>
@@ -687,7 +869,7 @@ export default function AdminPage() {
                                     <span>Available Catalog ({availableProducts.length})</span>
                                 </div>
                                 
-                                <div className="ordering-search-row">
+                                <div className="ordering-search-row" style={{ position: 'sticky', top: 0, background: 'white', padding: '10px 0', zIndex: 10 }}>
                                     <input
                                         type="text"
                                         placeholder="Search products..."
@@ -840,7 +1022,7 @@ export default function AdminPage() {
                 )}
 
                 {activeTab === 'renamer' && (
-                    <div className="renamer-view" style={{ borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+                    <div className="renamer-view" style={{ borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
                         <ProductRenamer />
                     </div>
                 )}

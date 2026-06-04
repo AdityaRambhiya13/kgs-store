@@ -482,7 +482,7 @@ def admin_list_products(request: Request, admin: dict = Depends(get_current_admi
 
 @app.post("/api/orders")
 
-def place_order(order: OrderCreate, request: Request, customer_token: dict = Depends(get_current_customer)):
+async def place_order(order: OrderCreate, request: Request, customer_token: dict = Depends(get_current_customer)):
 
     # check_rate_limit(request, limit=3, window=600, scope="orders")
 
@@ -598,6 +598,18 @@ def place_order(order: OrderCreate, request: Request, customer_token: dict = Dep
     response = {"token": token, "total": calculated_total, "status": "Processing", "payment_method": order.payment_method}
     if delivery_otp:
         response["delivery_otp"] = delivery_otp
+
+    # Broadcast new order to WebSocket channels
+    try:
+        await manager.broadcast_all({
+            "type": "new_order",
+            "token": token,
+            "customer_name": db_cust.get("name") or "Anonymous User",
+            "phone": phone
+        })
+    except Exception as ws_err:
+        logging.error(f"WebSocket broadcast error: {ws_err}")
+
     return response
 
 
