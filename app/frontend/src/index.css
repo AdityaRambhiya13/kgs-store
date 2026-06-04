@@ -3129,7 +3129,7 @@ p { line-height: 1.6; }
 
 @media (min-width: 768px) {
   .mobile-cart-bar-wrap {
-    display: none !important;
+    bottom: 24px;
   }
 }
 

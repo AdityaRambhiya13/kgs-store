@@ -10,7 +10,10 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     const logout = () => {
-        localStorage.clear(); // Wipe everything to be safe
+        localStorage.removeItem('kgsPhone');
+        localStorage.removeItem('kgsToken');
+        localStorage.removeItem('kgsName');
+        localStorage.removeItem('kgsAddress');
         setUser(null);
         // Refresh page to ensure all contexts reset
         window.location.href = '/login';
