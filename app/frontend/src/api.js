@@ -29,7 +29,11 @@ async function request(method, path, body = null, signal = null, token = null) {
         
         if (!res.ok) {
             if (res.status === 401) {
-                const isAdminRequest = path.includes('/api/admin') || activeToken === localStorage.getItem('adminToken');
+                const isAdminRequest = 
+                    path.includes('/api/admin') || 
+                    (path === '/api/orders' && method === 'GET') ||
+                    (path.startsWith('/api/orders/') && path.endsWith('/status')) ||
+                    activeToken === localStorage.getItem('adminToken');
                 if (isAdminRequest) {
                     window.dispatchEvent(new Event('admin-auth-error'));
                 } else {
