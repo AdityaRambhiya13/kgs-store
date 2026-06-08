@@ -9,7 +9,7 @@ async function request(method, path, body = null, signal = null, token = null) {
     
     // Create a timeout controller if no signal is provided
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 30000)
+    const timeoutId = setTimeout(() => controller.abort(), 120000)
     
     const opts = {
         method,
@@ -46,7 +46,7 @@ async function request(method, path, body = null, signal = null, token = null) {
         return res.json()
     } catch (err) {
         clearTimeout(timeoutId)
-        if (err.name === 'AbortError') throw new Error('Request timed out (15s)')
+        if (err.name === 'AbortError') throw new Error('Request timed out (120s)')
         throw err
     }
 }

@@ -793,12 +793,18 @@ def bulk_reorder_products(ordered_ids: list, clear_ids: list = None) -> bool:
                 (ordered_ids,)
             )
 
-            # 2. Re-apply sequential ranks (1 = top) for the ordered list
-            for index, pid in enumerate(ordered_ids):
-                cursor.execute(
-                    "UPDATE products SET display_order = %s WHERE id = %s",
-                    (index + 1, pid)
-                )
+            # 2. Re-apply sequential ranks (1 = top) for the ordered list using a fast bulk update
+            update_values = [(pid, index + 1) for index, pid in enumerate(ordered_ids)]
+            extras.execute_values(
+                cursor,
+                """
+                UPDATE products AS p 
+                SET display_order = u.display_order::integer
+                FROM (VALUES %s) AS u(id, display_order)
+                WHERE p.id = u.id::integer
+                """,
+                update_values
+            )
 
         conn.commit()
         _invalidate_products_cache()
