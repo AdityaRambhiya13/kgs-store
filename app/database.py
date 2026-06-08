@@ -770,6 +770,11 @@ def bulk_reorder_products(ordered_ids: list, clear_ids: list = None) -> bool:
     """
     conn = get_connection()
     try:
+        # Cast to integers defensively to prevent type mismatches
+        ordered_ids = [int(x) for x in ordered_ids if x is not None]
+        if clear_ids:
+            clear_ids = [int(x) for x in clear_ids if x is not None]
+
         cursor = conn.cursor()
 
         # Zero out any IDs explicitly requested to be cleared (Clear All Rankings action)

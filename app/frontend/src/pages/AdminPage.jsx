@@ -332,19 +332,25 @@ export default function AdminPage() {
     const handleSaveOrdering = async () => {
         setSaveOrderingLoading(true)
         try {
-            const orderedIds = pinnedList.map(p => p.id)
-            await bulkReorderProducts(orderedIds, adminToken)
+            const previouslyPinnedIds = products.filter(p => p.display_order > 0).map(p => p.id)
+            const currentlyPinnedIds = pinnedList.map(p => p.id)
+            const clearIds = previouslyPinnedIds.filter(id => !currentlyPinnedIds.includes(id))
+
+            await bulkReorderProducts(currentlyPinnedIds, adminToken, clearIds)
             
-            // Re-fetch products from DB to get the new ordering updated everywhere
-            const data = await getAdminProducts(adminToken)
-            const cleanedData = (Array.isArray(data) ? data : []).map(p => ({
-                ...p,
-                category: unescapeHTML(p.category),
-                sub_category: unescapeHTML(p.sub_category)
-            }))
-            setProducts(cleanedData)
-            // Keep the initialised flag true so the re-fetch above doesn't
-            // overwrite the admin's in-progress pinned list
+            // Update local products state with new display orders instead of full re-fetch to avoid timeouts
+            const updatedProducts = products.map(p => {
+                const pinIdx = currentlyPinnedIds.indexOf(p.id)
+                if (pinIdx !== -1) {
+                    return { ...p, display_order: pinIdx + 1 }
+                } else if (p.display_order > 0 && clearIds.includes(p.id)) {
+                    return { ...p, display_order: 0 }
+                }
+                return p
+            })
+            setProducts(updatedProducts)
+            
+            // Keep the initialised flag true so background fetches don't overwrite the state
             orderingInitialisedRef.current = true
             alert("✓ Custom display rankings saved successfully!")
         } catch (err) {
@@ -380,14 +386,15 @@ export default function AdminPage() {
                     : []
             )
 
-            // Refresh local product state so display_order is up to date
-            const data = await getAdminProducts(adminToken)
-            const cleanedData = (Array.isArray(data) ? data : []).map(p => ({
-                ...p,
-                category: unescapeHTML(p.category),
-                sub_category: unescapeHTML(p.sub_category)
-            }))
-            setProducts(cleanedData)
+            // Update local products state with cleared display orders instead of full re-fetch to avoid timeouts
+            const updatedProducts = products.map(p => {
+                const shouldClear = isCategoryScoped ? (p.category === categoryFilter) : true
+                if (shouldClear && p.display_order > 0) {
+                    return { ...p, display_order: 0 }
+                }
+                return p
+            })
+            setProducts(updatedProducts)
             orderingInitialisedRef.current = true
             alert(`✓ Rankings cleared for ${scopeLabel}!`)
         } catch (err) {
