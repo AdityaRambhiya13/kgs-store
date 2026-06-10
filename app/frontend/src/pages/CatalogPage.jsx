@@ -6,16 +6,19 @@ import HeroBanner from '../components/HeroBanner'
 import RecommendationsSection from '../components/RecommendationsSection'
 import { useCart } from '../CartContext'
 import { useAuth } from '../AuthContext'
-import { getProducts, getReorderReminders } from '../api'
+import { getProducts, getReorderReminders, getCategories } from '../api'
 import ProductDetailsModal from '../components/ProductDetailsModal'
 import { getMRP } from '../utils/pricing'
 
 // ── Zepto category definitions ──────────────────────────────────
-const CATEGORY_CONFIG = [
+const VIRTUAL_CATEGORIES = [
   { name: 'Newly Launched',             emoji: '⭐', color: '#fbbf24' },
   { name: 'Parachute New',              emoji: '✨', color: '#3b82f6', displayName: 'Parachute New Arrivals' },
   { name: 'Dehaat Products',            emoji: '🌾', color: '#10b981', displayName: 'Dehaat Farm Fresh Products' },
   { name: 'Organic India',              emoji: '🌿', color: '#10b981', displayName: 'Organic India Products' },
+]
+
+const DEFAULT_STANDARD_CATEGORIES = [
   { name: 'Atta, Rice & Dal',           emoji: '🌾', color: '#f59e0b' },
   { name: 'Masala & Dry Fruits',        emoji: '🌶️', color: '#ef4444' },
   { name: 'Snacks & Munchies',          emoji: '🍿', color: '#8b5cf6' },
@@ -31,8 +34,6 @@ const CATEGORY_CONFIG = [
   { name: 'Pooja Needs',                emoji: '🪔', color: '#eab308' },
   { name: 'Miscellaneous',              emoji: '📦', color: '#64748b' },
 ]
-
-const CATEGORY_MAP = Object.fromEntries(CATEGORY_CONFIG.map(c => [c.name, c]))
 
 // ── Blocked categories ───────────────────────────────────────────
 const BLOCKED_CATEGORIES = new Set([
@@ -107,6 +108,24 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
   const { user } = useAuth()
   const [productLimit, setProductLimit] = useState(40)
   const [debouncedSearch, setDebouncedSearch] = useState('')
+
+  const [officialCategories, setOfficialCategories] = useState([...VIRTUAL_CATEGORIES, ...DEFAULT_STANDARD_CATEGORIES])
+
+  const categoryMap = useMemo(() => {
+    return Object.fromEntries(officialCategories.map(c => [c.name, c]))
+  }, [officialCategories])
+
+  useEffect(() => {
+    let active = true
+    getCategories()
+      .then(data => {
+        if (active && Array.isArray(data) && data.length > 0) {
+          setOfficialCategories([...VIRTUAL_CATEGORIES, ...data])
+        }
+      })
+      .catch(err => console.error("Error fetching categories in CatalogPage:", err))
+    return () => { active = false }
+  }, [])
 
   const [reorderItems, setReorderItems] = useState([])
   const [reorderLoading, setReorderLoading] = useState(false)
@@ -217,7 +236,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
     if (hasOrganic) set.add('Organic India')
     
     // Robust matching: handle potential name changes (e.g. Dairy, Bread & Eggs -> Dairy & Bread)
-    return CATEGORY_CONFIG.filter(c => {
+    return officialCategories.filter(c => {
       if (set.has(c.name)) return true
       // Fallbacks for common renames
       if (c.name === 'Dairy & Bread' && set.has('Dairy, Bread & Eggs')) return true
@@ -719,8 +738,8 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
         {!loading && !error && !isSearchMode && activeCategory !== 'All' && filtered.length > 0 && (
           <div style={{ padding: '0 16px', marginTop: '8px' }}>
             <div className="section-header" style={{ marginBottom: '16px' }}>
-              <h2 className="section-title" style={{ color: CATEGORY_MAP[activeCategory]?.color }}>
-                {CATEGORY_MAP[activeCategory]?.emoji} {CATEGORY_MAP[activeCategory]?.displayName || activeCategory}
+              <h2 className="section-title" style={{ color: categoryMap[activeCategory]?.color }}>
+                {categoryMap[activeCategory]?.emoji} {categoryMap[activeCategory]?.displayName || activeCategory}
                 {activeSubCategory !== 'All' && <span style={{ fontSize: '0.8em', marginLeft: '8px', opacity: 0.7 }}>› {activeSubCategory}</span>}
               </h2>
               <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{filtered.length} items</span>

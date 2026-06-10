@@ -156,3 +156,12 @@ export const getSimilarProducts = (productId) =>
 
 export const getAvailableImages = (token) =>
     request('GET', '/api/admin/available-images', null, null, token)
+
+export const getCategories = (signal) =>
+    request('GET', '/api/categories', null, signal)
+
+export const makeCategoryOfficial = (name, emoji, color, adminToken) =>
+    request('POST', '/api/admin/categories/make-official', { name, emoji, color }, null, adminToken)
+
+export const renameCategory = (oldName, newName, adminToken) =>
+    request('POST', '/api/admin/categories/rename', { old_name: oldName, new_name: newName }, null, adminToken)

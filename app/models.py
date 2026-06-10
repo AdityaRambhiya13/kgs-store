@@ -216,3 +216,24 @@ class ResetPinRequest(BaseModel):
     token: str = Field(...)
     new_pin: str = Field(..., min_length=4, max_length=4, pattern=r"^\d{4}$")
 
+
+class CategoryMakeOfficial(BaseModel):
+    name: str = Field(..., min_length=1, max_length=50)
+    emoji: Optional[str] = Field("📦", max_length=10)
+    color: Optional[str] = Field("#64748b", max_length=20)
+
+    @field_validator("name", "emoji", "color")
+    @classmethod
+    def sanitize_inputs(cls, v):
+        return sanitize_text(v) if v else v
+
+
+class CategoryRename(BaseModel):
+    old_name: str = Field(..., min_length=1, max_length=50)
+    new_name: str = Field(..., min_length=1, max_length=50)
+
+    @field_validator("old_name", "new_name")
+    @classmethod
+    def sanitize_inputs(cls, v):
+        return sanitize_text(v) if v else v
+

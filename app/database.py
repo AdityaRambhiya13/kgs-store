@@ -198,8 +198,43 @@ def init_db():
                 base_name,
                 price
             );
+
+            -- Official categories table
+            CREATE TABLE IF NOT EXISTS official_categories (
+                name TEXT PRIMARY KEY,
+                emoji TEXT NOT NULL DEFAULT '📦',
+                color TEXT NOT NULL DEFAULT '#64748b',
+                display_order INTEGER NOT NULL DEFAULT 0
+            );
         """
         cursor.execute(setup_sql)
+
+        # Seed official_categories if empty
+        cursor.execute("SELECT COUNT(*) as count FROM official_categories")
+        row_cat = cursor.fetchone()
+        cat_count = row_cat['count'] if row_cat else 0
+        if cat_count == 0:
+            print("Official categories table empty. Initializing categories...")
+            default_cats = [
+                ('Atta, Rice & Dal', '🌾', '#f59e0b', 1),
+                ('Masala & Dry Fruits', '🌶️', '#ef4444', 2),
+                ('Snacks & Munchies', '🍿', '#8b5cf6', 3),
+                ('Sweet Tooth', '🍭', '#ec4899', 4),
+                ('Cleaning Essentials', '🧼', '#06b6d4', 5),
+                ('Instant & Frozen Food', '🍜', '#f97316', 6),
+                ('Dairy & Bread', '🥛', '#3b82f6', 7),
+                ('Personal Care', '💄', '#d946ef', 8),
+                ('Cold Drinks & Juices', '🥤', '#22c55e', 9),
+                ('Wellness', '💊', '#14b8a6', 10),
+                ('Tea, Coffee & Health Drinks', '☕', '#92400e', 11),
+                ('Home & Lifestyle', '🏠', '#0ea5e9', 12),
+                ('Pooja Needs', '🪔', '#eab308', 13),
+                ('Miscellaneous', '📦', '#64748b', 14)
+            ]
+            cursor.executemany(
+                "INSERT INTO official_categories (name, emoji, color, display_order) VALUES (%s, %s, %s, %s)",
+                default_cats
+            )
         
         # Check product count for conditional seeding
         cursor.execute("SELECT COUNT(*) as count FROM products")
@@ -1174,3 +1209,70 @@ def get_similar_products(product_id: int, limit: int = 6) -> list:
     
     # Return similar products
     return [p for p, _ in scored_candidates][:limit]
+
+# ── Official Categories Helper Functions ───────────────────
+
+def get_official_categories() -> list:
+    """Fetch all official categories from database."""
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT name, emoji, color, display_order FROM official_categories ORDER BY display_order ASC, name ASC")
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        release_connection(conn)
+
+def make_category_official(name: str, emoji: str = '📦', color: str = '#64748b') -> bool:
+    """Add a category to official_categories."""
+    name = clean_html_entities(name)
+    emoji = clean_html_entities(emoji)
+    color = clean_html_entities(color)
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        # Find next display_order
+        cursor.execute("SELECT COALESCE(MAX(display_order), 0) as max_ord FROM official_categories")
+        row = cursor.fetchone()
+        next_order = (row['max_ord'] if row else 0) + 1
+        
+        cursor.execute(
+            "INSERT INTO official_categories (name, emoji, color, display_order) VALUES (%s, %s, %s, %s) ON CONFLICT (name) DO NOTHING",
+            (name, emoji, color, next_order)
+        )
+        success = cursor.rowcount > 0
+        conn.commit()
+        return success
+    except Exception as e:
+        print(f"Error making category official: {e}")
+        if conn: conn.rollback()
+        return False
+    finally:
+        release_connection(conn)
+
+def rename_category(old_name: str, new_name: str) -> bool:
+    """Rename a category in official_categories table and update all products in products table."""
+    old_name = clean_html_entities(old_name)
+    new_name = clean_html_entities(new_name)
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        # 1. Update official_categories
+        cursor.execute(
+            "UPDATE official_categories SET name = %s WHERE name = %s",
+            (new_name, old_name)
+        )
+        # 2. Update products
+        cursor.execute(
+            "UPDATE products SET category = %s WHERE category = %s",
+            (new_name, old_name)
+        )
+        conn.commit()
+        _invalidate_products_cache()
+        return True
+    except Exception as e:
+        print(f"Error renaming category: {e}")
+        if conn: conn.rollback()
+        return False
+    finally:
+        release_connection(conn)

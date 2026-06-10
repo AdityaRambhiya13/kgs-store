@@ -79,14 +79,16 @@ from database import (
     get_trending_products, get_personalized_recommendations,
     confirm_payment_and_generate_otp, reject_order_payment,
     get_frequently_bought_together, get_smart_reorder_reminders,
-    get_similar_products
+    get_similar_products, get_official_categories, make_category_official,
+    rename_category
 )
 
 from models import (
 
     OrderCreate, OrderOut, OrderStatusUpdate, ProductOut, ProductCreate, ProductUpdate,
 
-    OTPRequest, OTPVerifyRequest, CustomerOut, SignupRequest, LoginRequest, ForgotPinRequest, ResetPinRequest
+    OTPRequest, OTPVerifyRequest, CustomerOut, SignupRequest, LoginRequest, ForgotPinRequest, ResetPinRequest,
+    CategoryMakeOfficial, CategoryRename
 
 )
 
@@ -1450,6 +1452,29 @@ def list_available_images(admin: dict = Depends(get_current_admin)):
 
         return {"images": []}
 
+
+# ── Category Management Endpoints ─────────────────────────
+
+@app.get("/api/categories")
+def api_get_categories(request: Request):
+    check_rate_limit(request, limit=120, window=60, scope="categories-get")
+    return get_official_categories()
+
+@app.post("/api/admin/categories/make-official")
+def api_make_category_official(body: CategoryMakeOfficial, admin: dict = Depends(get_current_admin)):
+    success = make_category_official(body.name, body.emoji, body.color)
+    if not success:
+        raise HTTPException(status_code=400, detail="Failed to make category official or category already exists")
+    invalidate_products_cache()
+    return {"message": "Category is now official"}
+
+@app.post("/api/admin/categories/rename")
+def api_rename_category(body: CategoryRename, admin: dict = Depends(get_current_admin)):
+    success = rename_category(body.old_name, body.new_name)
+    if not success:
+        raise HTTPException(status_code=400, detail="Failed to rename category")
+    invalidate_products_cache()
+    return {"message": "Category renamed successfully"}
 
 
 # ── Serve Frontend ────────────────────────────────────────

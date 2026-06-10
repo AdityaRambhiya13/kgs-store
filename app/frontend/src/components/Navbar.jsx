@@ -3,6 +3,7 @@ import { useCart } from '../CartContext'
 import { useAuth } from '../AuthContext'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
+import { getCategories } from '../api'
 
 const SEARCH_CATEGORIES = [
   { name: 'Atta, Rice & Dal',           emoji: '🌾' },
@@ -22,6 +23,22 @@ const SEARCH_CATEGORIES = [
 ]
 
 export default function Navbar({ searchQuery, onSearchChange, onCategorySelect }) {
+  const [categories, setCategories] = useState(SEARCH_CATEGORIES)
+
+  useEffect(() => {
+    let active = true
+    getCategories()
+      .then(data => {
+        if (active && Array.isArray(data) && data.length > 0) {
+          setCategories(data.map(c => ({
+            name: c.name,
+            emoji: c.emoji || '📦'
+          })))
+        }
+      })
+      .catch(err => console.error("Error fetching categories for Navbar:", err))
+    return () => { active = false }
+  }, [])
   const { cartCount, setCartOpen, lastAddedAt } = useCart()
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -183,7 +200,7 @@ export default function Navbar({ searchQuery, onSearchChange, onCategorySelect }
                   >
                     <p className="search-dropdown-label">Browse Categories</p>
                     <div className="search-dropdown-grid">
-                      {SEARCH_CATEGORIES.map(cat => (
+                      {categories.map(cat => (
                         <button
                           key={cat.name}
                           className="search-dropdown-cat-btn"

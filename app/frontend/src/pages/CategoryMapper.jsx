@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { getAdminProducts, updateProduct, adminLogin } from '../api'
+import { getAdminProducts, updateProduct, adminLogin, getCategories, makeCategoryOfficial, renameCategory } from '../api'
 
-const VALID_CATEGORIES = [
+const DEFAULT_VALID_CATEGORIES = [
   'Atta, Rice & Dal',
   'Masala & Dry Fruits',
   'Snacks & Munchies',
@@ -43,11 +43,32 @@ export default function CategoryMapper() {
   const [lastClickedId, setLastClickedId] = useState(null)
   const [sourceCategory, setSourceCategory] = useState('ALL')
 
+  const [officialCategories, setOfficialCategories] = useState(
+    DEFAULT_VALID_CATEGORIES.map(name => ({ name }))
+  )
+  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false)
+  const [renameOldName, setRenameOldName] = useState('')
+  const [renameNewName, setRenameNewName] = useState('')
+
+  const officialNames = useMemo(() => new Set(officialCategories.map(c => c.name)), [officialCategories])
+
   useEffect(() => {
     if (token) {
       loadData()
+      loadCategories()
     }
   }, [token])
+
+  async function loadCategories() {
+    try {
+      const cats = await getCategories()
+      if (Array.isArray(cats) && cats.length > 0) {
+        setOfficialCategories(cats)
+      }
+    } catch (err) {
+      console.error("Error loading categories:", err)
+    }
+  }
 
   async function loadData() {
     setLoading(true)
@@ -123,6 +144,58 @@ export default function CategoryMapper() {
     }
   }
 
+  async function handleMakeOfficial(catName) {
+    const emoji = prompt(`Enter emoji for "${catName}" category:`, "📦") || "📦"
+    const color = prompt(`Enter color/gradient for "${catName}" (e.g. #3b82f6):`, "#64748b") || "#64748b"
+    setStatus({ type: 'loading', msg: `Making "${catName}" official...` })
+    try {
+      await makeCategoryOfficial(catName, emoji, color, token)
+      setStatus({ type: 'success', msg: `"${catName}" is now official!` })
+      await loadCategories()
+      setTimeout(() => setStatus({ type: '', msg: '' }), 2000)
+    } catch (err) {
+      setStatus({ type: 'error', msg: err.message })
+    }
+  }
+
+  async function handleMakeOfficialAndAssign(catName, productIds) {
+    const emoji = prompt(`Enter emoji for "${catName}" category:`, "📦") || "📦"
+    const color = prompt(`Enter color/gradient for "${catName}" (e.g. #3b82f6):`, "#64748b") || "#64748b"
+    setStatus({ type: 'loading', msg: `Making "${catName}" official and assigning products...` })
+    try {
+      await makeCategoryOfficial(catName, emoji, color, token)
+      await loadCategories()
+      await assignCategory(productIds, catName)
+    } catch (err) {
+      setStatus({ type: 'error', msg: err.message })
+    }
+  }
+
+  async function handleRenameCategory(e) {
+    e.preventDefault()
+    if (!renameOldName || !renameNewName.trim()) {
+      setStatus({ type: 'error', msg: 'Please select a category and enter a new name.' })
+      return
+    }
+    const oldN = renameOldName
+    const newN = renameNewName.trim()
+    
+    setStatus({ type: 'loading', msg: `Renaming "${oldN}" to "${newN}"...` })
+    try {
+      await renameCategory(oldN, newN, token)
+      setStatus({ type: 'success', msg: `Renamed "${oldN}" to "${newN}" successfully!` })
+      setIsRenameModalOpen(false)
+      setRenameOldName('')
+      setRenameNewName('')
+      
+      // Reload both products and categories
+      await loadData()
+      await loadCategories()
+    } catch (err) {
+      setStatus({ type: 'error', msg: err.message })
+    }
+  }
+
   const toggleSelect = (id, shiftKey) => {
     const newSelected = new Set(selectedIds)
     if (shiftKey && lastClickedId) {
@@ -188,6 +261,7 @@ export default function CategoryMapper() {
           <p>Drag products from the left and drop them into categories on the right.</p>
         </div>
         <div className="header-right">
+          <button onClick={() => setIsRenameModalOpen(true)} className="rename-cat-btn">🏷️ Rename Category</button>
           <button onClick={loadData} className="refresh-btn">Refresh Data</button>
           <button onClick={() => { setToken(''); localStorage.removeItem('adminToken'); }} className="logout-btn">Logout</button>
         </div>
@@ -278,7 +352,7 @@ export default function CategoryMapper() {
               
               {/* Standard visible categories */}
               <div className="target-section-title">Standard Categories (Visible on Website)</div>
-              {VALID_CATEGORIES.map(cat => (
+              {officialCategories.map(c => c.name).map(cat => (
                 <CategoryDropZone 
                   key={cat} 
                   name={cat} 
@@ -290,16 +364,17 @@ export default function CategoryMapper() {
               ))}
 
               {/* Custom / Non-standard categories with warnings */}
-              {categories.filter(cat => !VALID_CATEGORIES.includes(cat)).length > 0 && (
+              {categories.filter(cat => !officialNames.has(cat)).length > 0 && (
                 <>
                   <div className="target-section-title warning-title">⚠️ Custom Categories (Hidden from Website)</div>
-                  {categories.filter(cat => !VALID_CATEGORIES.includes(cat)).map(cat => (
+                  {categories.filter(cat => !officialNames.has(cat)).map(cat => (
                     <CategoryDropZone 
                       key={cat} 
                       name={cat} 
                       onDrop={(ids) => assignCategory(ids, cat)}
                       isActive={sourceCategory === cat}
                       isWarning
+                      onMakeOfficial={handleMakeOfficial}
                       onClick={() => { if (selectedIds.size > 0) assignCategory(Array.from(selectedIds), cat) }}
                       hasSelection={selectedIds.size > 0}
                     />
@@ -307,13 +382,215 @@ export default function CategoryMapper() {
                 </>
               )}
               
-              <AddCategoryDropZone onAdd={(name, ids) => assignCategory(ids, name)} selectedIds={selectedIds} />
+              <AddCategoryDropZone 
+                onAdd={(name, ids) => {
+                  const cleanName = name.trim()
+                  if (!officialNames.has(cleanName)) {
+                    const makeOfficial = window.confirm(`"${cleanName}" is not an official category and won't be shown on the website. Would you like to make it official?`);
+                    if (makeOfficial) {
+                      handleMakeOfficialAndAssign(cleanName, ids);
+                    } else {
+                      assignCategory(ids, cleanName);
+                    }
+                  } else {
+                    assignCategory(ids, cleanName);
+                  }
+                }} 
+                selectedIds={selectedIds} 
+              />
             </div>
           </div>
         </div>
       </div>
 
+      <AnimatePresence>
+        {isRenameModalOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            className="modal-overlay"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }} 
+              animate={{ scale: 1, y: 0 }} 
+              exit={{ scale: 0.9, y: 20 }} 
+              className="rename-modal"
+            >
+              <h3>Rename Category</h3>
+              <p className="modal-subtitle">
+                This will safely update all products in this category without harming them.
+              </p>
+              <form onSubmit={handleRenameCategory}>
+                <div className="form-group">
+                  <label>Select Category to Rename:</label>
+                  <select 
+                    value={renameOldName} 
+                    onChange={e => setRenameOldName(e.target.value)}
+                    className="modal-select"
+                    required
+                  >
+                    <option value="">-- Select Category --</option>
+                    {Array.from(new Set([...categories, ...officialCategories.map(c => c.name)])).sort().map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>New Category Name:</label>
+                  <input 
+                    type="text" 
+                    value={renameNewName} 
+                    onChange={e => setRenameNewName(e.target.value)}
+                    placeholder="Enter new name..."
+                    className="modal-input"
+                    required
+                  />
+                </div>
+                <div className="modal-actions">
+                  <button 
+                    type="button" 
+                    onClick={() => { setIsRenameModalOpen(false); setRenameOldName(''); setRenameNewName(''); }}
+                    className="cancel-btn"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="confirm-btn">
+                    Confirm Rename
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <style dangerouslySetInnerHTML={{ __html: `
+        .rename-cat-btn {
+          padding: 10px 20px;
+          border-radius: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: 0.3s;
+          border: none;
+          background: rgba(192, 132, 252, 0.1);
+          color: #c084fc;
+          border: 1px solid rgba(192, 132, 252, 0.2);
+        }
+        .rename-cat-btn:hover {
+          background: rgba(192, 132, 252, 0.2);
+        }
+
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(15, 23, 42, 0.85);
+          backdrop-filter: blur(8px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+        }
+        .rename-modal {
+          background: #1e293b;
+          border: 1px solid rgba(255,255,255,0.1);
+          padding: 32px;
+          border-radius: 24px;
+          width: 440px;
+          max-width: 90%;
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .rename-modal h3 {
+          margin-top: 0;
+          font-size: 1.4rem;
+          font-weight: 800;
+          background: linear-gradient(135deg, #60a5fa 0%, #c084fc 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          margin-bottom: 8px;
+        }
+        .modal-subtitle {
+          color: #94a3b8;
+          font-size: 0.85rem;
+          margin-bottom: 24px;
+          line-height: 1.4;
+          text-align: left;
+        }
+        .form-group {
+          margin-bottom: 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          text-align: left;
+        }
+        .form-group label {
+          font-size: 0.85rem;
+          color: #94a3b8;
+          font-weight: 600;
+        }
+        .modal-select, .modal-input {
+          background: #0f172a;
+          border: 1px solid rgba(255,255,255,0.1);
+          color: white;
+          padding: 12px 16px;
+          border-radius: 12px;
+          font-size: 0.95rem;
+          outline: none;
+          transition: 0.3s;
+          width: 100%;
+        }
+        .modal-select:focus, .modal-input:focus {
+          border-color: #3b82f6;
+        }
+        .modal-actions {
+          display: flex;
+          gap: 12px;
+          justify-content: flex-end;
+          margin-top: 28px;
+        }
+        .cancel-btn, .confirm-btn {
+          padding: 12px 20px;
+          border-radius: 12px;
+          font-weight: 700;
+          font-size: 0.9rem;
+          cursor: pointer;
+          transition: 0.2s;
+          border: none;
+        }
+        .cancel-btn {
+          background: rgba(255,255,255,0.05);
+          color: #94a3b8;
+        }
+        .cancel-btn:hover {
+          background: rgba(255,255,255,0.1);
+        }
+        .confirm-btn {
+          background: #3b82f6;
+          color: white;
+        }
+        .confirm-btn:hover {
+          background: #2563eb;
+        }
+
+        .make-official-inline-btn {
+          background: rgba(16, 185, 129, 0.15);
+          color: #34d399;
+          border: 1px solid rgba(16, 185, 129, 0.3);
+          padding: 3px 8px;
+          border-radius: 6px;
+          font-size: 0.7rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: 0.2s;
+        }
+        .make-official-inline-btn:hover {
+          background: rgba(16, 185, 129, 0.25);
+          transform: translateY(-1px);
+        }
+
         .target-section-title {
           font-size: 0.8rem;
           font-weight: 700;
@@ -614,7 +891,7 @@ function DraggableProduct({ product, isSelected, onClick, selectedCount, selecte
   )
 }
 
-function CategoryDropZone({ name, onDrop, isSpecial, isActive, isWarning, onClick, hasSelection }) {
+function CategoryDropZone({ name, onDrop, isSpecial, isActive, isWarning, onClick, hasSelection, onMakeOfficial }) {
   const [isOver, setIsOver] = useState(false)
 
   const handleDrop = (e) => {
@@ -640,7 +917,16 @@ function CategoryDropZone({ name, onDrop, isSpecial, isActive, isWarning, onClic
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <span className="drop-zone-name">{name}</span>
         {isWarning && (
-          <span className="warning-badge">⚠️ Non-standard: won't show on website</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
+            <span className="warning-badge">⚠️ Non-standard: won't show on website</span>
+            <button 
+              className="make-official-inline-btn"
+              onClick={(e) => { e.stopPropagation(); onMakeOfficial(name); }}
+              title="Make this category official"
+            >
+              ✨ Make Official
+            </button>
+          </div>
         )}
       </div>
       <span className="drop-icon">{hasSelection ? '👈' : '📥'}</span>
