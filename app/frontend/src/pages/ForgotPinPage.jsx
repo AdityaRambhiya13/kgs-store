@@ -8,6 +8,7 @@ export default function ForgotPinPage() {
     const navigate = useNavigate()
     const [step, setStep] = useState(1) // 1 = Phone, 2 = New PIN
     const [phone, setPhone] = useState('')
+    const [oldPin, setOldPin] = useState('')
     const [userData, setUserData] = useState(null)
     const [newPin, setNewPin] = useState('')
 
@@ -18,14 +19,19 @@ export default function ForgotPinPage() {
     const handleVerifyPhone = async (e) => {
         e.preventDefault()
         setError(''); setMsg(''); setLoading(true)
+        if (oldPin.length !== 4) {
+            setError("PIN must be 4 digits")
+            setLoading(false)
+            return
+        }
         try {
-            const res = await forgotPin(phone)
+            const res = await forgotPin(phone, oldPin)
             if (res.verified) {
                 setUserData({ name: res.name, token: res.token })
                 setStep(2)
             }
         } catch (err) {
-            setError(err.message || 'Phone not registered')
+            setError(err.message || 'Incorrect details or unregistered phone')
         } finally {
             setLoading(false)
         }
@@ -72,7 +78,7 @@ export default function ForgotPinPage() {
 
                 {step === 1 && (
                     <form onSubmit={handleVerifyPhone}>
-                        <div className="confirm-phone-group" style={{ marginBottom: 24 }}>
+                        <div className="confirm-phone-group" style={{ marginBottom: 16 }}>
                             <span className="phone-prefix">+91</span>
                             <input
                                 type="tel"
@@ -83,7 +89,19 @@ export default function ForgotPinPage() {
                                 placeholder="10-digit number"
                             />
                         </div>
-                        <motion.button type="submit" className="btn btn-primary" disabled={loading || phone.length !== 10} whileTap={{ scale: 0.98 }} style={{ width: '100%', justifyContent: 'center', padding: '14px', fontSize: 16 }}>
+                        <div style={{ marginBottom: 24, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            <label style={{ fontSize: 14, fontWeight: 600 }}>Current 4-Digit PIN</label>
+                            <input
+                                type="password"
+                                className="input"
+                                value={oldPin}
+                                onChange={e => setOldPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                                required
+                                placeholder="••••"
+                                style={{ textAlign: 'center', letterSpacing: '4px', fontSize: '18px', padding: '12px' }}
+                            />
+                        </div>
+                        <motion.button type="submit" className="btn btn-primary" disabled={loading || phone.length !== 10 || oldPin.length !== 4} whileTap={{ scale: 0.98 }} style={{ width: '100%', justifyContent: 'center', padding: '14px', fontSize: 16 }}>
                             {loading ? 'Verifying...' : 'Continue'}
                         </motion.button>
 

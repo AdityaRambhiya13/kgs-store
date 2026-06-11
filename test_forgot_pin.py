@@ -9,6 +9,6 @@ from fastapi.testclient import TestClient
 
 client = TestClient(main.app)
 
-response = client.post("/api/auth/forgot-pin", json={"phone": "+919999999999"})
+response = client.post("/api/auth/forgot-pin", json={"phone": "+919999999999", "old_pin": "1234"})
 print("Status Code:", response.status_code)
 print("Response JSON:", response.json())

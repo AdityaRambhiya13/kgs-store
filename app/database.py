@@ -47,7 +47,7 @@ def init_pool():
                 print(f"Initializing Postgres Pool (Attempt {attempt+1})...")
                 # Small pool, fast timeout for serverless
                 _db_pool = pool.ThreadedConnectionPool(
-                    1, 10, url, 
+                    1, 5, url, 
                     cursor_factory=extras.RealDictCursor, 
                     connect_timeout=10
                 )
@@ -181,6 +181,17 @@ def init_db():
                 value INTEGER NOT NULL DEFAULT 100
             );
             INSERT INTO counters (name, value) VALUES ('order_token', 100) ON CONFLICT DO NOTHING;
+
+            -- Order token sequence (concurrency lock-free generation)
+            CREATE SEQUENCE IF NOT EXISTS order_token_seq START WITH 101;
+            
+            -- Sync sequence with current max order token to prevent duplicates
+            DO $$
+            BEGIN
+                IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'orders') THEN
+                    PERFORM setval('order_token_seq', COALESCE((SELECT MAX(NULLIF(regexp_replace(token, '\D', '', 'g'), '')::integer) FROM orders), 100) + 1, false);
+                END IF;
+            END $$;
 
             -- Favorites
             CREATE TABLE IF NOT EXISTS customer_favorites (
@@ -538,14 +549,8 @@ def create_order(phone: str, items: list, total: float, delivery_type: str = "pi
     try:
         cursor = conn.cursor()
         
-        # Robust increment logic with fallback insertion
-        cursor.execute("""
-            INSERT INTO counters (name, value) 
-            VALUES ('order_token', 101) 
-            ON CONFLICT (name) DO UPDATE 
-            SET value = counters.value + 1 
-            RETURNING value
-        """)
+        # Lock-free sequence generation
+        cursor.execute("SELECT nextval('order_token_seq') AS value")
         token_num = cursor.fetchone()['value']
         token = str(token_num)
 

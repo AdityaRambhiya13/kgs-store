@@ -203,6 +203,7 @@ class LoginRequest(BaseModel):
 
 class ForgotPinRequest(BaseModel):
     phone: str = Field(..., description="10-digit Indian phone number")
+    old_pin: str = Field(..., min_length=4, max_length=4, pattern=r"^\d{4}$", description="Current 4-digit security PIN")
 
     @field_validator("phone")
     @classmethod
@@ -211,6 +212,10 @@ class ForgotPinRequest(BaseModel):
         if not re.match(r"^[6-9]\d{9}$", cleaned):
             raise ValueError("Phone number not registered or invalid format")
         return cleaned
+
+class ChangePinRequest(BaseModel):
+    old_pin: str = Field(..., min_length=4, max_length=4, pattern=r"^\d{4}$")
+    new_pin: str = Field(..., min_length=4, max_length=4, pattern=r"^\d{4}$")
 
 class ResetPinRequest(BaseModel):
     token: str = Field(...)

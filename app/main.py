@@ -88,7 +88,7 @@ from models import (
     OrderCreate, OrderOut, OrderStatusUpdate, ProductOut, ProductCreate, ProductUpdate,
 
     OTPRequest, OTPVerifyRequest, CustomerOut, SignupRequest, LoginRequest, ForgotPinRequest, ResetPinRequest,
-    CategoryMakeOfficial, CategoryRename
+    CategoryMakeOfficial, CategoryRename, ChangePinRequest
 
 )
 
@@ -154,7 +154,11 @@ except Exception as e:
 
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 
-SECRET_KEY     = os.getenv("SECRET_KEY", "quickshop-secret-key-change-in-production")
+import secrets
+SECRET_KEY     = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    SECRET_KEY = secrets.token_hex(32)
+    print("WARNING: SECRET_KEY environment variable was not set. Generated a cryptographically secure random session secret key.")
 
 
 
@@ -198,7 +202,8 @@ def check_rate_limit(request: Request, limit: int, window: int, scope: str):
 
     key = f"rate_limit:{scope}:{client_ip}"
 
-    
+    if len(rate_limit_store) > 10000:
+        rate_limit_store.clear()
 
     current_time = time.time()
 
@@ -492,7 +497,7 @@ async def place_order(order: OrderCreate, request: Request, customer_token: dict
 
     phone = customer_token.get("phone")
 
-    db_cust = get_customer(phone)
+    db_cust = await asyncio.to_thread(get_customer, phone)
 
     if not db_cust:
 
@@ -526,11 +531,12 @@ async def place_order(order: OrderCreate, request: Request, customer_token: dict
 
     if len(recent_cancels) != len(cancels):
 
-        update_customer_cancels(phone, json.dumps(recent_cancels))
+        await asyncio.to_thread(update_customer_cancels, phone, json.dumps(recent_cancels))
 
 
 
-    products = {p["id"]: p for p in get_all_products()}
+    all_prods = await asyncio.to_thread(get_all_products)
+    products = {p["id"]: p for p in all_prods}
 
     validated_items = []
 
@@ -541,13 +547,17 @@ async def place_order(order: OrderCreate, request: Request, customer_token: dict
     for item in order.items:
 
         if item.product_id not in products:
+
             raise HTTPException(status_code=400, detail="Product not found")
 
         product = products[item.product_id]
 
         if not product.get("is_visible", True):
+
             raise HTTPException(status_code=400, detail=f"Product '{product['name']}' is no longer available.")
+
         if not product.get("in_stock", True):
+
             raise HTTPException(status_code=400, detail=f"Product '{product['name']}' is out of stock.")
 
         subtotal = product["price"] * item.quantity
@@ -592,25 +602,41 @@ async def place_order(order: OrderCreate, request: Request, customer_token: dict
 
         if order.save_as_home:
 
-            create_or_update_customer(phone=phone, address=address_str)
+            await asyncio.to_thread(create_or_update_customer, phone=phone, address=address_str)
 
 
 
-    token, delivery_otp = create_order(phone, validated_items, calculated_total, order.delivery_type, order.delivery_time, address_str, order.payment_method)
+    token, delivery_otp = await asyncio.to_thread(create_order, phone, validated_items, calculated_total, order.delivery_type, order.delivery_time, address_str, order.payment_method)
+
     response = {"token": token, "total": calculated_total, "status": "Processing", "payment_method": order.payment_method}
+
     if delivery_otp:
+
         response["delivery_otp"] = delivery_otp
 
+
+
     # Broadcast new order to WebSocket channels
+
     try:
+
         await manager.broadcast_all({
+
             "type": "new_order",
+
             "token": token,
+
             "customer_name": db_cust.get("name") or "Anonymous User",
+
             "phone": phone
+
         })
+
     except Exception as ws_err:
+
         logging.error(f"WebSocket broadcast error: {ws_err}")
+
+
 
     return response
 
@@ -619,12 +645,12 @@ async def place_order(order: OrderCreate, request: Request, customer_token: dict
 async def confirm_payment(order_token: str, request: Request, admin_token: dict = Depends(get_current_admin)):
     """Admin confirms payment received. Generates delivery OTP and moves order to Ready for Pickup."""
     check_rate_limit(request, limit=30, window=60, scope="admin-confirm-payment")
-    order = get_order_by_token(order_token)
+    order = await asyncio.to_thread(get_order_by_token, order_token)
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     if order.get("payment_status") == "paid":
         raise HTTPException(status_code=400, detail="Payment already confirmed for this order")
-    plain_otp = confirm_payment_and_generate_otp(order_token)
+    plain_otp = await asyncio.to_thread(confirm_payment_and_generate_otp, order_token)
     logging.info(f"ADMIN_ACTION: Payment confirmed for order {order_token} by admin")
     await manager.broadcast_all({"type": "status_update", "token": order_token, "status": "Ready for Pickup"})
     return {"message": "Payment confirmed. Order moved to Ready for Pickup.", "otp_generated": plain_otp is not None}
@@ -634,11 +660,11 @@ async def confirm_payment(order_token: str, request: Request, admin_token: dict 
 @app.post("/api/admin/orders/{order_token}/reject-payment")
 async def reject_payment(order_token: str, request: Request, admin: dict = Depends(get_current_admin)):
     check_rate_limit(request, limit=30, window=60, scope="admin-payment")
-    order = get_order_by_token(order_token)
+    order = await asyncio.to_thread(get_order_by_token, order_token)
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     
-    updated = reject_order_payment(order_token)
+    updated = await asyncio.to_thread(reject_order_payment, order_token)
     if not updated:
         raise HTTPException(status_code=500, detail="Failed to update payment status")
     
@@ -699,6 +725,9 @@ def get_order_details(token: str, request: Request, user: dict = Depends(get_cur
 
         raise HTTPException(status_code=404, detail="Order not found")
 
+    if user.get("role") == "admin":
+        order.pop("delivery_otp", None)
+
     return order
 
 
@@ -711,7 +740,7 @@ async def cancel_customer_order(token: str, request: Request, customer_token: di
 
     phone = customer_token.get("phone")
 
-    order = get_order_by_token(token)
+    order = await asyncio.to_thread(get_order_by_token, token)
 
     
 
@@ -727,7 +756,7 @@ async def cancel_customer_order(token: str, request: Request, customer_token: di
 
         
 
-    updated = update_order_status(token, "Cancelled")
+    updated = await asyncio.to_thread(update_order_status, token, "Cancelled")
 
     if not updated:
 
@@ -735,7 +764,7 @@ async def cancel_customer_order(token: str, request: Request, customer_token: di
 
         
 
-    db_cust = get_customer(phone)
+    db_cust = await asyncio.to_thread(get_customer, phone)
 
     try:
 
@@ -759,7 +788,7 @@ async def cancel_customer_order(token: str, request: Request, customer_token: di
 
     
 
-    update_customer_cancels(phone, json.dumps(recent_cancels))
+    await asyncio.to_thread(update_customer_cancels, phone, json.dumps(recent_cancels))
 
     
 
@@ -791,7 +820,7 @@ async def update_status(token: str, body: OrderStatusUpdate, request: Request, a
 
     if body.status == "Delivered":
 
-        order = get_order_by_token(token)
+        order = await asyncio.to_thread(get_order_by_token, token)
 
         if not order: raise HTTPException(status_code=404, detail="Order not found")
 
@@ -799,10 +828,16 @@ async def update_status(token: str, body: OrderStatusUpdate, request: Request, a
 
             raise HTTPException(status_code=400, detail="Invalid Delivery OTP")
 
-        updated = mark_delivered(token)
+
+
+        updated = await asyncio.to_thread(mark_delivered, token)
+
         logging.info(f"ADMIN_ACTION: Order {token} marked DELIVERED by admin")
+
     else:
-        updated = update_order_status(token, body.status)
+
+        updated = await asyncio.to_thread(update_order_status, token, body.status)
+
         logging.info(f"ADMIN_ACTION: Order {token} status changed to {body.status} by admin")
 
 
@@ -1122,43 +1157,42 @@ def login(body: LoginRequest, request: Request):
 
 
 @app.post("/api/auth/forgot-pin")
-
 def forgot_pin(body: ForgotPinRequest, request: Request):
-
     check_rate_limit(request, limit=5, window=60, scope="forgot-pin")
-
     customer = get_customer(body.phone)
-
     if not customer:
-
         raise HTTPException(status_code=404, detail="Phone number not registered")
-
         
-
+    if not verify_pin(body.old_pin, customer["pin_hash"]):
+        raise HTTPException(status_code=401, detail="Incorrect current PIN")
+        
     reset_token = create_access_token({"role": "reset", "phone": customer["phone"]}, timedelta(minutes=15))
-
     
-
     return {
-
         "verified": True,
-
         "name": customer.get("name", "User"),
-
         "token": reset_token
-
     }
 
-
+@app.post("/api/auth/change-pin")
+def change_pin(body: ChangePinRequest, request: Request, customer_token: dict = Depends(get_current_customer)):
+    check_rate_limit(request, limit=5, window=60, scope="change-pin")
+    phone = customer_token.get("phone")
+    customer = get_customer(phone)
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+        
+    if not verify_pin(body.old_pin, customer["pin_hash"]):
+        raise HTTPException(status_code=401, detail="Incorrect current PIN")
+        
+    new_pin_hash = hash_pin(body.new_pin)
+    create_or_update_customer(phone, pin_hash=new_pin_hash)
+    return {"message": "PIN updated successfully"}
 
 @app.post("/api/auth/reset-pin")
-
 def reset_pin(body: ResetPinRequest, request: Request):
-
     check_rate_limit(request, limit=3, window=60, scope="reset-pin")
-
     try:
-
         payload = jwt.decode(body.token, SECRET_KEY, algorithms=[ALGORITHM])
 
         if payload.get("role") != "reset":

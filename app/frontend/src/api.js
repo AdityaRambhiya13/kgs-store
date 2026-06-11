@@ -107,8 +107,8 @@ export const login = (identifier, pin) =>
         pin: String(pin)
     })
 
-export const forgotPin = (phone) =>
-    request('POST', '/api/auth/forgot-pin', { phone: `+91${phone}` })
+export const forgotPin = (phone, oldPin) =>
+    request('POST', '/api/auth/forgot-pin', { phone: `+91${phone}`, old_pin: String(oldPin) })
 
 export const resetPin = (token, new_pin) =>
     request('POST', '/api/auth/reset-pin', { token, new_pin: String(new_pin) })

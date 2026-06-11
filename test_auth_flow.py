@@ -4,10 +4,11 @@ import time
 import os
 import signal
 import subprocess
+import sys
 
 # Start server
 server = subprocess.Popen(
-    ["uvicorn", "main:app", "--port", "8001"], 
+    [sys.executable, "-m", "uvicorn", "main:app", "--port", "8001"], 
     cwd="app"
 )
 time.sleep(3) # wait for server to start
@@ -45,16 +46,30 @@ try:
 
     headers = {"Authorization": f"Bearer {token}"}
 
+    # Fetch a valid product ID dynamically
+    prod_res = requests.get(f"{BASE}/products")
+    if prod_res.status_code == 200 and prod_res.json():
+        sample_product = prod_res.json()[0]
+        product_id = sample_product["id"]
+        product_name = sample_product["name"]
+        product_price = sample_product["price"]
+        print(f"Using sample product: {product_name} (ID: {product_id}, Price: {product_price})")
+    else:
+        product_id = 1
+        product_name = "Atta"
+        product_price = 120.0
+        print("Could not fetch products, using fallback product ID 1")
+
     # 4. Create and Cancel 3 orders to hit limit
     print("\n4. Testing Order Creation and Cancellation Limit...")
     for i in range(1, 5):
         print(f"\n--- Order Iteration {i} ---")
         res = requests.post(f"{BASE}/orders", json={
-            "items": [{"product_id": 1, "quantity": 1}],
-            "total": 120, # The product with id 1 is Atta priced at 40/kg, wait, product 1 price is what? Let's assume there is product id 1.
+            "items": [{"product_id": product_id, "quantity": 1, "name": product_name, "price": product_price}],
+            "total": product_price,
             "delivery_type": "pickup"
         }, headers=headers)
-        
+
         if res.status_code != 200:
             print("Create order blocked:", res.status_code, res.json())
             break
@@ -67,7 +82,7 @@ try:
 
     # 5. Forgot PIN
     print("\n5. Testing Forgot PIN...")
-    res = requests.post(f"{BASE}/auth/forgot-pin", json={"email": "test8@example.com"})
+    res = requests.post(f"{BASE}/auth/forgot-pin", json={"phone": "9999999998", "old_pin": "1234"})
     print("Forgot PIN Response:", res.json())
 
 except Exception as e:
