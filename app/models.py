@@ -260,3 +260,19 @@ class CategoryRename(BaseModel):
     def sanitize_inputs(cls, v):
         return sanitize_text(v) if v else v
 
+
+class ProfileUpdateRequest(BaseModel):
+    name: str = Field(..., min_length=2, max_length=60)
+    security_question: Optional[str] = Field(None, min_length=1, max_length=150)
+    security_answer: Optional[str] = Field(None, min_length=1, max_length=100)
+
+    @field_validator("name", "security_question", "security_answer")
+    @classmethod
+    def sanitize_inputs(cls, v):
+        return sanitize_text(v) if v else v
+
+
+class AdminResetPinRequest(BaseModel):
+    new_pin: str = Field(..., min_length=4, max_length=4, pattern=r"^\d{4}$")
+
+

@@ -2,7 +2,15 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../AuthContext'
-import { updateProfile, getOrderHistory } from '../api'
+import { updateProfile, getOrderHistory, getProfile } from '../api'
+
+const SECURITY_QUESTIONS = [
+    "What was the name of your first pet?",
+    "What is your mother's maiden name?",
+    "What was the name of your first school?",
+    "In which city were you born?",
+    "What is your favorite food?"
+]
 
 function getInitials(name, phone) {
     if (name && name.trim()) {
@@ -36,9 +44,25 @@ export default function ProfilePage() {
     const [orders, setOrders] = useState([])
     const [ordersLoading, setOrdersLoading] = useState(true)
 
+    const [hasSecurityQuestion, setHasSecurityQuestion] = useState(true)
+    const [securityQuestion, setSecurityQuestion] = useState('')
+    const [securityAnswer, setSecurityAnswer] = useState('')
+    const [securityError, setSecurityError] = useState('')
+    const [securitySuccess, setSecuritySuccess] = useState(false)
+    const [securitySaving, setSecuritySaving] = useState(false)
+
     useEffect(() => {
         if (!user) { navigate('/login'); return }
         setNameInput(user.name || '')
+
+        getProfile()
+            .then(data => {
+                if (data) {
+                    setHasSecurityQuestion(!!data.has_security_question)
+                }
+            })
+            .catch(() => {})
+
         getOrderHistory()
             .then(data => setOrders(Array.isArray(data) ? data : []))
             .catch(() => setOrders([]))
@@ -62,6 +86,30 @@ export default function ProfilePage() {
             setSaveErr(e.message || 'Failed to update name')
         } finally {
             setSaving(false)
+        }
+    }
+
+    const handleSaveSecurity = async () => {
+        if (!securityQuestion) {
+            setSecurityError('Please select a security question')
+            return
+        }
+        if (!securityAnswer.trim()) {
+            setSecurityError('Please provide an answer')
+            return
+        }
+        setSecurityError('')
+        setSecuritySaving(true)
+        try {
+            await updateProfile(user?.name || '', securityQuestion, securityAnswer.trim())
+            setSecuritySuccess(true)
+            setHasSecurityQuestion(true)
+            setSecurityAnswer('')
+            setTimeout(() => setSecuritySuccess(false), 3000)
+        } catch (e) {
+            setSecurityError(e.message || 'Failed to update security question')
+        } finally {
+            setSecuritySaving(false)
         }
     }
 
@@ -198,6 +246,27 @@ export default function ProfilePage() {
                 </div>
             </div>
 
+            {!hasSecurityQuestion && (
+                <div className="profile-warning-banner" style={{
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    border: '1px solid rgba(239, 68, 68, 0.2)',
+                    borderRadius: 16,
+                    padding: 16,
+                    margin: '16px 0',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 8,
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: 20 }}>⚠️</span>
+                        <span style={{ fontWeight: 600, color: '#EF4444' }}>Action Required</span>
+                    </div>
+                    <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>
+                        Please set a security question to enable self-service PIN recovery in the future.
+                    </p>
+                </div>
+            )}
+
             {/* ── Recent Orders ── */}
             <div className="profile-section">
                 <div className="profile-section-header">
@@ -273,6 +342,81 @@ export default function ProfilePage() {
                         ))}
                     </div>
                 )}
+            </div>
+
+            {/* ── Security Configuration ── */}
+            <div className="profile-section">
+                <h3 className="profile-section-title" style={{ marginBottom: 12 }}>🔐 Security Settings</h3>
+                <div style={{
+                    background: 'var(--card-bg, var(--surface))',
+                    border: '1px solid var(--border)',
+                    borderRadius: 16,
+                    padding: 16,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 16
+                }}>
+                    <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>
+                        {hasSecurityQuestion 
+                            ? "✔️ A security question is currently set for your account. You can update it by selecting a new question and answer below."
+                            : "⚠️ You have not set a security question yet. Please configure one below to enable self-service PIN recovery."
+                        }
+                    </p>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <label style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>Security Question</label>
+                        <select
+                            value={securityQuestion}
+                            onChange={e => setSecurityQuestion(e.target.value)}
+                            className="input"
+                            style={{
+                                width: '100%',
+                                padding: '12px',
+                                borderRadius: '12px',
+                                border: '1px solid var(--border)',
+                                background: 'var(--surface)',
+                                color: 'var(--text)'
+                            }}
+                        >
+                            <option value="">Select a security question</option>
+                            {SECURITY_QUESTIONS.map(q => (
+                                <option key={q} value={q}>{q}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <label style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>Security Answer</label>
+                        <input
+                            type="text"
+                            value={securityAnswer}
+                            onChange={e => { setSecurityAnswer(e.target.value); setSecurityError('') }}
+                            placeholder="Enter your secret answer"
+                            className="input"
+                            style={{ width: '100%' }}
+                        />
+                    </div>
+
+                    {securityError && (
+                        <p style={{ color: '#EF4444', fontSize: 13, margin: 0 }}>{securityError}</p>
+                    )}
+
+                    {securitySuccess && (
+                        <p style={{ color: '#10B981', fontSize: 13, margin: 0, fontWeight: 500 }}>
+                            ✅ Security question updated successfully!
+                        </p>
+                    )}
+
+                    <motion.button
+                        className="btn btn-primary"
+                        onClick={handleSaveSecurity}
+                        disabled={securitySaving || !securityQuestion || !securityAnswer.trim()}
+                        whileTap={{ scale: 0.98 }}
+                        style={{ alignSelf: 'flex-start' }}
+                    >
+                        {securitySaving ? 'Saving...' : 'Update Security Question'}
+                    </motion.button>
+                </div>
             </div>
 
             {/* ── Account Actions ── */}

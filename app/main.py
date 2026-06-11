@@ -88,7 +88,7 @@ from models import (
     OrderCreate, OrderOut, OrderStatusUpdate, ProductOut, ProductCreate, ProductUpdate,
 
     OTPRequest, OTPVerifyRequest, CustomerOut, SignupRequest, LoginRequest, ForgotPinQuestionRequest, ForgotPinVerifyRequest, ResetPinRequest,
-    CategoryMakeOfficial, CategoryRename, ChangePinRequest
+    CategoryMakeOfficial, CategoryRename, ChangePinRequest, ProfileUpdateRequest, AdminResetPinRequest
 
 )
 
@@ -697,6 +697,25 @@ def list_customers(request: Request, admin: dict = Depends(get_current_admin)):
 
 
 
+@app.post("/api/admin/customers/{phone}/reset-pin")
+def admin_reset_customer_pin(phone: str, body: AdminResetPinRequest, request: Request, admin: dict = Depends(get_current_admin)):
+    check_rate_limit(request, limit=60, window=60, scope="admin-reset-pin")
+    cleaned_phone = phone.replace(" ", "").replace("-", "").replace("+", "")
+    if cleaned_phone.startswith("91") and len(cleaned_phone) == 12:
+        cleaned_phone = cleaned_phone[2:]
+    elif cleaned_phone.startswith("0") and len(cleaned_phone) == 11:
+        cleaned_phone = cleaned_phone[1:]
+        
+    customer = get_customer(cleaned_phone)
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+        
+    hashed_pin = hash_pin(body.new_pin)
+    create_or_update_customer(phone=cleaned_phone, pin_hash=hashed_pin)
+    return {"message": "Customer PIN reset successfully"}
+
+
+
 @app.get("/api/orders/history")
 
 def get_customer_orders(request: Request, customer_token: dict = Depends(get_current_customer)):
@@ -1004,37 +1023,36 @@ def get_me(request: Request, customer: dict = Depends(get_current_customer)):
 
             
 
-    return {"phone": db_cust["phone"], "name": db_cust["name"], "address": address_data}
-
-
-
-class ProfileUpdateRequest(BaseModel):
-
-    name: str
+    return {"phone": db_cust["phone"], "name": db_cust["name"], "address": address_data, "has_security_question": bool(db_cust.get("security_question"))}
 
 
 
 @app.patch("/api/auth/profile")
-
 def update_profile(body: ProfileUpdateRequest, request: Request, customer: dict = Depends(get_current_customer)):
-
     check_rate_limit(request, limit=10, window=60, scope="auth-profile-update")
-
     name = body.name.strip()
-
     if not name or len(name) < 2:
-
         raise HTTPException(status_code=400, detail="Name must be at least 2 characters")
-
     if len(name) > 60:
-
         raise HTTPException(status_code=400, detail="Name too long")
-
     phone = customer.get("phone")
 
-    create_or_update_customer(phone=phone, name=name)
+    security_question = body.security_question
+    security_answer_hash = None
+    if security_question or body.security_answer:
+        if not security_question or not body.security_answer:
+            raise HTTPException(status_code=400, detail="Both security question and answer must be provided to update security details")
+        ans_normalized = body.security_answer.strip().lower()
+        security_answer_hash = hash_pin(ans_normalized)
 
+    create_or_update_customer(
+        phone=phone,
+        name=name,
+        security_question=security_question,
+        security_answer_hash=security_answer_hash
+    )
     return {"message": "Profile updated", "name": name}
+
 
 
 

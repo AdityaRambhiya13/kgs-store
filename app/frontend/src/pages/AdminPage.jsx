@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { listOrders, updateStatus, listCustomers, adminLogin, getProducts, getAdminProducts, addProduct, updateProduct, deleteProduct, confirmPayment, rejectPayment, bulkReorderProducts } from '../api'
+import { listOrders, updateStatus, listCustomers, adminLogin, getProducts, getAdminProducts, addProduct, updateProduct, deleteProduct, confirmPayment, rejectPayment, bulkReorderProducts, adminResetPin } from '../api'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import ProductRenamer from './ProductRenamer'
@@ -57,6 +57,11 @@ export default function AdminPage() {
     const [categoryFilter, setCategoryFilter] = useState('All')
     const [productLimit, setProductLimit] = useState(50)
     const [newOrderNotification, setNewOrderNotification] = useState(null)
+    const [resetPinCustomer, setResetPinCustomer] = useState(null)
+    const [newPinInput, setNewPinInput] = useState('')
+    const [resetError, setResetError] = useState('')
+    const [resetSuccess, setResetSuccess] = useState('')
+    const [resetLoading, setResetLoading] = useState(false)
     const intervalRef = useRef(null)
     const orderingInitialisedRef = useRef(false) // tracks whether we've seeded pinnedList for this session
 
@@ -414,6 +419,32 @@ export default function AdminPage() {
         }
     }
 
+    const handleResetPinSubmit = async (e) => {
+        e.preventDefault()
+        if (!newPinInput || newPinInput.length !== 4 || !/^\d{4}$/.test(newPinInput)) {
+            setResetError('PIN must be exactly 4 digits')
+            return
+        }
+        setResetError('')
+        setResetLoading(true)
+        try {
+            await adminResetPin(resetPinCustomer.phone, newPinInput, adminToken)
+            setResetSuccess(`Successfully reset PIN for customer ${resetPinCustomer.phone} to ${newPinInput}`)
+            setNewPinInput('')
+            // Refresh customers list to ensure sync
+            const data = await listCustomers(adminToken)
+            setCustomers(Array.isArray(data) ? data : [])
+            setTimeout(() => {
+                setResetPinCustomer(null)
+                setResetSuccess('')
+            }, 2000)
+        } catch (err) {
+            setResetError(err.message || 'Failed to reset PIN')
+        } finally {
+            setResetLoading(false)
+        }
+    }
+
     // --- Derived / memoised values ---
     // IMPORTANT: all useMemo calls must be ABOVE any early return to satisfy React's Rules of Hooks
     const uniqueCategories = useMemo(() => {
@@ -610,9 +641,16 @@ export default function AdminPage() {
                                     <div className="customer-info" style={{ flex: 1 }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
                                             <span className="cust-phone" style={{ fontSize: '15.5px' }}>📱 {c.phone}</span>
-                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                                                 <a href={`tel:${c.phone}`} className="admin-order-phone-btn" style={{ fontSize: '11px', padding: '3px 8px' }}>📞 Call</a>
                                                 <a href={`https://wa.me/${c.phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="admin-order-phone-btn" style={{ fontSize: '11px', padding: '3px 8px' }}>💬 WhatsApp</a>
+                                                <button 
+                                                    onClick={() => { setResetPinCustomer(c); setNewPinInput(''); setResetError(''); setResetSuccess('') }} 
+                                                    className="admin-order-phone-btn" 
+                                                    style={{ fontSize: '11px', padding: '3px 8px', background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca', cursor: 'pointer' }}
+                                                >
+                                                    🔑 Reset PIN
+                                                </button>
                                             </div>
                                         </div>
                                         <span className="cust-name" style={{ display: 'block', marginTop: '4px', fontWeight: 600, color: '#475569' }}>{c.name || 'Anonymous User'}</span>
@@ -1099,6 +1137,46 @@ export default function AdminPage() {
                                     <button type="button" className="btn btn-ghost" onClick={() => setProductForm(null)}>Cancel</button>
                                     <button type="submit" className="btn btn-primary" disabled={loading}>
                                         {loading ? 'Saving...' : 'Save Changes'}
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Reset PIN Modal */}
+            <AnimatePresence>
+                {resetPinCustomer && (
+                    <div className="modal-overlay">
+                        <motion.div className="modal-content" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}>
+                            <h3>Reset Customer PIN</h3>
+                            <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px' }}>
+                                Resetting PIN for customer: <strong>{resetPinCustomer.name || 'Anonymous User'} ({resetPinCustomer.phone})</strong>
+                            </p>
+                            <form onSubmit={handleResetPinSubmit} className="admin-form">
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#64748b', marginBottom: '6px' }}>New 4-Digit PIN</label>
+                                    <input 
+                                        type="password" 
+                                        inputMode="numeric" 
+                                        maxLength={4} 
+                                        required 
+                                        value={newPinInput} 
+                                        onChange={e => setNewPinInput(e.target.value.replace(/\D/g, ''))} 
+                                        placeholder="••••"
+                                        className="input"
+                                        style={{ width: '100%', padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '14px', background: '#f8fafc' }}
+                                    />
+                                </div>
+
+                                {resetError && <p className="error-msg" style={{ color: '#EF4444', fontSize: '13px', marginTop: 12, margin: '12px 0 0 0' }}>⚠️ {resetError}</p>}
+                                {resetSuccess && <p style={{ color: '#10B981', fontSize: '13px', marginTop: 12, fontWeight: 500, margin: '12px 0 0 0' }}>{resetSuccess}</p>}
+
+                                <div className="modal-btns" style={{ marginTop: 20, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                                    <button type="button" className="btn btn-ghost" onClick={() => { setResetPinCustomer(null); setNewPinInput(''); setResetError(''); setResetSuccess('') }}>Cancel</button>
+                                    <button type="submit" className="btn btn-primary" disabled={resetLoading}>
+                                        {resetLoading ? 'Resetting...' : 'Reset PIN'}
                                     </button>
                                 </div>
                             </form>

@@ -69,6 +69,9 @@ export const listOrders = (token, signal) =>
 export const listCustomers = (token, signal) =>
     request('GET', '/api/admin/customers', null, signal, token)
 
+export const adminResetPin = (phone, newPin, adminToken) =>
+    request('POST', `/api/admin/customers/${phone}/reset-pin`, { new_pin: String(newPin) }, null, adminToken)
+
 export const updateStatus = (token, status, adminToken, otp = null) =>
     request('PATCH', `/api/orders/${token}/status`, { status, ...(otp && { otp }) }, null, adminToken)
 
@@ -121,8 +124,12 @@ export const resetPin = (token, new_pin) =>
 export const getProfile = () =>
     request('GET', `/api/auth/me?t=${Date.now()}`)
 
-export const updateProfile = (name) =>
-    request('PATCH', '/api/auth/profile', { name })
+export const updateProfile = (name, securityQuestion = null, securityAnswer = null) => {
+    const body = { name }
+    if (securityQuestion) body.security_question = securityQuestion
+    if (securityAnswer) body.security_answer = securityAnswer
+    return request('PATCH', '/api/auth/profile', body)
+}
 
 // ── Order History ──────────────────────────────────────────────
 export const getOrderHistory = () => {
