@@ -175,6 +175,16 @@ def init_db():
                 created_at TEXT NOT NULL
             );
 
+            -- Migrations for customer security questions
+            DO $$ BEGIN
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='customers' AND column_name='security_question') THEN
+                    ALTER TABLE customers ADD COLUMN security_question TEXT;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='customers' AND column_name='security_answer_hash') THEN
+                    ALTER TABLE customers ADD COLUMN security_answer_hash TEXT;
+                END IF;
+            END $$;
+
             -- Token counter
             CREATE TABLE IF NOT EXISTS counters (
                 name TEXT PRIMARY KEY,
@@ -481,14 +491,14 @@ def get_customer_by_email(email: str):
     finally:
         release_connection(conn)
 
-def create_or_update_customer(phone: str, name: "Optional[str]" = None, email: "Optional[str]" = None, address: "Optional[str]" = None, pin_hash: "Optional[str]" = None):
+def create_or_update_customer(phone: str, name: "Optional[str]" = None, email: "Optional[str]" = None, address: "Optional[str]" = None, pin_hash: "Optional[str]" = None, security_question: "Optional[str]" = None, security_answer_hash: "Optional[str]" = None):
     """Insert or update customer details."""
     existing = get_customer(phone)
     conn = get_connection()
     try:
         if existing:
             # Update existing
-            if name or email or address or pin_hash:
+            if name or email or address or pin_hash or security_question or security_answer_hash:
                 query = "UPDATE customers SET "
                 params = []
                 if name:
@@ -503,6 +513,12 @@ def create_or_update_customer(phone: str, name: "Optional[str]" = None, email: "
                 if pin_hash:
                     query += "pin_hash = %s, "
                     params.append(pin_hash)
+                if security_question:
+                    query += "security_question = %s, "
+                    params.append(security_question)
+                if security_answer_hash:
+                    query += "security_answer_hash = %s, "
+                    params.append(security_answer_hash)
                 
                 query = query.rstrip(', ')
                 query += " WHERE phone = %s"
@@ -513,8 +529,8 @@ def create_or_update_customer(phone: str, name: "Optional[str]" = None, email: "
             # Insert new
             cursor = conn.cursor()
             cursor.execute(
-                "INSERT INTO customers (phone, name, email, address, pin_hash, cancel_timestamps, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                (phone, name, email, address, pin_hash, "[]", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                "INSERT INTO customers (phone, name, email, address, pin_hash, cancel_timestamps, created_at, security_question, security_answer_hash) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                (phone, name, email, address, pin_hash, "[]", datetime.now().strftime("%Y-%m-%d %H:%M:%S"), security_question, security_answer_hash)
             )
         conn.commit()
     finally:

@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { forgotPin, resetPin } from '../api'
+import { getSecurityQuestion, verifySecurityAnswer, resetPin } from '../api'
 import { motion } from 'framer-motion'
 
 
 export default function ForgotPinPage() {
     const navigate = useNavigate()
-    const [step, setStep] = useState(1) // 1 = Phone, 2 = New PIN
+    const [step, setStep] = useState(1) // 1 = Phone, 2 = Question Answer, 3 = New PIN
     const [phone, setPhone] = useState('')
-    const [oldPin, setOldPin] = useState('')
+    const [securityQuestion, setSecurityQuestion] = useState('')
+    const [securityAnswer, setSecurityAnswer] = useState('')
     const [userData, setUserData] = useState(null)
     const [newPin, setNewPin] = useState('')
 
@@ -19,19 +20,28 @@ export default function ForgotPinPage() {
     const handleVerifyPhone = async (e) => {
         e.preventDefault()
         setError(''); setMsg(''); setLoading(true)
-        if (oldPin.length !== 4) {
-            setError("PIN must be 4 digits")
-            setLoading(false)
-            return
-        }
         try {
-            const res = await forgotPin(phone, oldPin)
+            const res = await getSecurityQuestion(phone)
+            setSecurityQuestion(res.security_question)
+            setStep(2)
+        } catch (err) {
+            setError(err.message || 'Phone not registered or security questions not set')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleVerifyAnswer = async (e) => {
+        e.preventDefault()
+        setError(''); setMsg(''); setLoading(true)
+        try {
+            const res = await verifySecurityAnswer(phone, securityAnswer)
             if (res.verified) {
                 setUserData({ name: res.name, token: res.token })
-                setStep(2)
+                setStep(3)
             }
         } catch (err) {
-            setError(err.message || 'Incorrect details or unregistered phone')
+            setError(err.message || 'Incorrect answer to security question')
         } finally {
             setLoading(false)
         }
@@ -64,12 +74,16 @@ export default function ForgotPinPage() {
                 style={{ width: '100%', maxWidth: '400px' }}
             >
                 <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, color: 'var(--primary)' }}>
-                    {step === 1 ? 'Reset PIN' : 'Create New PIN'}
+                    {step === 1 ? 'Reset PIN' : step === 2 ? 'Security Verification' : 'Create New PIN'}
                 </h2>
 
-                {step === 1 ? (
+                {step === 1 && (
                     <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24 }}>Enter your registered mobile number</p>
-                ) : (
+                )}
+                {step === 2 && (
+                    <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24 }}>Answer the security question to continue</p>
+                )}
+                {step === 3 && (
                     <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24 }}>Hey <strong style={{ color: 'var(--text)' }}>{userData?.name}</strong>, set your new security PIN.</p>
                 )}
 
@@ -78,7 +92,7 @@ export default function ForgotPinPage() {
 
                 {step === 1 && (
                     <form onSubmit={handleVerifyPhone}>
-                        <div className="confirm-phone-group" style={{ marginBottom: 16 }}>
+                        <div className="confirm-phone-group" style={{ marginBottom: 24 }}>
                             <span className="phone-prefix">+91</span>
                             <input
                                 type="tel"
@@ -89,19 +103,7 @@ export default function ForgotPinPage() {
                                 placeholder="10-digit number"
                             />
                         </div>
-                        <div style={{ marginBottom: 24, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                            <label style={{ fontSize: 14, fontWeight: 600 }}>Current 4-Digit PIN</label>
-                            <input
-                                type="password"
-                                className="input"
-                                value={oldPin}
-                                onChange={e => setOldPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                                required
-                                placeholder="••••"
-                                style={{ textAlign: 'center', letterSpacing: '4px', fontSize: '18px', padding: '12px' }}
-                            />
-                        </div>
-                        <motion.button type="submit" className="btn btn-primary" disabled={loading || phone.length !== 10 || oldPin.length !== 4} whileTap={{ scale: 0.98 }} style={{ width: '100%', justifyContent: 'center', padding: '14px', fontSize: 16 }}>
+                        <motion.button type="submit" className="btn btn-primary" disabled={loading || phone.length !== 10} whileTap={{ scale: 0.98 }} style={{ width: '100%', justifyContent: 'center', padding: '14px', fontSize: 16 }}>
                             {loading ? 'Verifying...' : 'Continue'}
                         </motion.button>
 
@@ -112,6 +114,37 @@ export default function ForgotPinPage() {
                 )}
 
                 {step === 2 && (
+                    <form onSubmit={handleVerifyAnswer}>
+                        <div style={{ marginBottom: 16 }}>
+                            <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)' }}>Question</label>
+                            <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', margin: '8px 0 20px 0', padding: '12px', background: 'var(--surface)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                                {securityQuestion}
+                            </p>
+                        </div>
+                        <div className="confirm-phone-group" style={{ marginBottom: 24 }}>
+                            <label>Security Answer</label>
+                            <input
+                                type="text"
+                                className="input"
+                                value={securityAnswer}
+                                onChange={e => setSecurityAnswer(e.target.value)}
+                                required
+                                placeholder="Enter answer"
+                            />
+                        </div>
+                        <motion.button type="submit" className="btn btn-primary" disabled={loading || !securityAnswer.trim()} whileTap={{ scale: 0.98 }} style={{ width: '100%', justifyContent: 'center', padding: '14px', fontSize: 16 }}>
+                            {loading ? 'Verifying Answer...' : 'Verify Answer'}
+                        </motion.button>
+
+                        <div style={{ textAlign: 'center', marginTop: 24, fontSize: 14 }}>
+                            <button type="button" onClick={() => setStep(1)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '14px' }}>
+                                ← Use different number
+                            </button>
+                        </div>
+                    </form>
+                )}
+
+                {step === 3 && (
                     <form onSubmit={handleResetPin}>
                         <div className="confirm-phone-group" style={{ marginBottom: 24 }}>
                             <input
@@ -127,12 +160,6 @@ export default function ForgotPinPage() {
                         <motion.button type="submit" className="btn btn-primary" disabled={loading || newPin.length !== 4} whileTap={{ scale: 0.98 }} style={{ width: '100%', justifyContent: 'center', padding: '14px', fontSize: 16 }}>
                             {loading ? 'Updating...' : 'Update PIN & Login'}
                         </motion.button>
-
-                        <div style={{ textAlign: 'center', marginTop: 24, fontSize: 14 }}>
-                            <button type="button" onClick={() => setStep(1)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '14px' }}>
-                                ← Use different number
-                            </button>
-                        </div>
                     </form>
                 )}
             </motion.div>

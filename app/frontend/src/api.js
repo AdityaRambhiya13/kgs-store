@@ -94,11 +94,13 @@ export const rejectPayment = (orderToken, adminToken) =>
 
 // ── Auth ───────────────────────────────────────────────────────
 // ── Auth ───────────────────────────────────────────────────────
-export const signup = (phone, pin, name) =>
+export const signup = (phone, pin, name, securityQuestion, securityAnswer) =>
     request('POST', '/api/auth/signup', {
         phone: `+91${phone}`,
         pin: String(pin),
-        name
+        name,
+        security_question: securityQuestion,
+        security_answer: securityAnswer
     })
 
 export const login = (identifier, pin) =>
@@ -107,8 +109,11 @@ export const login = (identifier, pin) =>
         pin: String(pin)
     })
 
-export const forgotPin = (phone, oldPin) =>
-    request('POST', '/api/auth/forgot-pin', { phone: `+91${phone}`, old_pin: String(oldPin) })
+export const getSecurityQuestion = (phone) =>
+    request('POST', '/api/auth/forgot-pin/question', { phone: `+91${phone}` })
+
+export const verifySecurityAnswer = (phone, answer) =>
+    request('POST', '/api/auth/forgot-pin/verify', { phone: `+91${phone}`, security_answer: answer })
 
 export const resetPin = (token, new_pin) =>
     request('POST', '/api/auth/reset-pin', { token, new_pin: String(new_pin) })

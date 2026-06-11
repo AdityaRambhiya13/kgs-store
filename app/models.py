@@ -172,6 +172,8 @@ class SignupRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     phone: str = Field(..., description="10-digit Indian phone number")
     pin: str = Field(..., min_length=4, max_length=4, pattern=r"^\d{4}$", description="4-digit security PIN")
+    security_question: str = Field(..., min_length=1, max_length=150)
+    security_answer: str = Field(..., min_length=1, max_length=100)
 
     @field_validator("phone")
     @classmethod
@@ -181,7 +183,7 @@ class SignupRequest(BaseModel):
             raise ValueError("Invalid Indian phone number. Please enter a valid 10-digit number.")
         return cleaned
 
-    @field_validator("name")
+    @field_validator("name", "security_question", "security_answer")
     @classmethod
     def sanitize_inputs(cls, v):
         return sanitize_text(v) if v else v
@@ -201,9 +203,8 @@ class LoginRequest(BaseModel):
         cleaned = clean_phone(v)
         return cleaned
 
-class ForgotPinRequest(BaseModel):
+class ForgotPinQuestionRequest(BaseModel):
     phone: str = Field(..., description="10-digit Indian phone number")
-    old_pin: str = Field(..., min_length=4, max_length=4, pattern=r"^\d{4}$", description="Current 4-digit security PIN")
 
     @field_validator("phone")
     @classmethod
@@ -212,6 +213,23 @@ class ForgotPinRequest(BaseModel):
         if not re.match(r"^[6-9]\d{9}$", cleaned):
             raise ValueError("Phone number not registered or invalid format")
         return cleaned
+
+class ForgotPinVerifyRequest(BaseModel):
+    phone: str = Field(..., description="10-digit Indian phone number")
+    security_answer: str = Field(..., min_length=1, max_length=100)
+
+    @field_validator("phone")
+    @classmethod
+    def validate_phone(cls, v):
+        cleaned = clean_phone(v)
+        if not re.match(r"^[6-9]\d{9}$", cleaned):
+            raise ValueError("Phone number not registered or invalid format")
+        return cleaned
+
+    @field_validator("security_answer")
+    @classmethod
+    def sanitize_answer(cls, v):
+        return sanitize_text(v).strip().lower() if v else v
 
 class ChangePinRequest(BaseModel):
     old_pin: str = Field(..., min_length=4, max_length=4, pattern=r"^\d{4}$")

@@ -6,7 +6,13 @@ import { useAuth } from '../AuthContext'
 
 export default function SignupPage() {
     const { user, loading: authLoading, completeAuth } = useAuth()
-    const [formData, setFormData] = useState({ name: '', phone: '', pin: '' })
+    const [formData, setFormData] = useState({
+        name: '',
+        phone: '',
+        pin: '',
+        security_question: 'What was the name of your first pet?',
+        security_answer: ''
+    })
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
     const navigate = useNavigate()
@@ -29,7 +35,7 @@ export default function SignupPage() {
 
         setLoading(true)
         try {
-            const res = await signup(formData.phone, formData.pin, formData.name)
+            const res = await signup(formData.phone, formData.pin, formData.name, formData.security_question, formData.security_answer)
             // Auto-login
             completeAuth(res)
             // Redirect to home
@@ -87,6 +93,38 @@ export default function SignupPage() {
                             value={formData.pin}
                             onChange={e => handleChange({ target: { name: 'pin', value: e.target.value.replace(/\D/g, '') } })}
                             placeholder="••••" required
+                        />
+                    </div>
+
+                    <div className="confirm-phone-group" style={{ marginBottom: 16 }}>
+                        <label>Security Question</label>
+                        <select
+                            name="security_question"
+                            className="input"
+                            value={formData.security_question}
+                            onChange={handleChange}
+                            required
+                            style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)' }}
+                        >
+                            <option value="What was the name of your first pet?">What was the name of your first pet?</option>
+                            <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
+                            <option value="What was the name of your first school?">What was the name of your first school?</option>
+                            <option value="In which city were you born?">In which city were you born?</option>
+                            <option value="What is your favorite food?">What is your favorite food?</option>
+                        </select>
+                    </div>
+
+                    <div className="confirm-phone-group" style={{ marginBottom: 24 }}>
+                        <label>Security Answer</label>
+                        <input
+                            type="text"
+                            name="security_answer"
+                            className="input"
+                            value={formData.security_answer}
+                            onChange={handleChange}
+                            placeholder="Your answer (case insensitive)"
+                            required
+                            maxLength={100}
                         />
                     </div>
 

@@ -87,7 +87,7 @@ from models import (
 
     OrderCreate, OrderOut, OrderStatusUpdate, ProductOut, ProductCreate, ProductUpdate,
 
-    OTPRequest, OTPVerifyRequest, CustomerOut, SignupRequest, LoginRequest, ForgotPinRequest, ResetPinRequest,
+    OTPRequest, OTPVerifyRequest, CustomerOut, SignupRequest, LoginRequest, ForgotPinQuestionRequest, ForgotPinVerifyRequest, ResetPinRequest,
     CategoryMakeOfficial, CategoryRename, ChangePinRequest
 
 )
@@ -1061,51 +1061,34 @@ def check_phone(phone: str, request: Request):
 
 
 @app.post("/api/auth/signup")
-
 def signup(body: SignupRequest, request: Request):
-
     check_rate_limit(request, limit=5, window=60, scope="auth-signup")
-
     
-
     if get_customer(body.phone):
-
         raise HTTPException(status_code=400, detail="Phone number is already registered")
-
         
-
     pin_hash = hash_pin(body.pin)
-
     
-
+    # Normalize security answer and hash it
+    ans_normalized = body.security_answer.strip().lower()
+    security_answer_hash = hash_pin(ans_normalized)
+    
     # Save user to database
-
     create_or_update_customer(
-
         phone=body.phone,
-
         name=body.name,
-
-        pin_hash=pin_hash
-
+        pin_hash=pin_hash,
+        security_question=body.security_question,
+        security_answer_hash=security_answer_hash
     )
-
     
-
     token = create_access_token({"role": "customer", "phone": body.phone}, timedelta(days=7))
-
     return {
-
         "verified": True,
-
         "phone": body.phone,
-
         "name": body.name,
-
         "access_token": token,
-
         "message": "Signup successful"
-
     }
 
 
@@ -1156,18 +1139,41 @@ def login(body: LoginRequest, request: Request):
 
 
 
-@app.post("/api/auth/forgot-pin")
-def forgot_pin(body: ForgotPinRequest, request: Request):
-    check_rate_limit(request, limit=5, window=60, scope="forgot-pin")
+@app.post("/api/auth/forgot-pin/question")
+def forgot_pin_question(body: ForgotPinQuestionRequest, request: Request):
+    check_rate_limit(request, limit=5, window=60, scope="forgot-pin-question")
     customer = get_customer(body.phone)
     if not customer:
         raise HTTPException(status_code=404, detail="Phone number not registered")
         
-    if not verify_pin(body.old_pin, customer["pin_hash"]):
-        raise HTTPException(status_code=401, detail="Incorrect current PIN")
+    question = customer.get("security_question")
+    if not question:
+        raise HTTPException(
+            status_code=400, 
+            detail="Security question is not configured for this account. Please contact store admin to reset your PIN."
+        )
+        
+    return {"security_question": question}
+
+@app.post("/api/auth/forgot-pin/verify")
+def forgot_pin_verify(body: ForgotPinVerifyRequest, request: Request):
+    check_rate_limit(request, limit=5, window=60, scope="forgot-pin-verify")
+    customer = get_customer(body.phone)
+    if not customer:
+        raise HTTPException(status_code=404, detail="Phone number not registered")
+        
+    ans_hash = customer.get("security_answer_hash")
+    if not ans_hash:
+        raise HTTPException(
+            status_code=400, 
+            detail="Security answer is not configured for this account. Please contact store admin to reset your PIN."
+        )
+        
+    # Verify the answer (normalized to lowercase and stripped)
+    if not verify_pin(body.security_answer, ans_hash):
+        raise HTTPException(status_code=401, detail="Incorrect answer to security question")
         
     reset_token = create_access_token({"role": "reset", "phone": customer["phone"]}, timedelta(minutes=15))
-    
     return {
         "verified": True,
         "name": customer.get("name", "User"),
