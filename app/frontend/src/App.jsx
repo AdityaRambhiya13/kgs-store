@@ -130,7 +130,7 @@ export default function App() {
             <Route path="/reset-pin"  element={<PageTransition><ResetPinPage /></PageTransition>} />
 
             {/* Protected Routes */}
-            <Route path="/"        element={<ProtectedRoute><PageTransition><CatalogPage searchQuery={searchQuery} navCategory={navCategory} /></PageTransition></ProtectedRoute>} />
+            <Route path="/"        element={<PageTransition><CatalogPage searchQuery={searchQuery} navCategory={navCategory} /></PageTransition>} />
             <Route path="/confirm" element={<ProtectedRoute><PageTransition><ConfirmPage /></PageTransition></ProtectedRoute>} />
             <Route path="/status/:token" element={<ProtectedRoute><PageTransition><StatusPage /></PageTransition></ProtectedRoute>} />
             <Route path="/orders"    element={<ProtectedRoute><PageTransition><OrderHistoryPage /></PageTransition></ProtectedRoute>} />

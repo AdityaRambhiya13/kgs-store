@@ -23,25 +23,34 @@ export default function InstallPrompt() {
   }, [])
 
   useEffect(() => {
-    const isDismissed = sessionStorage.getItem('pwa_install_dismissed') === 'true'
-
     // Check if actually running as installed PWA
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true
     
     if (isStandalone) {
       localStorage.setItem('pwa_install_status', 'installed')
       return
-    } else {
-      if (localStorage.getItem('pwa_install_status') === 'installed') {
-        localStorage.removeItem('pwa_install_status')
+    }
+
+    // Check if user has launched standalone before or completed install
+    const isInstalled = localStorage.getItem('pwa_install_status') === 'installed'
+    
+    // Check if dismissed recently (7 days)
+    const dismissTime = localStorage.getItem('pwa_install_dismissed_time')
+    let isDismissedRecent = false
+    if (dismissTime) {
+      const parsedTime = parseInt(dismissTime, 10)
+      if (!isNaN(parsedTime) && Date.now() - parsedTime < 7 * 24 * 60 * 60 * 1000) {
+        isDismissedRecent = true
       }
     }
+
+    const isDismissedSession = sessionStorage.getItem('pwa_install_dismissed') === 'true'
 
     // Manual trigger (from profile page)
     const handleManualTrigger = () => setShow(true)
     window.addEventListener('pwa-manual-prompt', handleManualTrigger)
 
-    if (isDismissed || isStandalone) return
+    if (isDismissedSession || isDismissedRecent || isInstalled || isStandalone) return
 
     // Show prompt after a short delay on mount if ready
     const timer = setTimeout(() => {
@@ -77,6 +86,7 @@ export default function InstallPrompt() {
 
   const handleNotNow = () => {
     sessionStorage.setItem('pwa_install_dismissed', 'true')
+    localStorage.setItem('pwa_install_dismissed_time', Date.now().toString())
     setSecondaryMessage(true)
     setTimeout(() => {
       setSecondaryMessage(false)

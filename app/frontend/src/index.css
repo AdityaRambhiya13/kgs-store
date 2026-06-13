@@ -2939,8 +2939,10 @@ p { line-height: 1.6; }
   background: #fff;
   padding: 16px 20px;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   z-index: 10;
+  border-bottom: 1px solid var(--border);
 }
 
 .pdm-close {
@@ -2948,12 +2950,21 @@ p { line-height: 1.6; }
   height: 32px;
   border-radius: 50%;
   background: var(--bg-surface);
-  border: none;
-  font-size: 18px;
+  color: var(--text);
+  border: 1px solid var(--border);
+  font-size: 16px;
+  font-weight: bold;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--t);
+}
+
+.pdm-close:hover {
+  background: #e2e8f0;
+  transform: scale(1.05);
 }
 
 .pdm-content {

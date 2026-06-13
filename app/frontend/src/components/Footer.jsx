@@ -23,7 +23,7 @@ export default function Footer() {
 
                     <div className="footer-col">
                         <h4>🚚 Delivery Area</h4>
-                        <p>Kalyan, Dombivali, Ulhasnagar &amp; nearby areas.</p>
+                        <p>Only Dombivali</p>
                     </div>
                 </div>
 

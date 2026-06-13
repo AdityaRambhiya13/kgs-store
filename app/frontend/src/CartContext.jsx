@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from './AuthContext'
 
 const CartContext = createContext(null)
@@ -18,6 +19,8 @@ export function CartProvider({ children }) {
     const [cart, setCart] = useState(loadCart)
     const [cartOpen, setCartOpen] = useState(false)
     const [lastAddedAt, setLastAddedAt] = useState(0)
+    const navigate = useNavigate()
+    const location = useLocation()
 
     // Persist to localStorage any time cart changes
     useEffect(() => {
@@ -33,6 +36,10 @@ export function CartProvider({ children }) {
     }, [user])
 
     const addToCart = (product, delta = 1) => {
+        if (!user) {
+            navigate('/login', { state: { from: location } })
+            return
+        }
         setCart(prev => {
             const current = prev[product.id]?.quantity || 0
             const next = Math.max(0, Math.min(100, current + delta))
