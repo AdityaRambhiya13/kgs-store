@@ -349,6 +349,83 @@ const standardizeProduct = (p) => {
   if (cat === 'Dairy, Bread & Eggs') cat = 'Dairy & Bread'
   if (cat === 'Pharma & Wellness' || cat === '& Wellness') cat = 'Wellness'
 
+  // 4. Snacks & Munchies Subcategory & Category Standardization
+  if (cat === 'Snacks & Munchies') {
+    const lowerName = name.toLowerCase()
+    
+    // a. Biscuits & Cookies / Rusk & Toast / Namkeen / Khakra
+    if (['Dry Fruits & Nuts', 'Ghee & Butter', 'Masalas & Spices', 'Masala & Spices', 'Bath & Body', 'Atta', 'Ghee', 'Atta & Flours'].includes(sub)) {
+      if (/\b(biscuit|biscuits|cookies|cookie|marie|biscoff|fantasy|cream|crackjack|krack\s*jack|good\s*day|magic|hide|seek|unibic|monaco|bounce|treat|pure\s*magic|milano|milk\s*bikis|50-50|50\s*50|nutri|digestive)\b/i.test(lowerName)) {
+        sub = 'Biscuits & Cookies'
+      } else if (/\b(khari|toast|rusk|butter|tost)\b/i.test(lowerName)) {
+        sub = 'Rusk & Toast'
+      } else if (/\b(chana|moong|sev|mixture|mix|sing|shing|papad|chakli|chakali)\b/i.test(lowerName)) {
+        sub = 'Namkeen & Farsan'
+      } else if (/\b(chips|wafer|wefer|nachos|lays|kurkure)\b/i.test(lowerName)) {
+        sub = 'Chips & Crisps'
+      } else if (/\b(khakhra|khakara|khakra)\b/i.test(lowerName)) {
+        sub = 'Khakra & Snacks'
+      }
+    }
+    // b. Atta & Flours / Dals & Pulses / Seeds & Herbs / Cooking Essentials
+    else if (['Atta & Flours', 'Dals & Pulses', 'Seeds & Herbs', 'Cooking Essentials'].includes(sub)) {
+      if (/\b(chakli|chakali|bhajani|sev|gathiya|chana|moongdal|boondi|farsan|mixture|mix|sing|pakwan|moong|mung|shing|dal200gm)\b/i.test(lowerName)) {
+        sub = 'Namkeen & Farsan'
+      } else if (/\b(khakhra|khakara|khakra)\b/i.test(lowerName)) {
+        sub = 'Khakra & Snacks'
+      } else if (/\b(biscuit|biscuits|cookies|cookie|marie|maida|sugar|nutri|digestive)\b/i.test(lowerName)) {
+        sub = 'Biscuits & Cookies'
+      } else if (lowerName.includes('muesli')) {
+        sub = 'Breakfast Cereals'
+      } else if (lowerName.includes('fanas')) {
+        sub = 'Healthy Snacks'
+      } else if (lowerName.includes('chips')) {
+        sub = 'Chips & Crisps'
+      }
+    }
+    // c. Sugar, Salt & Jaggery
+    else if (sub === 'Sugar, Salt & Jaggery') {
+      if (/\b(khakhra|khakara|khakra)\b/i.test(lowerName)) {
+        sub = 'Khakra & Snacks'
+      } else if (/\b(bar|protein)\b/i.test(lowerName)) {
+        sub = 'Chocolates & Bars'
+      } else if (/\b(makhana|salt|vinegar)\b/i.test(lowerName)) {
+        sub = 'Healthy Snacks'
+      }
+    }
+    // d. Paan & Mukhwas
+    else if (sub === 'Paan & Mukhwas') {
+      sub = 'Mouth Fresheners'
+      cat = 'Sweet Tooth'
+    }
+    // e. Cooking Oils
+    else if (sub === 'Cooking Oils') {
+      if (lowerName.includes('vinegar')) {
+        cat = 'Sauces,Jams & Sizzlings'
+        sub = 'Sauces & Condiments'
+      }
+    }
+    // f. Tea (Nachos)
+    else if (sub === 'Tea') {
+      if (lowerName.includes('nachos')) {
+        sub = 'Chips & Crisps'
+      }
+    }
+    // g. Baby Food & Nutrition
+    else if (sub === 'Baby Food & Nutrition') {
+      if (lowerName.includes('muesli')) {
+        sub = 'Breakfast Cereals'
+      }
+    }
+    // h. Dry Fruits
+    else if (sub === 'Dry Fruits') {
+      if (lowerName.includes('chutney')) {
+        cat = 'Masala & Dry Fruits'
+        sub = 'Masalas & Spices'
+      }
+    }
+  }
+
   return {
     ...p,
     category: cat,
@@ -967,7 +1044,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
                   </div>
                   <div className="product-grid zepto-product-scroll">
                     {preview.map(item => (
-                      <div key={(item.base_name || item.name) + item.category}>
+                      <div key={item.id}>
                         <ProductCard
                           product={item}
                           onDetailClick={(prod, mrp) => setSelectedProductDetails({ product: prod, mrp })}
@@ -1007,7 +1084,7 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
             </div>
             <div className="product-grid product-grid-multi">
               {filtered.slice(0, productLimit).map(g => (
-                <div key={(g.base_name || g.name) + g.category}>
+                <div key={g.id}>
                   <ProductCard
                     product={g}
                     onDetailClick={(prod, mrp) => setSelectedProductDetails({ product: prod, mrp })}
