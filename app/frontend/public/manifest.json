@@ -1,22 +1,36 @@
 {
   "short_name": "Ketan Stores",
   "name": "Ketan Stores",
+  "description": "Your trusted neighbourhood grocery store in Dombivali. Order fresh groceries and daily essentials.",
   "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable"
+    },
     {
       "src": "/icon-512.png",
       "type": "image/png",
-      "sizes": "192x192",
+      "sizes": "512x512",
       "purpose": "any"
     },
     {
       "src": "/icon-512.png",
       "type": "image/png",
       "sizes": "512x512",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
-  "theme_color": "#9b0a3d",
+  "orientation": "portrait",
+  "theme_color": "#2563EB",
   "background_color": "#ffffff"
 }

@@ -8,6 +8,7 @@ const ASSET_CACHE = `ketan-assets-${CACHE_VERSION}`
 const SHELL_URLS = [
   '/',
   '/manifest.json',
+  '/icon-192.png',
   '/icon-512.png',
 ]
 

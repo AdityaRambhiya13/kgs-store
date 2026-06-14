@@ -54,43 +54,254 @@ const unescapeHTML = (str) => {
   return val.trim()
 }
 
-// ── Hybrid Search Helper ────────────────────────────────────────
-const fuzzyMatch = (query, text) => {
-  if (!query) return true
-  if (!text) return false
+// ── Levenshtein Distance for Typo Tolerance ────────────────────
+const levenshteinDistance = (a, b) => {
+  if (a.length === 0) return b.length
+  if (b.length === 0) return a.length
+  const matrix = []
+  for (let i = 0; i <= b.length; i++) matrix[i] = [i]
+  for (let j = 0; j <= a.length; j++) matrix[0][j] = j
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1]
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1)
+        )
+      }
+    }
+  }
+  return matrix[b.length][a.length]
+}
+
+// ── Hindi-English Grocery Phrase and Word Synonyms ──────────────
+const PHRASE_SYNONYMS = [
+  { phrases: ["cottage cheese", "paneer"] },
+  { phrases: ["clarified butter", "ghee", "cow ghee"] },
+  { phrases: ["instant noodles", "maggi", "noodles"] },
+  { phrases: ["wheat flour", "atta", "aata", "ashirvaad atta"] },
+  { phrases: ["hair wash", "shampoo"] },
+  { phrases: ["body wash", "handwash", "soap", "sabun"] },
+  { phrases: ["curd", "dahi", "yogurt"] },
+  { phrases: ["milk", "doodh", "dudh"] },
+  { phrases: ["sugar", "cheeni", "chini", "shakkar"] },
+  { phrases: ["potato", "potatoes", "aloo", "alu"] },
+  { phrases: ["onion", "onions", "pyaz", "pyaaz"] },
+  { phrases: ["lemon", "lime", "nimbu"] },
+  { phrases: ["biscuit", "biscuits", "biskit", "biscut", "cookies"] },
+  { phrases: ["tea", "chai", "chaya"] },
+  { phrases: ["oil", "tel"] },
+  { phrases: ["chilli", "chili", "mirchi", "mirch"] },
+  { phrases: ["bread", "pav", "bun"] },
+  { phrases: ["ketchup", "sauce"] }
+]
+
+const SYNONYMS = {
+  "ghee": ["clarified butter", "cow ghee"],
+  "atta": ["flour", "gehun", "wheat flour", "aata"],
+  "aata": ["flour", "gehun", "wheat flour", "atta"],
+  "dahi": ["curd", "yogurt"],
+  "curd": ["dahi", "yogurt"],
+  "yogurt": ["dahi", "curd"],
+  "milk": ["doodh", "dudh"],
+  "doodh": ["milk", "dudh"],
+  "dudh": ["milk", "doodh"],
+  "soap": ["sabun", "bar", "body wash", "handwash"],
+  "sabun": ["soap", "bar", "body wash"],
+  "salt": ["namak"],
+  "namak": ["salt"],
+  "sugar": ["cheeni", "chini", "shakkar"],
+  "cheeni": ["sugar", "chini", "shakkar"],
+  "chini": ["sugar", "cheeni", "shakkar"],
+  "shakkar": ["sugar", "cheeni", "chini"],
+  "rice": ["chawal", "basmati", "kolam"],
+  "chawal": ["rice", "basmati"],
+  "banana": ["kela"],
+  "kela": ["banana"],
+  "potato": ["potatoes", "aloo", "alu"],
+  "potatoes": ["potato", "aloo", "alu"],
+  "aloo": ["potato", "potatoes", "alu"],
+  "alu": ["potato", "potatoes", "aloo"],
+  "onion": ["onions", "pyaz", "pyaaz"],
+  "onions": ["onion", "pyaz", "pyaaz"],
+  "pyaz": ["onion", "onions", "pyaaz"],
+  "pyaaz": ["onion", "onions", "pyaz"],
+  "ginger": ["adrak"],
+  "adrak": ["ginger"],
+  "coriander": ["dhaniya", "kothimbir"],
+  "dhaniya": ["coriander", "kothimbir"],
+  "lemon": ["lime", "nimbu"],
+  "lime": ["lemon", "nimbu"],
+  "nimbu": ["lemon", "lime"],
+  "paneer": ["cottage cheese"],
+  "biscuit": ["biscuits", "biskit", "biscut", "cookies"],
+  "biscuits": ["biscuit", "biskit", "biscut", "cookies"],
+  "biskit": ["biscuit", "biscuits", "cookies"],
+  "biscut": ["biscuit", "biscuits", "cookies"],
+  "cookies": ["biscuit", "biscuits"],
+  "noodle": ["noodles", "maggi", "maggy"],
+  "noodles": ["noodle", "maggi", "maggy"],
+  "maggi": ["noodles", "maggy"],
+  "maggy": ["noodles", "maggi"],
+  "tea": ["chai", "chaya"],
+  "chai": ["tea", "chaya"],
+  "oil": ["tel"],
+  "tel": ["oil"],
+  "poha": ["flattened rice"],
+  "rava": ["sooji", "suji", "semolina"],
+  "sooji": ["rava", "suji", "semolina"],
+  "suji": ["rava", "sooji", "semolina"],
+  "semolina": ["rava", "sooji", "suji"],
+  "maida": ["all purpose flour"],
+  "besan": ["gram flour"],
+  "spice": ["masala"],
+  "masala": ["spice"],
+  "shampoo": ["hair wash"],
+  "toothpaste": ["colgate", "pepsodent", "sensodyne"],
+  "colgate": ["toothpaste"],
+  "chilli": ["chili", "mirchi", "mirch"],
+  "chili": ["chilli", "mirchi", "mirch"],
+  "mirchi": ["chilli", "chili", "mirch"],
+  "mirch": ["chilli", "chili", "mirchi"],
+  "bread": ["loaf", "bun", "pav"],
+  "pav": ["bread"],
+  "butter": ["makkhan"],
+  "makkhan": ["butter"],
+  "cheese": ["spread", "slices", "block"],
+  "ketchup": ["sauce"],
+  "sauce": ["ketchup"],
+  "coffee": ["nescafe", "bru"],
+  "water": ["bisleri", "aquafina", "mineral water"]
+}
+
+// ── Relevance Scoring Search Engine ─────────────────────────────
+const scoreSearch = (query, product) => {
+  if (!query) return { match: true, score: 0 }
   
   const q = String(query).toLowerCase().trim()
-  const t = String(text).toLowerCase().trim()
+  const name = String(product.name || '').toLowerCase().trim()
+  const baseName = String(product.base_name || '').toLowerCase().trim()
+  const category = String(product.category || '').toLowerCase().trim()
+  const subCategory = String(product.sub_category || '').toLowerCase().trim()
+
+  // 1. Exact string matches (Highest priority)
+  if (name === q) return { match: true, score: 2000 }
+  if (baseName === q) return { match: true, score: 1800 }
+
+  const queryWords = q.split(/\s+/).filter(Boolean)
+  const nameWords = name.split(/\s+/).filter(Boolean)
+  const baseWords = baseName.split(/\s+/).filter(Boolean)
+  const targetWords = [...new Set([...nameWords, ...baseWords])]
+
+  if (queryWords.length === 0) return { match: false, score: 0 }
+
+  let totalScore = 0
+  let matchedQueryWordsCount = 0
+  const matchedIndices = new Set()
+
+  // Check phrase-level synonyms first
+  let phraseSynonymScore = 0
   
-  // 1. Exact substring match (Highest precision)
-  if (t.includes(q)) return true
-  
-  // 2. Word-start match (High precision: e.g. "mag" matches "Maggi")
-  const words = t.split(/\s+/)
-  const queryWords = q.split(/\s+/)
-  
-  // If query is multiple words, check if they all exist in text
-  if (queryWords.length > 1) {
-    return queryWords.every(qw => words.some(w => w.startsWith(qw) || w.includes(qw)))
-  }
-  
-  // Single word query: check if any word starts with query
-  if (words.some(w => w.startsWith(q))) return true
-  
-  // 3. Typo tolerance (Only for queries >= 3 chars, and with strict rules)
-  if (q.length < 3) return false // No fuzzy for tiny queries
-  
-  // Allow 1 char omission/typo ONLY if it's a long enough word
-  // This prevents "maggi" matching "mataki" because "magi" vs "mataki" is too different
-  const qNoSpaces = q.replace(/\s+/g, '')
-  const tNoSpaces = t.replace(/\s+/g, '')
-  
-  for (let i = 0; i < qNoSpaces.length; i++) {
-    const sub = qNoSpaces.slice(0, i) + qNoSpaces.slice(i + 1)
-    if (tNoSpaces.includes(sub)) return true
+  for (const group of PHRASE_SYNONYMS) {
+    const matchingQueryPhrase = group.phrases.find(phrase => q.includes(phrase))
+    if (matchingQueryPhrase) {
+      const matchingProductPhrase = group.phrases.find(phrase => name.includes(phrase) || baseName.includes(phrase))
+      if (matchingProductPhrase) {
+        phraseSynonymScore += 300
+        
+        // Mark the words of the matching query phrase as matched
+        const phraseWords = matchingQueryPhrase.split(/\s+/)
+        phraseWords.forEach(w => {
+          const idx = queryWords.indexOf(w)
+          if (idx !== -1) matchedIndices.add(idx)
+        })
+      }
+    }
   }
 
-  return false
+  totalScore += phraseSynonymScore
+
+  // Match each query word
+  for (let i = 0; i < queryWords.length; i++) {
+    if (matchedIndices.has(i)) {
+      matchedQueryWordsCount++
+      continue
+    }
+
+    const qw = queryWords[i]
+    let bestWordScore = 0
+    const synonyms = SYNONYMS[qw] || []
+
+    // Category / SubCategory matches
+    if (category.includes(qw) || subCategory.includes(qw)) {
+      bestWordScore = Math.max(bestWordScore, 100)
+    }
+
+    for (const tw of targetWords) {
+      // a. Exact word match
+      if (tw === qw) {
+        bestWordScore = Math.max(bestWordScore, 500)
+        continue
+      }
+
+      // b. Prefix match: word starts with query
+      if (tw.startsWith(qw)) {
+        bestWordScore = Math.max(bestWordScore, 400)
+        continue
+      }
+
+      // c. Substring match
+      if (tw.includes(qw)) {
+        bestWordScore = Math.max(bestWordScore, 150)
+        continue
+      }
+
+      // d. Synonym word match
+      for (const syn of synonyms) {
+        if (tw === syn) {
+          bestWordScore = Math.max(bestWordScore, 300)
+        } else if (tw.startsWith(syn)) {
+          bestWordScore = Math.max(bestWordScore, 250)
+        }
+      }
+
+      // e. Typo tolerance / Fuzzy match (Levenshtein distance)
+      if (qw.length >= 4 && tw.length >= 4) {
+        const dist = levenshteinDistance(qw, tw)
+        const maxAllowedDist = qw.length <= 5 ? 1 : 2
+        if (dist <= maxAllowedDist) {
+          const fuzzyScore = 200 - dist * 50
+          bestWordScore = Math.max(bestWordScore, fuzzyScore)
+        }
+      }
+    }
+
+    if (bestWordScore > 0) {
+      totalScore += bestWordScore
+      matchedQueryWordsCount++
+    }
+  }
+
+  // All query words must find a match in the product to qualify (strict match)
+  if (matchedQueryWordsCount < queryWords.length) {
+    return { match: false, score: 0 }
+  }
+
+  // Add a bonus if the query matches the start of the product name
+  if (name.startsWith(q)) {
+    totalScore += 200
+  } else if (baseName.startsWith(q)) {
+    totalScore += 150
+  }
+
+  // Add a bonus if the query is a complete substring of the name
+  if (name.includes(q)) {
+    totalScore += 100
+  }
+
+  return { match: true, score: totalScore }
 }
 
 export default function CatalogPage({ searchQuery = '', onSearchFocus, navCategory }) {
@@ -348,17 +559,16 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
       }
 
       return products
-        .filter(p => {
-          if (!p) return false
-          const unescapedCat = unescapeHTML(p.category)
-          if (!unescapedCat || BLOCKED_CATEGORIES.has(unescapedCat)) return false
-          const nameMatch = p.name ? fuzzyMatch(lq, p.name) : false
-          const baseMatch = p.base_name ? fuzzyMatch(lq, p.base_name) : false
-          return nameMatch || baseMatch
-        })
         .map(p => {
+          if (!p) return null
+          const unescapedCat = unescapeHTML(p.category)
+          if (!unescapedCat || BLOCKED_CATEGORIES.has(unescapedCat)) return null
+          
+          const { match, score } = scoreSearch(lq, p)
+          if (!match) return null
+
           // Standardize category name for matching group key
-          let cat = unescapeHTML(p.category) || 'Other'
+          let cat = unescapedCat || 'Other'
           if (cat === 'Dairy, Bread & Eggs') cat = 'Dairy & Bread'
           if (cat === 'Pharma & Wellness' || cat === '& Wellness') cat = 'Wellness'
           
@@ -383,17 +593,22 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
             displayPrice: p.price || 0,
             category: cat,
             sub_category: unescapeHTML(p.sub_category),
+            searchScore: score,
             variants: (group && group.variants) ? group.variants : [{ ...p, category: cat, sub_category: unescapeHTML(p.sub_category) }]
           }
         })
+        .filter(Boolean)
         .sort((a, b) => {
+          if (b.searchScore !== a.searchScore) {
+            return b.searchScore - a.searchScore
+          }
           const aName = String(a.name || a.displayName || '').toLowerCase()
           const bName = String(b.name || b.displayName || '').toLowerCase()
           const aStarts = aName.startsWith(lq)
           const bStarts = bName.startsWith(lq)
           if (aStarts && !bStarts) return -1
           if (!aStarts && bStarts) return 1
-          return 0
+          return aName.localeCompare(bName)
         })
     }
 
