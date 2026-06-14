@@ -304,6 +304,58 @@ const scoreSearch = (query, product) => {
   return { match: true, score: totalScore }
 }
 
+// ── Product Category & Subcategory Standardization Helper ───────
+const standardizeProduct = (p) => {
+  if (!p) return null
+  const originalCat = unescapeHTML(p.category)
+  let cat = originalCat || 'Other'
+  let sub = unescapeHTML(p.sub_category) || ''
+
+  const name = (p.name || p.base_name || '').toLowerCase()
+
+  // 1. Move Cooking Oils and Ghee to "Oil & Ghee" if they are in cooking/grocery categories
+  if (originalCat === 'Atta, Rice & Dal' || originalCat === 'Tea, Coffee & Health Drinks' || originalCat === 'Oil & Ghee') {
+    if (/\bghee\b/.test(name) && !name.includes('soanpapdi') && !name.includes('soan papdi')) {
+      cat = 'Oil & Ghee'
+      sub = 'Ghee'
+    } else if (sub === 'Ghee') {
+      cat = 'Oil & Ghee'
+    } else if (
+      /\b(oil|tel|mustard|sunflower|groundnut|olive|vanaspati|dalda)\b/.test(name)
+    ) {
+      cat = 'Oil & Ghee'
+      if (name.includes('dalda') || name.includes('vanaspati')) {
+        sub = 'Ghee'
+      } else {
+        sub = 'Cooking Oils'
+      }
+    } else if (sub === 'Cooking Oils') {
+      cat = 'Oil & Ghee'
+    }
+  }
+
+  // 2. Clean up subcategories under "Oil & Ghee"
+  if (cat === 'Oil & Ghee') {
+    if (sub !== 'Ghee' && sub !== 'Cooking Oils') {
+      if (name.includes('ghee') || name.includes('dalda') || name.includes('vanaspati')) {
+        sub = 'Ghee'
+      } else {
+        sub = 'Cooking Oils'
+      }
+    }
+  }
+
+  // 3. Other category mappings
+  if (cat === 'Dairy, Bread & Eggs') cat = 'Dairy & Bread'
+  if (cat === 'Pharma & Wellness' || cat === '& Wellness') cat = 'Wellness'
+
+  return {
+    ...p,
+    category: cat,
+    sub_category: sub
+  }
+}
+
 export default function CatalogPage({ searchQuery = '', onSearchFocus, navCategory }) {
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -431,13 +483,14 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
     let hasOrganic = false
 
     products.forEach(p => {
-      if (!p.category) return
-      const cat = unescapeHTML(p.category)
+      const std = standardizeProduct(p)
+      if (!std) return
+      const cat = std.category
       if (!BLOCKED_CATEGORIES.has(cat)) set.add(cat)
-      if (p.is_newly_launched) set.add('Newly Launched')
+      if (std.is_newly_launched) set.add('Newly Launched')
 
-      const name = p.name || p.base_name || ''
-      if (p.is_newly_launched && /parachute/i.test(name)) hasParachute = true
+      const name = std.name || std.base_name || ''
+      if (std.is_newly_launched && /parachute/i.test(name)) hasParachute = true
       if (/dehaat|deehat/i.test(name)) hasDehaat = true
       if (/organic\s*india/i.test(name)) hasOrganic = true
     })
@@ -455,16 +508,18 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
       if (c.name === 'Wellness' && set.has('& Wellness')) return true
       return false
     })
-  }, [products])
+  }, [products, officialCategories])
 
   // Sub-categories for the active category
   const subCategories = useMemo(() => {
     if (activeCategory === 'All') return []
     const subs = new Set()
     products.forEach(p => {
-      const cat = unescapeHTML(p.category)
-      if (cat === activeCategory && p.sub_category) {
-        subs.add(unescapeHTML(p.sub_category))
+      const std = standardizeProduct(p)
+      if (!std) return
+      const cat = std.category
+      if (cat === activeCategory && std.sub_category) {
+        subs.add(std.sub_category)
       }
     })
     return ['All', ...Array.from(subs).sort()]
@@ -477,19 +532,16 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
     // 1. Group all variants by their standardized base key to collect all options
     const allVariantsMap = {}
     products.forEach(p => {
-      if (!p.category) return
-      const unescapedCat = unescapeHTML(p.category)
-      if (BLOCKED_CATEGORIES.has(unescapedCat)) return
+      const std = standardizeProduct(p)
+      if (!std) return
+      const cat = std.category
+      if (BLOCKED_CATEGORIES.has(cat)) return
       
-      let cat = unescapedCat
-      if (cat === 'Dairy, Bread & Eggs') cat = 'Dairy & Bread'
-      if (cat === 'Pharma & Wellness' || cat === '& Wellness') cat = 'Wellness'
-
-      const baseKey = (p.base_name || p.name) + '|' + cat
+      const baseKey = (std.base_name || std.name) + '|' + cat
       if (!allVariantsMap[baseKey]) {
         allVariantsMap[baseKey] = []
       }
-      allVariantsMap[baseKey].push({ ...p, category: cat, sub_category: unescapeHTML(p.sub_category) })
+      allVariantsMap[baseKey].push(std)
     })
 
     // Sort variants in each group by price
@@ -499,30 +551,27 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
 
     // 2. Build the final displayed catalog items
     products.forEach(p => {
-      if (!p.category) return
-      const unescapedCat = unescapeHTML(p.category)
-      if (BLOCKED_CATEGORIES.has(unescapedCat)) return
+      const std = standardizeProduct(p)
+      if (!std) return
+      const cat = std.category
+      if (BLOCKED_CATEGORIES.has(cat)) return
       
-      let cat = unescapedCat
-      if (cat === 'Dairy, Bread & Eggs') cat = 'Dairy & Bread'
-      if (cat === 'Pharma & Wellness' || cat === '& Wellness') cat = 'Wellness'
-
-      const baseKey = (p.base_name || p.name) + '|' + cat
+      const baseKey = (std.base_name || std.name) + '|' + cat
 
       // If a product is explicitly ranked/sorted (display_order > 0), display it as a separate card.
       // Otherwise, group by its baseKey.
-      const isPinned = p.display_order > 0
-      const key = isPinned ? `${p.id}|${cat}` : baseKey
+      const isPinned = std.display_order > 0
+      const key = isPinned ? `${std.id}|${cat}` : baseKey
 
       if (!groups[key]) {
-        const cheapestVariant = isPinned ? p : (allVariantsMap[baseKey][0] || p)
+        const cheapestVariant = isPinned ? std : (allVariantsMap[baseKey][0] || std)
         groups[key] = { 
           ...cheapestVariant, 
           category: cat, 
-          sub_category: unescapeHTML(p.sub_category), 
+          sub_category: std.sub_category, 
           variants: allVariantsMap[baseKey] 
         }
-      } else if (p.is_newly_launched) {
+      } else if (std.is_newly_launched) {
         groups[key].is_newly_launched = true;
       }
     })
@@ -560,23 +609,20 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
 
       return products
         .map(p => {
-          if (!p) return null
-          const unescapedCat = unescapeHTML(p.category)
-          if (!unescapedCat || BLOCKED_CATEGORIES.has(unescapedCat)) return null
+          const std = standardizeProduct(p)
+          if (!std) return null
+          const unescapedCat = std.category
+          if (BLOCKED_CATEGORIES.has(unescapedCat)) return null
           
-          const { match, score } = scoreSearch(lq, p)
+          const { match, score } = scoreSearch(lq, std)
           if (!match) return null
 
-          // Standardize category name for matching group key
-          let cat = unescapedCat || 'Other'
-          if (cat === 'Dairy, Bread & Eggs') cat = 'Dairy & Bread'
-          if (cat === 'Pharma & Wellness' || cat === '& Wellness') cat = 'Wellness'
-          
-          const key = (p.base_name || p.name || 'unknown') + '|' + cat
+          let cat = unescapedCat
+          const key = (std.base_name || std.name || 'unknown') + '|' + cat
           const group = groupMap[key]
           // Title Standardization with cleaning
-          let base = p.base_name || p.name
-          let unit = p.unit || ''
+          let base = std.base_name || std.name
+          let unit = std.unit || ''
           
           // Clean redundant unit mentions (e.g. "Gulab Oil 1L" + "1L" -> "Gulab Oil 1L")
           if (unit && base.toLowerCase().endsWith(unit.toLowerCase().trim())) {
@@ -588,13 +634,13 @@ export default function CatalogPage({ searchQuery = '', onSearchFocus, navCatego
           }
 
           return {
-            ...p,
+            ...std,
             displayName: unit ? `${base} ${unit}` : base,
-            displayPrice: p.price || 0,
+            displayPrice: std.price || 0,
             category: cat,
-            sub_category: unescapeHTML(p.sub_category),
+            sub_category: std.sub_category,
             searchScore: score,
-            variants: (group && group.variants) ? group.variants : [{ ...p, category: cat, sub_category: unescapeHTML(p.sub_category) }]
+            variants: (group && group.variants) ? group.variants : [{ ...std, category: cat, sub_category: std.sub_category }]
           }
         })
         .filter(Boolean)
