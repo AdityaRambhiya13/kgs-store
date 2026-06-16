@@ -1111,6 +1111,8 @@ def signup(body: SignupRequest, request: Request):
 
 
 
+failed_login_attempts = {}
+
 @app.post("/api/auth/login")
 
 def login(body: LoginRequest, request: Request):
@@ -1132,12 +1134,42 @@ def login(body: LoginRequest, request: Request):
         raise HTTPException(status_code=404, detail="User not found")
 
         
+    phone = customer["phone"]
+    now = time.time()
+    
+    # Check if account is locked
+    lock_info = failed_login_attempts.get(phone)
+    if lock_info and lock_info["locked_until"] > now:
+        minutes_left = int((lock_info["locked_until"] - now + 59) // 60)
+        raise HTTPException(
+            status_code=423,
+            detail=f"Account temporarily locked due to too many failed attempts. Try again in {minutes_left} minutes."
+        )
 
     if not verify_pin(body.pin, customer["pin_hash"]):
         logging.warning(f"FAILED_LOGIN: Attempt on phone {customer['phone'][-4:].rjust(10, '*')}")
-        raise HTTPException(status_code=401, detail="Incorrect PIN")
-
         
+        # Track failed attempts
+        lock_info = failed_login_attempts.get(phone, {"attempts": 0, "locked_until": 0})
+        lock_info["attempts"] += 1
+        
+        if lock_info["attempts"] >= 5:
+            lock_info["locked_until"] = now + 900  # 15 minutes lockout
+            failed_login_attempts[phone] = lock_info
+            raise HTTPException(
+                status_code=423,
+                detail="Account locked for 15 minutes due to 5 failed PIN attempts."
+            )
+        else:
+            failed_login_attempts[phone] = lock_info
+            attempts_left = 5 - lock_info["attempts"]
+            raise HTTPException(
+                status_code=401,
+                detail=f"Incorrect PIN. {attempts_left} attempts remaining before account lock."
+            )
+
+    # Clear lockout on success
+    failed_login_attempts.pop(phone, None)
 
     token = create_access_token({"role": "customer", "phone": customer["phone"]}, timedelta(days=7))
 
