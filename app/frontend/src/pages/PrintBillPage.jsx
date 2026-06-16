@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getOrder } from '../api'
+import { getMRP } from '../utils/pricing'
 
 export default function PrintBillPage() {
     const { token } = useParams()
@@ -88,7 +89,7 @@ export default function PrintBillPage() {
                     </thead>
                     <tbody>
                         {items.map((item, index) => {
-                            const mrp = (item.price * 1.1).toFixed(2)
+                            const mrp = getMRP(item.price, item.product_id || item.id, item.mrp).toFixed(2)
                             return (
                                 <React.Fragment key={index}>
                                     <tr>

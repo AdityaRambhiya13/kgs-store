@@ -21,7 +21,7 @@ const PrivacyPolicy = () => {
           padding: '40px',
           borderRadius: '24px',
           border: '1px solid rgba(255,255,255,0.1)',
-          backdropFilter: blur('10px')
+          backdropFilter: 'blur(10px)'
         }}
       >
         <h1 style={{ color: 'white', marginBottom: '24px', fontSize: '2.5rem' }}>Privacy Policy</h1>
