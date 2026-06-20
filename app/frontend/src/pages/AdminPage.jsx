@@ -203,7 +203,8 @@ export default function AdminPage() {
                         // Refresh orders list immediately if currently viewing orders
                         if (activeTab === 'orders') {
                             try {
-                                const ordersData = await listOrders(adminToken)
+                                const freshToken = localStorage.getItem('adminToken') || adminToken
+                                const ordersData = await listOrders(freshToken)
                                 setOrders(Array.isArray(ordersData) ? ordersData : [])
                             } catch (e) {
                                 console.error("Error reloading orders on new order event:", e)
@@ -228,7 +229,10 @@ export default function AdminPage() {
         connectWS()
 
         return () => {
-            if (ws) ws.close()
+            if (ws) {
+                ws.onclose = null // Prevent reconnect loop from firing on deliberate close
+                ws.close()
+            }
             if (reconnectTimeout) clearTimeout(reconnectTimeout)
         }
     }, [authed, adminToken, activeTab])
