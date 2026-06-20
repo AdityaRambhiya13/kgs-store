@@ -1577,7 +1577,22 @@ if os.path.exists(DIST_PATH):
 
     print(f"Serving frontend from: {DIST_PATH}")
 
-    app.mount("/assets", StaticFiles(directory=os.path.join(DIST_PATH, "assets")), name="assets")
+    import mimetypes
+
+    class UTF8StaticFiles(StaticFiles):
+        def file_response(self, *args, **kwargs):
+            response = super().file_response(*args, **kwargs)
+            content_type = response.headers.get("content-type", "")
+            if (
+                content_type.startswith("text/") 
+                or "javascript" in content_type 
+                or "json" in content_type 
+                or "svg" in content_type
+            ) and "charset" not in content_type:
+                response.headers["content-type"] = f"{content_type}; charset=utf-8"
+            return response
+
+    app.mount("/assets", UTF8StaticFiles(directory=os.path.join(DIST_PATH, "assets")), name="assets")
 
     
 
@@ -1595,7 +1610,18 @@ if os.path.exists(DIST_PATH):
                 headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
                 headers["Pragma"] = "no-cache"
                 headers["Expires"] = "0"
-            return FileResponse(file_path, headers=headers)
+            
+            content_type, _ = mimetypes.guess_type(file_path)
+            media_type = content_type
+            if content_type and (
+                content_type.startswith("text/") 
+                or "javascript" in content_type 
+                or "json" in content_type 
+                or "svg" in content_type
+            ) and "charset" not in content_type:
+                media_type = f"{content_type}; charset=utf-8"
+                
+            return FileResponse(file_path, headers=headers, media_type=media_type)
             
         index_file = os.path.join(DIST_PATH, "index.html")
         headers = {
@@ -1603,7 +1629,7 @@ if os.path.exists(DIST_PATH):
             "Pragma": "no-cache",
             "Expires": "0"
         }
-        return FileResponse(index_file, headers=headers)
+        return FileResponse(index_file, headers=headers, media_type="text/html; charset=utf-8")
 
 else:
 
