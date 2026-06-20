@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { listOrders, updateStatus, listCustomers, adminLogin, getProducts, getAdminProducts, addProduct, updateProduct, deleteProduct, confirmPayment, rejectPayment, bulkReorderProducts, adminResetPin } from '../api'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -56,7 +56,12 @@ export default function AdminPage() {
     const [saveOrderingLoading, setSaveOrderingLoading] = useState(false)
     const [categoryFilter, setCategoryFilter] = useState('All')
     const [productLimit, setProductLimit] = useState(50)
-    const [newOrderNotification, setNewOrderNotification] = useState(null)
+    const [notifications, setNotifications] = useState([])
+    const lastChimeTimeRef = useRef(0)
+
+    const removeNotification = useCallback((id) => {
+        setNotifications(prev => prev.filter(n => n.id !== id))
+    }, [])
     const [resetPinCustomer, setResetPinCustomer] = useState(null)
     const [newPinInput, setNewPinInput] = useState('')
     const [resetError, setResetError] = useState('')
@@ -172,33 +177,46 @@ export default function AdminPage() {
                 try {
                     const data = JSON.parse(event.data)
                     if (data.type === 'new_order') {
-                        // Play synthesised audio alert chime using Web Audio API
-                        try {
-                            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                            const gainNode = audioCtx.createGain();
-                            const oscillator = audioCtx.createOscillator();
-                            oscillator.connect(gainNode);
-                            gainNode.connect(audioCtx.destination);
-                            oscillator.type = 'sine';
-                            oscillator.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
-                            gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
-                            oscillator.start();
-                            oscillator.stop(audioCtx.currentTime + 0.12);
-                            setTimeout(() => {
-                                const osc2 = audioCtx.createOscillator();
-                                osc2.connect(gainNode);
-                                osc2.type = 'sine';
-                                osc2.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
-                                osc2.start();
-                                osc2.stop(audioCtx.currentTime + 0.22);
-                            }, 120);
-                        } catch (soundErr) { }
+                        const newId = Date.now() + Math.random().toString(36).substr(2, 9)
+                        setNotifications(prev => [
+                            ...prev,
+                            {
+                                id: newId,
+                                token: data.token,
+                                customerName: data.customer_name,
+                                phone: data.phone
+                            }
+                        ])
 
-                        setNewOrderNotification({
-                            token: data.token,
-                            customerName: data.customer_name,
-                            phone: data.phone
-                        })
+                        const now = Date.now()
+                        if (now - lastChimeTimeRef.current > 1000) {
+                            lastChimeTimeRef.current = now
+                            // Play synthesised audio alert chime using Web Audio API
+                            try {
+                                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                                const gainNode = audioCtx.createGain();
+                                const oscillator = audioCtx.createOscillator();
+                                oscillator.connect(gainNode);
+                                gainNode.connect(audioCtx.destination);
+                                oscillator.type = 'sine';
+                                oscillator.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+                                gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                                oscillator.start();
+                                oscillator.stop(audioCtx.currentTime + 0.12);
+                                setTimeout(() => {
+                                    const osc2 = audioCtx.createOscillator();
+                                    osc2.connect(gainNode);
+                                    osc2.type = 'sine';
+                                    osc2.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+                                    osc2.start();
+                                    osc2.stop(audioCtx.currentTime + 0.22);
+                                }, 120);
+                            } catch (soundErr) { }
+                        }
+
+                        setTimeout(() => {
+                            removeNotification(newId)
+                        }, 10000)
 
                         // Refresh orders list immediately if currently viewing orders
                         if (activeTab === 'orders') {
@@ -236,13 +254,6 @@ export default function AdminPage() {
             if (reconnectTimeout) clearTimeout(reconnectTimeout)
         }
     }, [authed, adminToken, activeTab])
-
-    // Dismiss order notification after 10s
-    useEffect(() => {
-        if (!newOrderNotification) return
-        const timer = setTimeout(() => setNewOrderNotification(null), 10000)
-        return () => clearTimeout(timer)
-    }, [newOrderNotification])
 
     const handleLogin = async () => {
         setLoginError('')
@@ -513,90 +524,99 @@ export default function AdminPage() {
     return (
         <motion.div className="admin-page" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             {/* Real-time Order Popup Notifications */}
-            <AnimatePresence>
-                {newOrderNotification && (
-                    <motion.div 
-                        initial={{ opacity: 0, y: -50, scale: 0.9 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        style={{
-                            position: 'fixed',
-                            top: '24px',
-                            right: '24px',
-                            zIndex: 9999,
-                            background: 'linear-gradient(135deg, #1e3a8a, #3b82f6)',
-                            color: 'white',
-                            padding: '16px 20px',
-                            borderRadius: '16px',
-                            boxShadow: '0 10px 25px -5px rgba(59,130,246,0.4)',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '10px',
-                            width: '320px',
-                            border: '1px solid rgba(255,255,255,0.2)'
-                        }}
-                    >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.9 }}>
-                                🔔 New Order Received!
-                            </span>
-                            <button 
-                                onClick={() => setNewOrderNotification(null)}
-                                style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '18px', fontWeight: 'bold', padding: 0 }}
-                            >
-                                ×
-                            </button>
-                        </div>
-                        <div>
-                            <div style={{ fontSize: '16px', fontWeight: 800, marginBottom: '2px' }}>
-                                #{newOrderNotification.token.slice(0, 10).toUpperCase()}
+            <div style={{
+                position: 'fixed',
+                top: '24px',
+                right: '24px',
+                zIndex: 9999,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                pointerEvents: 'none'
+            }}>
+                <AnimatePresence>
+                    {notifications.map((notif) => (
+                        <motion.div 
+                            key={notif.id}
+                            initial={{ opacity: 0, x: 50, scale: 0.9 }}
+                            animate={{ opacity: 1, x: 0, scale: 1 }}
+                            exit={{ opacity: 0, x: 100, scale: 0.9 }}
+                            style={{
+                                pointerEvents: 'auto',
+                                background: 'linear-gradient(135deg, #1e3a8a, #3b82f6)',
+                                color: 'white',
+                                padding: '16px 20px',
+                                borderRadius: '16px',
+                                boxShadow: '0 10px 25px -5px rgba(59,130,246,0.4)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '10px',
+                                width: '320px',
+                                border: '1px solid rgba(255,255,255,0.2)'
+                            }}
+                        >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.9 }}>
+                                    🔔 New Order Received!
+                                </span>
+                                <button 
+                                    onClick={() => removeNotification(notif.id)}
+                                    style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '18px', fontWeight: 'bold', padding: 0 }}
+                                >
+                                    ×
+                                </button>
                             </div>
-                            <div style={{ fontSize: '13px', opacity: 0.9 }}>
-                                Customer: <strong>{newOrderNotification.customerName}</strong>
+                            <div>
+                                <div style={{ fontSize: '16px', fontWeight: 800, marginBottom: '2px' }}>
+                                    #{notif.token.slice(0, 10).toUpperCase()}
+                                </div>
+                                <div style={{ fontSize: '13px', opacity: 0.9 }}>
+                                    Customer: <strong>{notif.customerName}</strong>
+                                </div>
+                                <div style={{ fontSize: '12px', opacity: 0.8 }}>
+                                    Phone: {notif.phone}
+                                </div>
                             </div>
-                            <div style={{ fontSize: '12px', opacity: 0.8 }}>
-                                Phone: {newOrderNotification.phone}
+                            <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                                <button 
+                                    onClick={() => {
+                                        setActiveTab('orders');
+                                        removeNotification(notif.id);
+                                    }}
+                                    style={{
+                                        flex: 1,
+                                        background: 'white',
+                                        color: '#1e3a8a',
+                                        fontSize: '11px',
+                                        padding: '6px 12px',
+                                        fontWeight: '800',
+                                        borderRadius: '8px',
+                                        border: 'none',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    View Order
+                                </button>
+                                <button 
+                                    onClick={() => removeNotification(notif.id)}
+                                    style={{
+                                        background: 'rgba(255,255,255,0.2)',
+                                        color: 'white',
+                                        fontSize: '11px',
+                                        padding: '6px 12px',
+                                        fontWeight: '800',
+                                        borderRadius: '8px',
+                                        border: 'none',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    Dismiss
+                                </button>
                             </div>
-                        </div>
-                        <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                            <button 
-                                onClick={() => {
-                                    setActiveTab('orders');
-                                    setNewOrderNotification(null);
-                                }}
-                                style={{
-                                    flex: 1,
-                                    background: 'white',
-                                    color: '#1e3a8a',
-                                    fontSize: '11px',
-                                    padding: '6px 12px',
-                                    fontWeight: '800',
-                                    borderRadius: '8px',
-                                    border: 'none',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                View Order
-                            </button>
-                            <button 
-                                onClick={() => setNewOrderNotification(null)}
-                                style={{
-                                    background: 'rgba(255,255,255,0.2)',
-                                    color: 'white',
-                                    fontSize: '11px',
-                                    padding: '6px 12px',
-                                    fontWeight: '800',
-                                    borderRadius: '8px',
-                                    border: 'none',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                Dismiss
-                            </button>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
+            </div>
             {/* Nav Header */}
             <div className="admin-header">
                 <div>
