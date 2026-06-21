@@ -52,6 +52,8 @@ export default function AdminPage() {
     const [cardError, setCardError] = useState({})   // per-token inline errors
     const [productForm, setProductForm] = useState(null) // null or { id?, name, price, ... }
     const [searchQuery, setSearchQuery] = useState('') // Search state for products
+    const [pinnedSearchQuery, setPinnedSearchQuery] = useState('') // Search state for pinned products
+    const [editingRanks, setEditingRanks] = useState({}) // Temporary input values for rank editing
     const [pinnedList, setPinnedList] = useState([])
     const [saveOrderingLoading, setSaveOrderingLoading] = useState(false)
     const [categoryFilter, setCategoryFilter] = useState('All')
@@ -74,6 +76,12 @@ export default function AdminPage() {
     useEffect(() => {
         setProductLimit(50)
     }, [searchQuery, categoryFilter, activeTab])
+
+    // Reset pinned products search and editing ranks when changing categories or tabs
+    useEffect(() => {
+        setPinnedSearchQuery('')
+        setEditingRanks({})
+    }, [categoryFilter, activeTab])
 
     useEffect(() => {
         const handleAdminAuthError = () => {
@@ -349,6 +357,39 @@ export default function AdminPage() {
         })
     }
 
+    const handleDirectRankSubmit = (productId, originalIdx) => {
+        const typedVal = editingRanks[productId]
+        if (typedVal === undefined) return
+        
+        const newRank = parseInt(typedVal)
+        // Clean up editing state for this product
+        setEditingRanks(prev => {
+            const next = { ...prev }
+            delete next[productId]
+            return next
+        })
+
+        if (isNaN(newRank) || newRank < 1 || newRank > displayedPinnedList.length) {
+            return
+        }
+
+        const targetIdx = newRank - 1
+        if (targetIdx === originalIdx) return
+
+        const itemA = displayedPinnedList[originalIdx]
+        const itemB = displayedPinnedList[targetIdx]
+
+        setPinnedList(prev => {
+            const next = [...prev]
+            const idxA = next.findIndex(p => p.id === itemA.id)
+            const idxB = next.findIndex(p => p.id === itemB.id)
+            if (idxA !== -1 && idxB !== -1) {
+                ;[next[idxA], next[idxB]] = [next[idxB], next[idxA]]
+            }
+            return next
+        })
+    }
+
     const handleSaveOrdering = async () => {
         setSaveOrderingLoading(true)
         try {
@@ -475,6 +516,17 @@ export default function AdminPage() {
         if (!categoryFilter || categoryFilter === 'All') return pinnedList
         return pinnedList.filter(p => p.category === categoryFilter)
     }, [pinnedList, categoryFilter]);
+
+    // Filter displayed pinned list based on search query
+    const filteredDisplayedPinnedList = useMemo(() => {
+        const listWithIndices = displayedPinnedList.map((p, idx) => ({ p, originalIdx: idx }))
+        if (!pinnedSearchQuery.trim()) return listWithIndices
+        const term = pinnedSearchQuery.toLowerCase()
+        return listWithIndices.filter(item => 
+            item.p.name.toLowerCase().includes(term) ||
+            item.p.category.toLowerCase().includes(term)
+        )
+    }, [displayedPinnedList, pinnedSearchQuery]);
 
     const availableProducts = useMemo(() => {
         return products.filter(p => {
@@ -1026,6 +1078,19 @@ export default function AdminPage() {
                                     </span>
                                 </div>
 
+                                {displayedPinnedList.length > 0 && (
+                                    <div className="ordering-search-row" style={{ position: 'sticky', top: 0, background: 'white', padding: '10px 0', zIndex: 10 }}>
+                                        <input
+                                            type="text"
+                                            placeholder="Search pinned products..."
+                                            value={pinnedSearchQuery}
+                                            onChange={e => setPinnedSearchQuery(e.target.value)}
+                                            className="input"
+                                            style={{ flex: 1, padding: '10px 14px', borderRadius: '10px' }}
+                                        />
+                                    </div>
+                                )}
+
                                 <div className="ordering-list">
                                     {displayedPinnedList.length === 0 ? (
                                         <div style={{ textAlign: 'center', padding: '80px 20px', color: '#64748b' }}>
@@ -1037,10 +1102,38 @@ export default function AdminPage() {
                                                     : 'Select products from the left side. They will appear here in order, pinning them to the top of the store page.'}
                                             </p>
                                         </div>
+                                    ) : filteredDisplayedPinnedList.length === 0 ? (
+                                        <div style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b' }}>
+                                            <div style={{ fontSize: 32, marginBottom: 8 }}>🌾</div>
+                                            <strong>No pinned products match search</strong>
+                                            <p style={{ fontSize: 12, marginTop: 4 }}>Try adjusting your search terms.</p>
+                                        </div>
                                     ) : (
-                                        displayedPinnedList.map((p, idx) => (
+                                        filteredDisplayedPinnedList.map(({ p, originalIdx }) => (
                                             <div key={p.id} className="ordering-item-card" style={{ border: '1px solid #cbd5e1', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-                                                <div className="ordering-rank-badge">{idx + 1}</div>
+                                                <input 
+                                                    type="text"
+                                                    pattern="\d*"
+                                                    className="ordering-rank-input"
+                                                    value={editingRanks[p.id] !== undefined ? editingRanks[p.id] : String(originalIdx + 1)}
+                                                    onChange={e => {
+                                                        const val = e.target.value
+                                                        if (/^\d*$/.test(val)) {
+                                                            setEditingRanks(prev => ({ ...prev, [p.id]: val }))
+                                                        }
+                                                    }}
+                                                    onKeyDown={e => {
+                                                        if (e.key === 'Enter') {
+                                                            handleDirectRankSubmit(p.id, originalIdx)
+                                                        }
+                                                    }}
+                                                    onBlur={() => {
+                                                        handleDirectRankSubmit(p.id, originalIdx)
+                                                    }}
+                                                    min="1"
+                                                    max={displayedPinnedList.length}
+                                                    title={`Rank between 1 and ${displayedPinnedList.length}. Press Enter to swap.`}
+                                                />
                                                 <div className="ordering-item-details">
                                                     <img 
                                                         src={p.image_url} 
@@ -1056,18 +1149,18 @@ export default function AdminPage() {
                                                 <div className="ordering-actions">
                                                     <button 
                                                         className="btn-action-small"
-                                                        onClick={() => handleMoveUp(idx)}
-                                                        disabled={idx === 0}
-                                                        style={{ opacity: idx === 0 ? 0.3 : 1, cursor: idx === 0 ? 'not-allowed' : 'pointer' }}
+                                                        onClick={() => handleMoveUp(originalIdx)}
+                                                        disabled={originalIdx === 0}
+                                                        style={{ opacity: originalIdx === 0 ? 0.3 : 1, cursor: originalIdx === 0 ? 'not-allowed' : 'pointer' }}
                                                         title="Move Up"
                                                     >
                                                         ▲
                                                     </button>
                                                     <button 
                                                         className="btn-action-small"
-                                                        onClick={() => handleMoveDown(idx)}
-                                                        disabled={idx === displayedPinnedList.length - 1}
-                                                        style={{ opacity: idx === displayedPinnedList.length - 1 ? 0.3 : 1, cursor: idx === displayedPinnedList.length - 1 ? 'not-allowed' : 'pointer' }}
+                                                        onClick={() => handleMoveDown(originalIdx)}
+                                                        disabled={originalIdx === displayedPinnedList.length - 1}
+                                                        style={{ opacity: originalIdx === displayedPinnedList.length - 1 ? 0.3 : 1, cursor: originalIdx === displayedPinnedList.length - 1 ? 'not-allowed' : 'pointer' }}
                                                         title="Move Down"
                                                     >
                                                         ▼
@@ -1288,6 +1381,34 @@ export default function AdminPage() {
                     align-items: center;
                     justify-content: center;
                     flex-shrink: 0;
+                }
+                .ordering-rank-input {
+                    background: #1e3a8a;
+                    color: white;
+                    font-weight: 800;
+                    font-size: 12px;
+                    width: 32px;
+                    height: 24px;
+                    border-radius: 6px;
+                    border: 1px solid rgba(255,255,255,0.2);
+                    text-align: center;
+                    outline: none;
+                    flex-shrink: 0;
+                    transition: all 0.2s;
+                }
+                .ordering-rank-input:focus {
+                    border-color: #60a5fa;
+                    background: #2563eb;
+                    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+                }
+                /* Hide up/down arrows in number inputs */
+                .ordering-rank-input::-webkit-outer-spin-button,
+                .ordering-rank-input::-webkit-inner-spin-button {
+                    -webkit-appearance: none;
+                    margin: 0;
+                }
+                .ordering-rank-input[type=number] {
+                    -moz-appearance: textfield;
                 }
                 .ordering-item-details {
                     flex: 1;
