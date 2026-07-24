@@ -197,8 +197,12 @@ async def cleanup_rate_limits():
             rate_limit_store.pop(key, None)
 
 def check_rate_limit(request: Request, limit: int, window: int, scope: str):
-
-    client_ip = request.client.host if request.client else "127.0.0.1"
+    # Extract real client IP from reverse proxy headers (Render, Vercel, Cloudflare, Nginx)
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        client_ip = forwarded.split(",")[0].strip()
+    else:
+        client_ip = request.headers.get("cf-connecting-ip") or (request.client.host if request.client else "127.0.0.1")
 
     key = f"rate_limit:{scope}:{client_ip}"
 
@@ -208,13 +212,11 @@ def check_rate_limit(request: Request, limit: int, window: int, scope: str):
     current_time = time.time()
 
     if key not in rate_limit_store:
-
         rate_limit_store[key] = []
 
     rate_limit_store[key] = [t for t in rate_limit_store[key] if current_time - t < window]
 
     if len(rate_limit_store[key]) >= limit:
-
         raise HTTPException(status_code=429, detail="Too many requests. Please slow down.")
 
     rate_limit_store[key].append(current_time)
@@ -372,6 +374,7 @@ app.add_middleware(
         "http://localhost:5173",
         "http://localhost:3000"
     ],
+    allow_origin_regex=r"https://.*\.vercel\.app|https://.*\.ketanstores\.in|http://localhost:.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -1117,7 +1120,7 @@ failed_login_attempts = {}
 
 def login(body: LoginRequest, request: Request):
 
-    check_rate_limit(request, limit=5, window=60, scope="auth-login")
+    check_rate_limit(request, limit=20, window=60, scope="auth-login")
 
     
 

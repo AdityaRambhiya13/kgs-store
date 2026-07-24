@@ -29,15 +29,24 @@ async function request(method, path, body = null, signal = null, token = null) {
         
         if (!res.ok) {
             if (res.status === 401) {
-                const isAdminRequest = 
-                    path.includes('/api/admin') || 
-                    (path === '/api/orders' && method === 'GET') ||
-                    (path.startsWith('/api/orders/') && path.endsWith('/status')) ||
-                    activeToken === localStorage.getItem('adminToken');
-                if (isAdminRequest) {
-                    window.dispatchEvent(new Event('admin-auth-error'));
-                } else {
-                    window.dispatchEvent(new Event('auth-error'));
+                const isAuthFlowRequest = 
+                    path.startsWith('/api/auth/login') || 
+                    path.startsWith('/api/auth/signup') || 
+                    path.startsWith('/api/auth/forgot-pin') || 
+                    path.startsWith('/api/auth/reset-pin') ||
+                    path.startsWith('/api/auth/admin-login');
+
+                if (!isAuthFlowRequest) {
+                    const isAdminRequest = 
+                        path.includes('/api/admin') || 
+                        (path === '/api/orders' && method === 'GET') ||
+                        (path.startsWith('/api/orders/') && path.endsWith('/status')) ||
+                        activeToken === localStorage.getItem('adminToken');
+                    if (isAdminRequest) {
+                        window.dispatchEvent(new Event('admin-auth-error'));
+                    } else {
+                        window.dispatchEvent(new Event('auth-error'));
+                    }
                 }
             }
             const err = await res.json().catch(() => ({ detail: res.statusText }))

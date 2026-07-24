@@ -60,7 +60,7 @@ def init_pool():
                 time.sleep(1)
 
 def get_connection():
-    """Get a PostgreSQL connection with retry logic."""
+    """Get a PostgreSQL connection with retry logic and connection health check."""
     if _db_pool is None:
         init_pool()
     assert _db_pool is not None
@@ -68,13 +68,30 @@ def get_connection():
     max_retries = 3
     last_err = None
     for attempt in range(max_retries):
+        conn = None
         try:
-            return _db_pool.getconn()
+            conn = _db_pool.getconn()
+            if conn:
+                if conn.closed != 0:
+                    try:
+                        _db_pool.putconn(conn, close=True)
+                    except Exception:
+                        pass
+                    conn = _db_pool.getconn()
+                # Test query execution to ensure server hasn't dropped idle connection
+                with conn.cursor() as cur:
+                    cur.execute("SELECT 1")
+            return conn
         except Exception as e:
             last_err = e
-            print(f"Connection attempt {attempt+1} failed: {e}")
+            print(f"Connection attempt {attempt+1} failed (testing connection): {e}")
+            if conn:
+                try:
+                    _db_pool.putconn(conn, close=True)
+                except Exception:
+                    pass
             if attempt < max_retries - 1:
-                time.sleep(1) # Wait before retry
+                time.sleep(0.5)
     
     raise last_err or Exception("Could not get connection from pool")
 
@@ -199,7 +216,7 @@ def init_db():
             DO $$
             BEGIN
                 IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'orders') THEN
-                    PERFORM setval('order_token_seq', COALESCE((SELECT MAX(NULLIF(regexp_replace(token, '\D', '', 'g'), '')::integer) FROM orders), 100) + 1, false);
+                    PERFORM setval('order_token_seq', COALESCE((SELECT MAX(NULLIF(regexp_replace(token, '\\D', '', 'g'), '')::integer) FROM orders), 100) + 1, false);
                 END IF;
             END $$;
 
@@ -470,11 +487,21 @@ def get_all_products():
 # ── Customer OTP auth ─────────────────────────────────────
 
 def get_customer(phone: str):
-    """Fetch customer record by phone."""
+    """Fetch customer record by phone (supports +91, 0, and 10-digit formats)."""
+    if not phone:
+        return None
     conn = get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM customers WHERE phone = %s", (phone,))
+        digits = "".join(filter(str.isdigit, phone))
+        if len(digits) >= 10:
+            last10 = digits[-10:]
+            cursor.execute(
+                "SELECT * FROM customers WHERE phone = %s OR phone = %s OR phone = %s OR phone LIKE %s",
+                (phone, f"+91{last10}", last10, f"%{last10}")
+            )
+        else:
+            cursor.execute("SELECT * FROM customers WHERE phone = %s", (phone,))
         row = cursor.fetchone()
         return dict(row) if row else None
     finally:
