@@ -24,7 +24,9 @@ try:
         "phone": "9999999998",
         "email": "test8@example.com",
         "address": "123 Test St",
-        "pin": "1234"
+        "pin": "1234",
+        "security_question": "What is your pet's name?",
+        "security_answer": "Fluffy"
     })
     print("Signup Response:", res.status_code, res.json())
 
