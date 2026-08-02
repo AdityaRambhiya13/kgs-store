@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies if needed
+# Install system dependencies for PostgreSQL
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     libpq-dev \
@@ -18,5 +18,5 @@ COPY app/ ./
 # Expose default port
 EXPOSE 8000
 
-# Start FastAPI application
-CMD ["python", "main.py"]
+# Start FastAPI application using uvicorn bound to 0.0.0.0:$PORT
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
