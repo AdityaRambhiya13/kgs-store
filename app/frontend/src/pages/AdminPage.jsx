@@ -208,11 +208,14 @@ export default function AdminPage() {
             })
             setTimeout(() => setShutdownToast(null), 5000)
         } catch (err) {
+            const errorText = (err.message === 'Not Found' || err.message?.includes('404'))
+                ? 'Railway backend deployment is pending. Please open your Railway dashboard and click Deploy/Redeploy on kgs-store.'
+                : (err.message || 'Failed to update store status')
             setShutdownToast({
                 type: 'error',
-                text: err.message || 'Failed to update store status'
+                text: errorText
             })
-            setTimeout(() => setShutdownToast(null), 5000)
+            setTimeout(() => setShutdownToast(null), 7000)
         } finally {
             setStatusUpdating(false)
         }
@@ -233,11 +236,14 @@ export default function AdminPage() {
             })
             setTimeout(() => setShutdownToast(null), 4000)
         } catch (err) {
+            const errorText = (err.message === 'Not Found' || err.message?.includes('404'))
+                ? 'Railway backend deployment is pending. Please open your Railway dashboard and click Deploy/Redeploy on kgs-store.'
+                : (err.message || 'Failed to save notice message')
             setShutdownToast({
                 type: 'error',
-                text: err.message || 'Failed to save notice message'
+                text: errorText
             })
-            setTimeout(() => setShutdownToast(null), 5000)
+            setTimeout(() => setShutdownToast(null), 7000)
         } finally {
             setSaveMessageLoading(false)
         }

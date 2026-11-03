@@ -230,7 +230,9 @@ export default function App() {
         setStoreStatus(data)
       }
     } catch (err) {
-      console.error("Failed to fetch store status:", err)
+      if (err.message !== 'Not Found' && !err.message?.includes('404')) {
+        console.error("Failed to fetch store status:", err)
+      }
     } finally {
       setStatusChecking(false)
     }
