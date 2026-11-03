@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Link } from 'react-router-dom'
 
 export default function ShutdownPage({ status, onCheckAgain, isChecking = false }) {
   const [countdown, setCountdown] = useState(20)
@@ -198,36 +197,6 @@ export default function ShutdownPage({ status, onCheckAgain, isChecking = false 
           <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 500 }}>
             Auto-checking in <strong style={{ color: '#94a3b8' }}>{countdown}s</strong>
           </span>
-        </div>
-
-        {/* Admin Shortcut Footer */}
-        <div style={{
-          marginTop: '36px',
-          paddingTop: '20px',
-          borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          fontSize: '12px',
-          color: '#64748b'
-        }}>
-          <span>Ketan General Stores • Katemanivali, Kalyan (E)</span>
-          <Link
-            to="/manage-store-99"
-            style={{
-              color: '#94a3b8',
-              textDecoration: 'none',
-              fontWeight: 600,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-              transition: 'color 0.2s'
-            }}
-            onMouseOver={(e) => (e.currentTarget.style.color = '#38bdf8')}
-            onMouseOut={(e) => (e.currentTarget.style.color = '#94a3b8')}
-          >
-            🔐 Store Admin
-          </Link>
         </div>
       </motion.div>
     </div>
