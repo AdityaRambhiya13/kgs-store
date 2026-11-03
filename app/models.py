@@ -276,3 +276,15 @@ class AdminResetPinRequest(BaseModel):
     new_pin: str = Field(..., min_length=4, max_length=4, pattern=r"^\d{4}$")
 
 
+
+
+class StoreStatusOut(BaseModel):
+    is_shutdown: bool
+    title: str
+    message: str
+    updated_at: str
+
+class StoreStatusUpdate(BaseModel):
+    is_shutdown: bool
+    title: Optional[str] = None
+    message: Optional[str] = None

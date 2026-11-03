@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import { listOrders, updateStatus, listCustomers, adminLogin, getProducts, getAdminProducts, addProduct, updateProduct, deleteProduct, confirmPayment, rejectPayment, bulkReorderProducts, adminResetPin } from '../api'
+import { listOrders, updateStatus, listCustomers, adminLogin, getProducts, getAdminProducts, addProduct, updateProduct, deleteProduct, confirmPayment, rejectPayment, bulkReorderProducts, adminResetPin, getAdminStoreStatus, updateStoreStatus } from '../api'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import ProductRenamer from './ProductRenamer'
+import ShutdownPage from './ShutdownPage'
 
 const unescapeHTML = (str) => {
   if (!str) return ''
@@ -71,6 +72,15 @@ export default function AdminPage() {
     const [resetLoading, setResetLoading] = useState(false)
     const intervalRef = useRef(null)
     const orderingInitialisedRef = useRef(false) // tracks whether we've seeded pinnedList for this session
+
+    // Temporary Store Shutdown State
+    const [storeStatus, setStoreStatus] = useState(null)
+    const [statusLoading, setStatusLoading] = useState(false)
+    const [statusUpdating, setStatusUpdating] = useState(false)
+    const [shutdownToast, setShutdownToast] = useState(null)
+    const [editTitle, setEditTitle] = useState('')
+    const [editMessage, setEditMessage] = useState('')
+    const [saveMessageLoading, setSaveMessageLoading] = useState(false)
 
     // Reset product limit on filter, search, or tab changes to keep DOM lightweight
     useEffect(() => {
@@ -157,6 +167,110 @@ export default function AdminPage() {
         }
     }, [authed, adminToken, activeTab])
 
+
+    // Fetch store status
+    const fetchStoreStatus = useCallback(async () => {
+        if (!adminToken) return
+        try {
+            setStatusLoading(true)
+            const data = await getAdminStoreStatus(adminToken)
+            setStoreStatus(data)
+            setEditTitle(data.title || '')
+            setEditMessage(data.message || '')
+        } catch (err) {
+            console.error("Admin fetch store status error:", err)
+        } finally {
+            setStatusLoading(false)
+        }
+    }, [adminToken])
+
+    useEffect(() => {
+        if (authed && adminToken) {
+            fetchStoreStatus()
+        }
+    }, [authed, adminToken, fetchStoreStatus])
+
+    const handleToggleShutdown = async (nextState) => {
+        const isTurningOn = typeof nextState === 'boolean' ? nextState : !storeStatus?.is_shutdown
+        try {
+            setStatusUpdating(true)
+            const updated = await updateStoreStatus({
+                is_shutdown: isTurningOn,
+                title: editTitle.trim() || undefined,
+                message: editMessage.trim() || undefined
+            }, adminToken)
+            setStoreStatus(updated)
+            setShutdownToast({
+                type: isTurningOn ? 'warning' : 'success',
+                text: isTurningOn
+                    ? '🛑 Temporary Shutdown is now ON! Customer website is paused.'
+                    : '🟢 Shutdown turned OFF! Customer website is now live.'
+            })
+            setTimeout(() => setShutdownToast(null), 5000)
+        } catch (err) {
+            setShutdownToast({
+                type: 'error',
+                text: err.message || 'Failed to update store status'
+            })
+            setTimeout(() => setShutdownToast(null), 5000)
+        } finally {
+            setStatusUpdating(false)
+        }
+    }
+
+    const handleSaveNoticeMessage = async () => {
+        try {
+            setSaveMessageLoading(true)
+            const updated = await updateStoreStatus({
+                is_shutdown: storeStatus?.is_shutdown || false,
+                title: editTitle.trim(),
+                message: editMessage.trim()
+            }, adminToken)
+            setStoreStatus(updated)
+            setShutdownToast({
+                type: 'success',
+                text: '✅ Customer announcement notice updated successfully!'
+            })
+            setTimeout(() => setShutdownToast(null), 4000)
+        } catch (err) {
+            setShutdownToast({
+                type: 'error',
+                text: err.message || 'Failed to save notice message'
+            })
+            setTimeout(() => setShutdownToast(null), 5000)
+        } finally {
+            setSaveMessageLoading(false)
+        }
+    }
+
+    const handleResetNoticeMessage = async () => {
+        const defTitle = "Currently in Maintenance"
+        const defMsg = "Sorry for the inconvenience. We'll be back shortly!"
+        setEditTitle(defTitle)
+        setEditMessage(defMsg)
+        try {
+            setSaveMessageLoading(true)
+            const updated = await updateStoreStatus({
+                is_shutdown: storeStatus?.is_shutdown || false,
+                title: defTitle,
+                message: defMsg
+            }, adminToken)
+            setStoreStatus(updated)
+            setShutdownToast({
+                type: 'success',
+                text: '↺ Reset announcement notice to default message!'
+            })
+            setTimeout(() => setShutdownToast(null), 4000)
+        } catch (err) {
+            setShutdownToast({
+                type: 'error',
+                text: err.message || 'Failed to reset notice'
+            })
+        } finally {
+            setSaveMessageLoading(false)
+        }
+    }
+
     // Real-time WebSocket Order Notifications
     useEffect(() => {
         if (!authed || !adminToken) return
@@ -184,6 +298,16 @@ export default function AdminPage() {
             ws.onmessage = async (event) => {
                 try {
                     const data = JSON.parse(event.data)
+                    if (data.type === 'store_status_changed') {
+                        setStoreStatus(prev => ({
+                            ...prev,
+                            is_shutdown: data.is_shutdown,
+                            title: data.title || prev?.title,
+                            message: data.message || prev?.message
+                        }))
+                        setEditTitle(data.title || '')
+                        setEditMessage(data.message || '')
+                    }
                     if (data.type === 'new_order') {
                         const newId = Date.now() + Math.random().toString(36).substr(2, 9)
                         setNotifications(prev => [
@@ -672,17 +796,55 @@ export default function AdminPage() {
             {/* Nav Header */}
             <div className="admin-header">
                 <div>
-                    <h1>🌾 KGS Admin <span style={{fontSize: '12px', opacity: 0.5, fontWeight: 400}}>v33</span></h1>
+                    <h1 style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                        🌾 KGS Admin <span style={{fontSize: '12px', opacity: 0.5, fontWeight: 400}}>v33</span>
+                        {storeStatus && (
+                            <button
+                                onClick={() => setActiveTab('shutdown')}
+                                title="Click to manage store shutdown switch"
+                                style={{
+                                    padding: '4px 10px',
+                                    borderRadius: '999px',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    fontSize: '11px',
+                                    fontWeight: 800,
+                                    letterSpacing: '0.4px',
+                                    background: storeStatus.is_shutdown ? '#ef4444' : 'rgba(16, 185, 129, 0.25)',
+                                    color: storeStatus.is_shutdown ? '#ffffff' : '#34d399',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    transition: 'all 0.2s',
+                                    boxShadow: storeStatus.is_shutdown ? '0 0 12px rgba(239, 68, 68, 0.6)' : 'none'
+                                }}
+                            >
+                                <span style={{
+                                    width: '7px',
+                                    height: '7px',
+                                    borderRadius: '50%',
+                                    background: storeStatus.is_shutdown ? '#ffffff' : '#10b981'
+                                }} />
+                                {storeStatus.is_shutdown ? 'SHUT DOWN (ON)' : 'STORE LIVE'}
+                            </button>
+                        )}
+                    </h1>
                     <p>Store Management System</p>
                 </div>
                 <div className="admin-nav-tabs">
-                    {['orders', 'products', 'ordering', 'new_products', 'visibility', 'inventory', 'renamer', 'customers'].map(tab => (
+                    {['orders', 'products', 'ordering', 'new_products', 'visibility', 'inventory', 'renamer', 'customers', 'shutdown'].map(tab => (
                         <button
                             key={tab}
-                            className={`nav-tab ${activeTab === tab ? 'active' : ''}`}
+                            className={`nav-tab ${activeTab === tab ? 'active' : ''} ${tab === 'shutdown' && storeStatus?.is_shutdown ? 'nav-tab-shutdown-active' : ''}`}
                             onClick={() => { setActiveTab(tab); setSearchQuery(''); }}
                         >
-                            {tab === 'ordering' ? 'Sort Display' : tab === 'visibility' ? 'Displayer' : tab === 'inventory' ? 'Stock' : tab === 'new_products' ? 'Newly Launched' : tab === 'renamer' ? 'Product Names' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                            {tab === 'ordering' ? 'Sort Display' :
+                             tab === 'visibility' ? 'Displayer' :
+                             tab === 'inventory' ? 'Stock' :
+                             tab === 'new_products' ? 'Newly Launched' :
+                             tab === 'renamer' ? 'Product Names' :
+                             tab === 'shutdown' ? (storeStatus?.is_shutdown ? '🛑 Shut Down' : '⚡ Shut Down') :
+                             tab.charAt(0).toUpperCase() + tab.slice(1)}
                         </button>
                     ))}
                 </div>
@@ -1188,6 +1350,300 @@ export default function AdminPage() {
                         <ProductRenamer />
                     </div>
                 )}
+
+                {activeTab === 'shutdown' && (
+                    <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+                        {/* Section Header */}
+                        <div className="section-header" style={{ marginBottom: '16px' }}>
+                            <div>
+                                <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <span>🛑</span> Temporary Store Shutdown (Maintenance Mode)
+                                </h3>
+                                <p style={{ fontSize: '14px', color: '#64748b', marginTop: '4px' }}>
+                                    Use this switch to pause customer traffic while modifying prices or restructuring products.
+                                </p>
+                            </div>
+                            <button
+                                className="btn btn-ghost"
+                                onClick={fetchStoreStatus}
+                                disabled={statusLoading}
+                                style={{ border: '1px solid #cbd5e1', padding: '8px 16px', borderRadius: '10px' }}
+                            >
+                                {statusLoading ? 'Refreshing...' : '🔄 Refresh Status'}
+                            </button>
+                        </div>
+
+                        {shutdownToast && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                style={{
+                                    padding: '12px 18px',
+                                    borderRadius: '12px',
+                                    marginBottom: '20px',
+                                    fontSize: '14px',
+                                    fontWeight: 600,
+                                    background: shutdownToast.type === 'error' ? '#fef2f2' : shutdownToast.type === 'warning' ? '#fffbeb' : '#f0fdf4',
+                                    color: shutdownToast.type === 'error' ? '#b91c1c' : shutdownToast.type === 'warning' ? '#b45309' : '#15803d',
+                                    border: `1px solid ${shutdownToast.type === 'error' ? '#fecaca' : shutdownToast.type === 'warning' ? '#fde68a' : '#bbf7d0'}`
+                                }}
+                            >
+                                {shutdownToast.text}
+                            </motion.div>
+                        )}
+
+                        {/* Master Toggle Switch Card */}
+                        <div style={{
+                            background: storeStatus?.is_shutdown ? '#fff1f2' : '#ffffff',
+                            border: `2px solid ${storeStatus?.is_shutdown ? '#f43f5e' : '#e2e8f0'}`,
+                            borderRadius: '20px',
+                            padding: '28px',
+                            boxShadow: storeStatus?.is_shutdown
+                                ? '0 10px 25px -5px rgba(244, 63, 94, 0.15), 0 0 0 1px rgba(244, 63, 94, 0.2)'
+                                : '0 4px 6px -1px rgba(0,0,0,0.05)',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            gap: '24px',
+                            marginBottom: '28px',
+                            flexWrap: 'wrap',
+                            transition: 'all 0.3s'
+                        }}>
+                            <div style={{ flex: '1 1 320px' }}>
+                                <div style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    padding: '6px 14px',
+                                    borderRadius: '999px',
+                                    fontSize: '12px',
+                                    fontWeight: 800,
+                                    letterSpacing: '0.5px',
+                                    textTransform: 'uppercase',
+                                    background: storeStatus?.is_shutdown ? '#e11d48' : '#10b981',
+                                    color: '#ffffff',
+                                    marginBottom: '12px'
+                                }}>
+                                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fff' }} />
+                                    {storeStatus?.is_shutdown ? 'Temporary Shutdown is ACTIVE' : 'Store is LIVE & Operational'}
+                                </div>
+                                <h4 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', margin: '0 0 6px 0' }}>
+                                    {storeStatus?.is_shutdown
+                                        ? 'The customer storefront is currently PAUSED'
+                                        : 'The customer storefront is OPEN to all visitors'}
+                                </h4>
+                                <p style={{ fontSize: '13.5px', color: '#64748b', margin: 0, lineHeight: 1.5 }}>
+                                    {storeStatus?.is_shutdown
+                                        ? 'Customers visiting the website see your apologetic message and a promise to return with great stuff. Ordering and pricing are safely locked until you flip this switch back off.'
+                                        : 'Customers can browse products, see updated prices, add items to cart, and place orders without restriction.'}
+                                </p>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                <label style={{ position: 'relative', display: 'inline-block', width: '68px', height: '38px', margin: 0 }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={!!storeStatus?.is_shutdown}
+                                        disabled={statusUpdating}
+                                        onChange={(e) => handleToggleShutdown(e.target.checked)}
+                                        style={{ opacity: 0, width: 0, height: 0 }}
+                                    />
+                                    <span style={{
+                                        position: 'absolute',
+                                        cursor: statusUpdating ? 'wait' : 'pointer',
+                                        top: 0, left: 0, right: 0, bottom: 0,
+                                        backgroundColor: storeStatus?.is_shutdown ? '#e11d48' : '#cbd5e1',
+                                        transition: '.3s',
+                                        borderRadius: '38px',
+                                        boxShadow: storeStatus?.is_shutdown ? '0 0 16px rgba(225, 29, 72, 0.4)' : 'none'
+                                    }}>
+                                        <span style={{
+                                            position: 'absolute',
+                                            content: '""',
+                                            height: '30px',
+                                            width: '30px',
+                                            left: '4px',
+                                            bottom: '4px',
+                                            backgroundColor: '#ffffff',
+                                            transition: '.3s',
+                                            borderRadius: '50%',
+                                            transform: storeStatus?.is_shutdown ? 'translateX(30px)' : 'translateX(0)',
+                                            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontSize: '12px'
+                                        }}>
+                                            {storeStatus?.is_shutdown ? '🛑' : '🟢'}
+                                        </span>
+                                    </span>
+                                </label>
+
+                                <button
+                                    onClick={() => handleToggleShutdown()}
+                                    disabled={statusUpdating}
+                                    style={{
+                                        padding: '12px 20px',
+                                        borderRadius: '12px',
+                                        border: 'none',
+                                        fontWeight: 700,
+                                        fontSize: '14px',
+                                        cursor: statusUpdating ? 'wait' : 'pointer',
+                                        background: storeStatus?.is_shutdown ? '#10b981' : '#e11d48',
+                                        color: '#ffffff',
+                                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                        transition: 'all 0.2s',
+                                        opacity: statusUpdating ? 0.7 : 1
+                                    }}
+                                >
+                                    {statusUpdating
+                                        ? 'Updating...'
+                                        : storeStatus?.is_shutdown
+                                            ? '✅ Turn OFF Shutdown (Reopen)'
+                                            : '🛑 Turn ON Shutdown'}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Notice Message Editor Card */}
+                        <div style={{
+                            background: '#ffffff',
+                            borderRadius: '20px',
+                            padding: '28px',
+                            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
+                            border: '1px solid #e2e8f0',
+                            marginBottom: '28px'
+                        }}>
+                            <h4 style={{ fontSize: '17px', fontWeight: 800, color: '#1e293b', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span>📢</span> Customer Announcement & Apology Message
+                            </h4>
+                            <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '20px' }}>
+                                When the shutdown switch is ON, customers will see this title and message letting them know the website is currently in maintenance and will be back shortly.
+                            </p>
+
+                            <div style={{ marginBottom: '16px' }}>
+                                <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                                    Notice Title / Heading:
+                                </label>
+                                <input
+                                    type="text"
+                                    value={editTitle}
+                                    onChange={(e) => setEditTitle(e.target.value)}
+                                    placeholder="e.g. Currently in Maintenance"
+                                    style={{
+                                        width: '100%',
+                                        padding: '12px 16px',
+                                        borderRadius: '10px',
+                                        border: '1px solid #cbd5e1',
+                                        fontSize: '14px',
+                                        fontWeight: 600
+                                    }}
+                                />
+                            </div>
+
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                                    Notice Message (Apology & Promise):
+                                </label>
+                                <textarea
+                                    value={editMessage}
+                                    onChange={(e) => setEditMessage(e.target.value)}
+                                    rows={4}
+                                    placeholder="e.g. Sorry for the inconvenience. We'll be back shortly!"
+                                    style={{
+                                        width: '100%',
+                                        padding: '12px 16px',
+                                        borderRadius: '10px',
+                                        border: '1px solid #cbd5e1',
+                                        fontSize: '14px',
+                                        lineHeight: 1.5,
+                                        resize: 'vertical'
+                                    }}
+                                />
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                                <button
+                                    onClick={handleSaveNoticeMessage}
+                                    disabled={saveMessageLoading}
+                                    style={{
+                                        padding: '10px 22px',
+                                        borderRadius: '10px',
+                                        background: '#2563eb',
+                                        color: '#ffffff',
+                                        border: 'none',
+                                        fontWeight: 700,
+                                        fontSize: '13.5px',
+                                        cursor: saveMessageLoading ? 'wait' : 'pointer',
+                                        opacity: saveMessageLoading ? 0.7 : 1
+                                    }}
+                                >
+                                    {saveMessageLoading ? 'Saving...' : '💾 Save Notice Details'}
+                                </button>
+                                <button
+                                    onClick={handleResetNoticeMessage}
+                                    disabled={saveMessageLoading}
+                                    style={{
+                                        padding: '10px 18px',
+                                        borderRadius: '10px',
+                                        background: '#f1f5f9',
+                                        color: '#475569',
+                                        border: '1px solid #cbd5e1',
+                                        fontWeight: 600,
+                                        fontSize: '13.5px',
+                                        cursor: saveMessageLoading ? 'wait' : 'pointer'
+                                    }}
+                                >
+                                    ↺ Reset to Default Message
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Customer Live Preview */}
+                        <div style={{
+                            background: '#0f172a',
+                            borderRadius: '24px',
+                            padding: '24px',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            boxShadow: '0 10px 25px -5px rgba(0,0,0,0.3)'
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span style={{ fontSize: '18px' }}>📱</span>
+                                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#f8fafc' }}>
+                                        Live Customer Preview
+                                    </span>
+                                </div>
+                                <span style={{
+                                    fontSize: '11px',
+                                    fontWeight: 700,
+                                    padding: '4px 10px',
+                                    borderRadius: '999px',
+                                    background: storeStatus?.is_shutdown ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+                                    color: storeStatus?.is_shutdown ? '#f87171' : '#34d399'
+                                }}>
+                                    {storeStatus?.is_shutdown ? 'ACTIVE FOR VISITORS' : 'PREVIEW MODE ONLY'}
+                                </span>
+                            </div>
+
+                            {/* Embedded Preview Frame */}
+                            <div style={{
+                                borderRadius: '16px',
+                                overflow: 'hidden',
+                                border: '1px solid rgba(255, 255, 255, 0.1)'
+                            }}>
+                                <ShutdownPage
+                                    status={{
+                                        title: editTitle || storeStatus?.title,
+                                        message: editMessage || storeStatus?.message
+                                    }}
+                                    onCheckAgain={() => {}}
+                                    isChecking={false}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Product Modal */}
@@ -1474,6 +1930,7 @@ export default function AdminPage() {
                 .admin-nav-tabs { display: flex; gap: 10px; }
                 .nav-tab { background: rgba(255,255,255,0.1); border: none; color: #fff; padding: 10px 24px; border-radius: 99px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s; }
                 .nav-tab.active { background: #fff; color: #1e3a8a; }
+                .nav-tab-shutdown-active { background: #e11d48 !important; color: #fff !important; font-weight: 700; box-shadow: 0 0 12px rgba(225, 29, 72, 0.5); }
                 
                 .admin-container { padding: 30px 40px; }
                 .admin-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; margin-bottom: 30px; }

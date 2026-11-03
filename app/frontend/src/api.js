@@ -186,3 +186,14 @@ export const makeCategoryOfficial = (name, emoji, color, adminToken) =>
 
 export const renameCategory = (oldName, newName, adminToken) =>
     request('POST', '/api/admin/categories/rename', { old_name: oldName, new_name: newName }, null, adminToken)
+
+
+// ── Store Status / Temporary Shutdown ──────────────────────────
+export const getStoreStatus = (signal) =>
+    request('GET', `/api/store-status?t=${Date.now()}`, null, signal)
+
+export const getAdminStoreStatus = (adminToken, signal) =>
+    request('GET', `/api/admin/store-status?t=${Date.now()}`, null, signal, adminToken)
+
+export const updateStoreStatus = (data, adminToken) =>
+    request('POST', '/api/admin/store-status', data, null, adminToken)

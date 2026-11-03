@@ -248,8 +248,37 @@ def init_db():
                 color TEXT NOT NULL DEFAULT '#64748b',
                 display_order INTEGER NOT NULL DEFAULT 0
             );
+
+            -- Store settings table
+            CREATE TABLE IF NOT EXISTS store_settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
         """
         cursor.execute(setup_sql)
+
+        # Seed store_settings if empty
+        cursor.execute("SELECT COUNT(*) as count FROM store_settings WHERE key = 'is_shutdown'")
+        row_settings = cursor.fetchone()
+        if not row_settings or row_settings['count'] == 0:
+            now_iso = datetime.now().isoformat()
+            cursor.execute(
+                """
+                INSERT INTO store_settings (key, value, updated_at) VALUES 
+                ('is_shutdown', 'false', %s),
+                ('shutdown_title', %s, %s),
+                ('shutdown_message', %s, %s)
+                ON CONFLICT (key) DO NOTHING
+                """,
+                (
+                    now_iso,
+                    "Currently in Maintenance",
+                    now_iso,
+                    "Sorry for the inconvenience. We'll be back shortly!",
+                    now_iso
+                )
+            )
 
         # Seed official_categories if empty
         cursor.execute("SELECT COUNT(*) as count FROM official_categories")
@@ -1326,5 +1355,95 @@ def rename_category(old_name: str, new_name: str) -> bool:
         print(f"Error renaming category: {e}")
         if conn: conn.rollback()
         return False
+    finally:
+        release_connection(conn)
+
+
+# ── Store Status & Maintenance Settings ──────────────────────
+_store_status_cache = None
+_store_status_cache_time = 0
+
+DEFAULT_SHUTDOWN_TITLE = "Currently in Maintenance"
+DEFAULT_SHUTDOWN_MESSAGE = "Sorry for the inconvenience. We'll be back shortly!"
+
+def get_store_status() -> dict:
+    global _store_status_cache, _store_status_cache_time
+    now = time.time()
+    if _store_status_cache is not None and (now - _store_status_cache_time < 15):
+        return _store_status_cache
+
+    conn = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT key, value, updated_at FROM store_settings WHERE key IN ('is_shutdown', 'shutdown_title', 'shutdown_message')")
+        rows = cursor.fetchall()
+        settings = {row['key']: row['value'] for row in rows} if rows else {}
+        updated_at = max([row['updated_at'] for row in rows], default=datetime.now().isoformat()) if rows else datetime.now().isoformat()
+
+        status = {
+            "is_shutdown": settings.get("is_shutdown", "false").lower() == "true",
+            "title": settings.get("shutdown_title") or DEFAULT_SHUTDOWN_TITLE,
+            "message": settings.get("shutdown_message") or DEFAULT_SHUTDOWN_MESSAGE,
+            "updated_at": updated_at
+        }
+        _store_status_cache = status
+        _store_status_cache_time = now
+        return status
+    except Exception as e:
+        print(f"Error fetching store status: {e}")
+        return {
+            "is_shutdown": False,
+            "title": DEFAULT_SHUTDOWN_TITLE,
+            "message": DEFAULT_SHUTDOWN_MESSAGE,
+            "updated_at": datetime.now().isoformat()
+        }
+    finally:
+        if conn:
+            release_connection(conn)
+
+def update_store_status(is_shutdown: bool, title: Optional[str] = None, message: Optional[str] = None) -> dict:
+    global _store_status_cache, _store_status_cache_time
+    conn = get_connection()
+    now_iso = datetime.now().isoformat()
+    try:
+        cursor = conn.cursor()
+        # Upsert is_shutdown
+        cursor.execute(
+            """
+            INSERT INTO store_settings (key, value, updated_at)
+            VALUES ('is_shutdown', %s, %s)
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = EXCLUDED.updated_at
+            """,
+            (str(is_shutdown).lower(), now_iso)
+        )
+        if title is not None and title.strip():
+            cursor.execute(
+                """
+                INSERT INTO store_settings (key, value, updated_at)
+                VALUES ('shutdown_title', %s, %s)
+                ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = EXCLUDED.updated_at
+                """,
+                (title.strip(), now_iso)
+            )
+        if message is not None and message.strip():
+            cursor.execute(
+                """
+                INSERT INTO store_settings (key, value, updated_at)
+                VALUES ('shutdown_message', %s, %s)
+                ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = EXCLUDED.updated_at
+                """,
+                (message.strip(), now_iso)
+            )
+        conn.commit()
+        # Invalidate cache
+        _store_status_cache = None
+        _store_status_cache_time = 0
+        return get_store_status()
+    except Exception as e:
+        print(f"Error updating store status: {e}")
+        if conn:
+            conn.rollback()
+        raise e
     finally:
         release_connection(conn)

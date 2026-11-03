@@ -1,9 +1,10 @@
-import { useState, useEffect, lazy, Suspense } from 'react'
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { Routes, Route, useLocation, Navigate, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAuth } from './AuthContext'
 import { FavoritesProvider } from './FavoritesContext'
-import { adminLogin } from './api'
+import { adminLogin, getStoreStatus } from './api'
+import ShutdownPage from './pages/ShutdownPage'
 
 // Lazy loaded pages
 const CatalogPage = lazy(() => import('./pages/CatalogPage'))
@@ -211,7 +212,68 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('')
   const [navCategory, setNavCategory] = useState(null)
 
+  // Store shutdown / maintenance state
+  const [storeStatus, setStoreStatus] = useState({
+    is_shutdown: false,
+    title: '',
+    message: ''
+  })
+  const [statusChecking, setStatusChecking] = useState(false)
+
   usePWABackGuard()
+
+  const fetchStoreStatus = useCallback(async () => {
+    try {
+      setStatusChecking(true)
+      const data = await getStoreStatus()
+      if (data && typeof data.is_shutdown === 'boolean') {
+        setStoreStatus(data)
+      }
+    } catch (err) {
+      console.error("Failed to fetch store status:", err)
+    } finally {
+      setStatusChecking(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchStoreStatus()
+    const interval = setInterval(fetchStoreStatus, 20000)
+    return () => clearInterval(interval)
+  }, [fetchStoreStatus])
+
+  // Real-time WebSocket connection to receive instant shutdown updates
+  useEffect(() => {
+    let ws = null
+    try {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      let host = window.location.host
+      const apiUrl = import.meta.env.VITE_API_URL
+      if (apiUrl) {
+        try {
+          const u = new URL(apiUrl)
+          host = u.host
+        } catch (e) {}
+      }
+      ws = new WebSocket(`${protocol}//${host}/ws/customer`)
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data)
+          if (msg.type === 'store_status_changed') {
+            setStoreStatus(prev => ({
+              ...prev,
+              is_shutdown: msg.is_shutdown,
+              title: msg.title || prev.title,
+              message: msg.message || prev.message
+            }))
+          }
+        } catch (e) {}
+      }
+    } catch (err) {}
+    return () => {
+      if (ws) ws.close()
+    }
+  }, [])
 
   // Hide Navbar/Cart on Auth and Admin pages
   const isAuthPage = ['/login', '/signup', '/forgot-pin', '/reset-pin'].includes(location.pathname) ||
@@ -226,6 +288,25 @@ export default function App() {
   const handleCategorySelect = (catName) => {
     setNavCategory(catName)
     setTimeout(() => setNavCategory(null), 100)
+  }
+
+  const isAdminRoute = location.pathname.startsWith('/manage-store') ||
+                       location.pathname.startsWith('/admin')
+
+  // If store is temporarily shut down and the visitor is not in admin portal, display the shutdown screen
+  if (storeStatus.is_shutdown && !isAdminRoute) {
+    return (
+      <FavoritesProvider>
+        <>
+          <OfflineBanner />
+          <ShutdownPage
+            status={storeStatus}
+            onCheckAgain={fetchStoreStatus}
+            isChecking={statusChecking}
+          />
+        </>
+      </FavoritesProvider>
+    )
   }
 
   return (

@@ -80,7 +80,7 @@ from database import (
     confirm_payment_and_generate_otp, reject_order_payment,
     get_frequently_bought_together, get_smart_reorder_reminders,
     get_similar_products, get_official_categories, make_category_official,
-    rename_category
+    rename_category, get_store_status, update_store_status
 )
 
 from models import (
@@ -88,7 +88,7 @@ from models import (
     OrderCreate, OrderOut, OrderStatusUpdate, ProductOut, ProductCreate, ProductUpdate,
 
     OTPRequest, OTPVerifyRequest, CustomerOut, SignupRequest, LoginRequest, ForgotPinQuestionRequest, ForgotPinVerifyRequest, ResetPinRequest,
-    CategoryMakeOfficial, CategoryRename, ChangePinRequest, ProfileUpdateRequest, AdminResetPinRequest
+    CategoryMakeOfficial, CategoryRename, ChangePinRequest, ProfileUpdateRequest, AdminResetPinRequest, StoreStatusOut, StoreStatusUpdate
 
 )
 
@@ -493,6 +493,10 @@ def admin_list_products(request: Request, admin: dict = Depends(get_current_admi
 @app.post("/api/orders")
 
 async def place_order(order: OrderCreate, request: Request, customer_token: dict = Depends(get_current_customer)):
+
+    store_status = get_store_status()
+    if store_status.get("is_shutdown"):
+        raise HTTPException(status_code=503, detail="Store is temporarily closed for updates. Please check back soon!")
 
     # check_rate_limit(request, limit=3, window=600, scope="orders")
 
@@ -1568,6 +1572,38 @@ def api_rename_category(body: CategoryRename, admin: dict = Depends(get_current_
         raise HTTPException(status_code=400, detail="Failed to rename category")
     invalidate_products_cache()
     return {"message": "Category renamed successfully"}
+
+
+# ── Store Status / Shutdown API ───────────────────────────
+
+@app.get("/api/store-status", response_model=StoreStatusOut)
+def api_get_store_status():
+    """Public endpoint for customer app to check if store is in temporary shutdown/maintenance."""
+    return get_store_status()
+
+
+@app.get("/api/admin/store-status", response_model=StoreStatusOut)
+def api_admin_get_store_status(admin: dict = Depends(get_current_admin)):
+    """Admin endpoint to get current store shutdown status and settings."""
+    return get_store_status()
+
+
+@app.post("/api/admin/store-status", response_model=StoreStatusOut)
+async def api_admin_set_store_status(body: StoreStatusUpdate, admin: dict = Depends(get_current_admin)):
+    """Admin endpoint to toggle temporary shutdown switch and update custom apology/announcement message."""
+    updated = update_store_status(
+        is_shutdown=body.is_shutdown,
+        title=body.title,
+        message=body.message
+    )
+    # Broadcast to all active clients (customers and admin)
+    await manager.broadcast_all({
+        "type": "store_status_changed",
+        "is_shutdown": updated["is_shutdown"],
+        "title": updated["title"],
+        "message": updated["message"]
+    })
+    return updated
 
 
 # ── Serve Frontend ────────────────────────────────────────
